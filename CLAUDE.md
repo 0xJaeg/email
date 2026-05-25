@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Intent
 
-This repository is the scaffold for an **Email Support Agent** — a webhook-driven system that ingests Agent Mail webhooks, classifies/decides via Claude, and acts (reply or refund via ClickBank). See `initial-plan.md` for the full MVP spec, refund decision tree, cost model, and 4-day build timeline. The plan is the source of truth for architectural decisions until the backend lands.
+This repository is the scaffold for an **Email Support Agent** — a webhook-driven system that ingests Agent Mail webhooks, classifies/decides via Claude, and acts (reply or refund via ClickBank). See `docs/initial-plan.md` for the full MVP spec, refund decision tree, cost model, and 4-day build timeline. The plan is the source of truth for architectural decisions until the backend lands.
 
-Current state: only the Next.js dashboard scaffold exists in `apps/web`. The Hono API server, BullMQ worker, Supabase schema, and Anthropic/ClickBank integrations described in `initial-plan.md` are **not yet implemented** — expect to create new workspace packages (e.g. `apps/api`, `apps/worker`) when adding them.
+Current state: `apps/web` (Next.js dashboard scaffold), `apps/api` (Hono webhook server skeleton — `/health` only, webhook handler is a stub for slice B), `apps/worker` (BullMQ consumer skeleton that just logs and acks jobs — real processing lands in slice C), and `packages/db` (shared Supabase client + migrations). Anthropic classifier, refund decision tree, action layer (`sendReply`/`refundCustomer`), and dashboard pages from `docs/initial-plan.md` are **not yet implemented**.
 
 ## Working Style
 
@@ -58,11 +58,13 @@ For multi-step tasks, state a brief plan with verification per step.
 All commands are run from the repo root and dispatched by Turbo to the relevant workspaces:
 
 ```bash
-pnpm dev          # turbo dev (starts apps/web with --turbopack, persistent)
+pnpm dev          # turbo dev (starts apps/web, apps/api, apps/worker in parallel)
 pnpm build        # turbo build
 pnpm lint         # turbo lint
 pnpm format       # turbo format (prettier --write)
 pnpm typecheck    # turbo typecheck (tsc --noEmit)
+pnpm db:start     # docker compose up -d redis (BullMQ broker for apps/worker)
+pnpm db:stop      # docker compose down
 ```
 
 To run a script in a single workspace, use `pnpm --filter <name> <script>` (e.g. `pnpm --filter web dev`, `pnpm --filter @workspace/ui typecheck`).
@@ -76,7 +78,10 @@ Node `>=20` and `pnpm@9.15.9` are required (declared in root `package.json`).
 **Monorepo layout** (pnpm workspaces + Turbo):
 
 - `apps/web` — Next.js 16 (App Router, Turbopack, React 19) dashboard. Imports UI from `@workspace/ui`; transpiled via `next.config.mjs`'s `transpilePackages`.
+- `apps/api` — Hono webhook server (plain Node, ESM, NodeNext). Entry at `src/index.ts` via `@hono/node-server` on `PORT` (default 3001). `/health` returns `{ status: "ok" }`; `/webhooks/agent-mail` is a slice-B stub. Dev via `tsx watch`.
+- `apps/worker` — BullMQ consumer (plain Node, ESM, NodeNext). Connects to Redis via `REDIS_URL`, listens on the `emails` queue (constant exported from `src/queues.ts`). Processor in `src/processors/email.ts` is a slice-C stub. Dev via `tsx watch`.
 - `packages/ui` — Shared shadcn/ui component library. Exports under subpaths (`@workspace/ui/components/*`, `@workspace/ui/lib/*`, `@workspace/ui/hooks/*`, `@workspace/ui/globals.css`, `@workspace/ui/postcss.config`). The exports map is the contract — add new entries here when introducing new subpaths.
+- `packages/db` — Shared Supabase access. `createServerClient({ url, serviceRoleKey })` returns a typed `SupabaseClient<Database>`. Schema in `packages/db/supabase/migrations/*.sql` (managed by the Supabase CLI; system install on PATH). Types regenerated via `pnpm --filter @workspace/db gen-types` after `supabase link --project-ref <ref>`.
 - `packages/eslint-config` — `@workspace/eslint-config` with `base`, `next-js`, `react-internal` configs.
 - `packages/typescript-config` — `@workspace/typescript-config` with `base.json` and `nextjs.json`. Root `tsconfig.json` extends `base.json`.
 
