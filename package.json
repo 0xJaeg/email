@@ -9,13 +9,16 @@
     "format": "turbo format",
     "typecheck": "turbo typecheck",
     "db:start": "docker compose up -d redis",
-    "db:stop": "docker compose down"
+    "db:stop": "docker compose down",
+    "sim": "tsx --env-file=.env.local scripts/sim-webhook.ts"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "svix": "^1.94.0",
+    "tsx": "^4.19.0",
     "turbo": "^2.8.17",
     "typescript": "5.9.3"
   },
@@ -24,6 +27,8 @@
     "node": ">=20"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["msgpackr-extract"]
+    "onlyBuiltDependencies": [
+      "msgpackr-extract"
+    ]
   }
 }
