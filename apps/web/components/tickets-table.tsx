@@ -60,7 +60,7 @@ export function TicketsTable({ initial }: { initial: TicketRow[] }) {
   return (
     <div className="overflow-hidden rounded-lg border">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-muted">
           <TableRow>
             <TableHead>Sender</TableHead>
             <TableHead>Subject</TableHead>
@@ -86,10 +86,10 @@ export function TicketsTable({ initial }: { initial: TicketRow[] }) {
           ) : (
             rows.map((r) => (
               <TableRow key={r.id}>
-                <TableCell className="max-w-[200px] truncate font-medium">
+                <TableCell className="max-w-50 truncate font-medium">
                   {r.sender}
                 </TableCell>
-                <TableCell className="max-w-[280px] truncate text-muted-foreground">
+                <TableCell className="max-w-70 truncate text-muted-foreground">
                   {r.subject}
                 </TableCell>
                 <TableCell>

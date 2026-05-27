@@ -20,7 +20,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@workspace/ui/components/sidebar"
-import { IconDotsVertical, IconUserCircle, IconCreditCard, IconNotification, IconLogout } from "@tabler/icons-react"
+import {
+  IconDotsVertical,
+  IconUserCircle,
+  IconCreditCard,
+  IconNotification,
+  IconLogout,
+} from "@tabler/icons-react"
 
 export function NavUser({
   user,
@@ -76,27 +82,8 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle
-                />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification
-                />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <IconLogout
-              />
+              <IconLogout />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

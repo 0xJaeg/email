@@ -13,15 +13,10 @@ export default async function Page() {
   ])
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2">
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          <SectionCards initial={stats} />
-          <div className="px-4 lg:px-6">
-            <TicketsTable initial={tickets} />
-          </div>
-        </div>
-      </div>
+    <div className="@container/main space-y-2 lg:space-y-4">
+      <SectionCards initial={stats} />
+
+      <TicketsTable initial={tickets} />
     </div>
   )
 }

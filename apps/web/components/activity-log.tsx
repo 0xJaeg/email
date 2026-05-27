@@ -52,7 +52,7 @@ export function ActivityLog({ initial }: { initial: ActivityRow[] }) {
   return (
     <div className="overflow-hidden rounded-lg border">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-muted">
           <TableRow>
             <TableHead>Action</TableHead>
             <TableHead>Status</TableHead>
@@ -77,12 +77,12 @@ export function ActivityLog({ initial }: { initial: ActivityRow[] }) {
                 <TableCell>
                   <AuditStatusBadge value={r.status} />
                 </TableCell>
-                <TableCell className="max-w-[360px] truncate text-muted-foreground">
+                <TableCell className="max-w-90 truncate text-muted-foreground">
                   {r.error ?? r.emailId ?? "—"}
                 </TableCell>
                 <TableCell
                   suppressHydrationWarning
-                  className="text-right tabular-nums text-muted-foreground"
+                  className="text-right text-muted-foreground tabular-nums"
                 >
                   {formatTime(r.createdAt)}
                 </TableCell>
