@@ -34,3 +34,7 @@ npm-debug.log*
 # Misc
 .DS_Store
 *.pem
+
+# Playwright MCP / verification scratch
+.playwright-mcp/
+verify-*.png

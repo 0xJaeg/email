@@ -11,13 +11,14 @@ import {
 import { getBreadcrumbs } from "@workspace/ui/lib/utils"
 import { usePathname } from "next/navigation"
 import { Fragment } from "react"
+import ThemeToggler from "@workspace/ui/components/theme-toggler"
 
 export function SiteHeader() {
   const pathname = usePathname()
   const breadcrumbs = getBreadcrumbs(pathname)
 
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) lg:px-6">
+    <header className="flex justify-between h-(--header-height) shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) lg:px-6">
       <Breadcrumb>
         <BreadcrumbList>
           {breadcrumbs.map((crumb, index) => {
@@ -43,6 +44,7 @@ export function SiteHeader() {
           })}
         </BreadcrumbList>
       </Breadcrumb>
+      <ThemeToggler />
     </header>
   )
 }
