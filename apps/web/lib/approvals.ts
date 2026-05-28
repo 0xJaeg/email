@@ -4,10 +4,11 @@ import { sendReply } from "@workspace/actions/send-reply"
 import { refundCustomer } from "@workspace/actions/refund-customer"
 import { getAgentMailInboxId } from "@workspace/actions/agent-mail"
 import { getServerSupabase } from "@/lib/supabase/admin"
-
-const APPROVER = "mvp-operator" // placeholder until auth lands
+import { getActionSupabase } from "@/lib/supabase/server"
 
 export async function approveRefund(decisionId: string): Promise<void> {
+  const { user } = await getActionSupabase()
+  const approvedBy = user.email ?? user.id
   const supabase = getServerSupabase()
 
   // Race-safe state transition: only proceed if still pending_approval.
@@ -16,7 +17,7 @@ export async function approveRefund(decisionId: string): Promise<void> {
     .update({
       status: "approved",
       approved_at: new Date().toISOString(),
-      approved_by: APPROVER,
+      approved_by: approvedBy,
     })
     .eq("id", decisionId)
     .eq("status", "pending_approval")
@@ -120,13 +121,15 @@ export async function rejectRefund(
   decisionId: string,
   reason?: string
 ): Promise<void> {
+  const { user } = await getActionSupabase()
+  const approvedBy = user.email ?? user.id
   const supabase = getServerSupabase()
   const { data: claimed, error } = await supabase
     .from("decisions")
     .update({
       status: "rejected",
       approved_at: new Date().toISOString(),
-      approved_by: APPROVER,
+      approved_by: approvedBy,
     })
     .eq("id", decisionId)
     .eq("status", "pending_approval")
