@@ -5,6 +5,8 @@ import { getAnthropic } from "../lib/anthropic.js"
 import { getSupabase } from "../lib/supabase.js"
 import { INSTRUCTIONS_TEXT } from "../lib/instructions.js"
 import { decideRefund, type RefundDecision } from "../lib/refund-decision.js"
+import { sendReply, getAgentMailInboxId } from "@workspace/actions"
+import { generateReply } from "../lib/generate-reply.js"
 
 const ClassificationResult = z.object({
   classification: z.enum(["refund_request", "faq", "other"]),
@@ -32,7 +34,7 @@ export async function processEmail(job: Job) {
   // 1. Fetch the email
   const { data: email, error: emailErr } = await supabase
     .from("emails")
-    .select("id, from_email, to_email, subject, body_text")
+    .select("id, from_email, to_email, subject, body_text, agent_mail_message_id")
     .eq("id", emailId)
     .single()
   if (emailErr || !email) {
@@ -111,6 +113,61 @@ export async function processEmail(job: Job) {
   console.log(
     `[worker] ${email.id}: classify=${cls.classification} decide=${dec.decision} cache_read=${classifyResp.usage.cache_read_input_tokens}`
   )
+
+  const isRefundDecision =
+    dec.decision === "issue_refund" ||
+    dec.decision === "issue_refund_chargeback"
+  const isReplyDecision =
+    dec.decision === "send_offer_1" ||
+    dec.decision === "send_offer_2" ||
+    dec.decision === "send_faq_reply"
+  const isEscalate = dec.decision === "escalate"
+
+  if (isEscalate) {
+    await supabase
+      .from("decisions")
+      .update({ status: "needs_human" })
+      .eq("id", row.id)
+  } else if (isReplyDecision) {
+    const templateMap = {
+      send_faq_reply: "FAQ_REPLY",
+      send_offer_1: "OFFER_1",
+      send_offer_2: "OFFER_2",
+    } as const
+    const template = templateMap[dec.decision as keyof typeof templateMap]
+    try {
+      const reply = await generateReply({ template, email, anthropic })
+      const sent = await sendReply({
+        inboxId: getAgentMailInboxId(),
+        inReplyToMessageId: email.agent_mail_message_id ?? "",
+        replyText: reply.text,
+        decisionId: row.id,
+        supabase,
+      })
+      await supabase
+        .from("decisions")
+        .update({
+          status: sent.ok ? "sent" : "failed",
+          draft_reply_text: reply.text,
+        })
+        .eq("id", row.id)
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err)
+      await supabase
+        .from("decisions")
+        .update({ status: "failed" })
+        .eq("id", row.id)
+      await supabase.from("audit_log").insert({
+        action: "generate_reply_failed",
+        email_id: email.id,
+        status: "failure",
+        error,
+        payload: { decision_id: row.id, template },
+      })
+    }
+  }
+  // Refund branches handled in Task 8.
+
   return {
     decisionId: row.id,
     classification: cls.classification,
