@@ -128,6 +128,12 @@ export async function processEmail(job: Job) {
       .from("decisions")
       .update({ status: "needs_human" })
       .eq("id", row.id)
+    await supabase.from("audit_log").insert({
+      action: "escalate_needs_human",
+      email_id: email.id,
+      status: "success",
+      payload: { decision_id: row.id, decision: dec.decision },
+    })
   } else if (isReplyDecision) {
     const templateMap = {
       send_faq_reply: "FAQ_REPLY",

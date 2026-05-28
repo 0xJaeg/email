@@ -73,7 +73,9 @@ pnpm db:stop      # docker compose down
 
 To run a script in a single workspace, use `pnpm --filter <name> <script>` (e.g. `pnpm --filter web dev`, `pnpm --filter @workspace/ui typecheck`).
 
-There is no test runner configured yet — add one to the relevant workspace before claiming a test command exists.
+Vitest is the workspace test runner — `pnpm test` runs across the monorepo; per-workspace via `pnpm --filter <name> test`.
+
+`packages/actions` is built to `dist/` (NodeNext `.ts` → `.js`) so Turbopack (Next.js) can resolve `@workspace/actions/*` subpath imports — `pnpm build` triggers it via Turbo's `^build` chain. On a fresh clone, run `pnpm build` once before `pnpm dev` or `pnpm --filter @workspace/actions build` if you only need the actions package. Follow-up: switch to Turbopack `experimental.extensionAlias` to drop the build step.
 
 Node `>=20` and `pnpm@9.15.9` are required (declared in root `package.json`).
 
