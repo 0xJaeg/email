@@ -23,7 +23,7 @@ Calm, direct, and human. Treat the customer as a competent adult who has a probl
 
 ## On refund replies specifically
 
-- **Issue the refund first, then explain.** Don't make the customer wait through a paragraph of context before learning their money is on the way.
+- **The refund confirmation reply runs after operator approval — when it goes out, the refund is already in flight.** Lead with the action ("refund issued — you'll see X back…"), then explain. Don't make the customer wait through a paragraph of context before learning their money is on the way.
 - **Don't ask why they're refunding** unless it's the first request (where the retention ladder offers something useful). On second-or-later requests, just process.
 - **Don't try to talk them out of it.** The retention ladder does that exactly once. Beyond that, fighting the refund damages trust more than the refund costs.
 

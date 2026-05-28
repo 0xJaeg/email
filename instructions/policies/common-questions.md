@@ -36,7 +36,7 @@ A: For teams of 5+ seats, point them at the contact form at `https://example.com
 A: Initial charge happens at checkout. Subscription renewals happen on the same day of the month as the original purchase.
 
 **Q: I see a duplicate charge.**
-A: Pull up the ClickBank order history for that email and confirm whether it's a duplicate or two distinct purchases (sometimes a subscription renewal happens the same day as a one-off purchase). If it's truly a duplicate, refund the second charge immediately and apologize — do not escalate to the retention ladder for duplicate-charge errors.
+A: Pull up the ClickBank order history for that email and confirm whether it's a duplicate or two distinct purchases (sometimes a subscription renewal happens the same day as a one-off purchase). If it's truly a duplicate, the decision is a refund + apology (queued for operator approval — the duplicate-charge path also requires approval, no carve-outs). Do not escalate to the retention ladder for duplicate-charge errors.
 
 **Q: Can I get a receipt for my purchase?**
 A: ClickBank sends a receipt to the email on file at purchase time. They can also re-request from `https://www.clickbank.com/orderhistory`.

@@ -22,7 +22,7 @@ Send a polite retention message that:
 3. Offers a one-time 50% discount on their next purchase as a goodwill gesture, OR a free 30-day extension on whatever the product is.
 4. Makes the refund still easy: "if this doesn't change your mind, just reply 'refund' and we'll process it the same day."
 
-Do not be pushy. The goal is to learn what went wrong and offer something useful. If they reply with anything that still reads as refund intent, the next message issues the refund.
+Do not be pushy. The goal is to learn what went wrong and offer something useful. If they reply with anything that still reads as refund intent, the next message is a refund decision — recorded and queued for the operator to approve. The agent does not issue refunds directly.
 
 ### `[OFFER_2]` — Second refund request from the same sender
 
@@ -30,11 +30,11 @@ Send a shorter, more direct message that:
 
 1. Acknowledges the previous touch.
 2. Offers either a refund OR a 1:1 video walkthrough with a human support specialist (15 minutes, scheduled via a Calendly link).
-3. If the second email contains any chargeback or dispute language, **skip the offer ladder entirely and issue an immediate refund + apology**.
+3. If the second email contains any chargeback or dispute language, **skip the offer ladder entirely — the decision tree records this as a refund + chargeback apology, which the operator approves before money moves**.
 
 ### Third request → immediate refund
 
-By the third request the goodwill window is closed. Issue the refund, send a brief confirmation, and log the case for trend analysis (multiple refund-attempts is a product-quality signal).
+By the third request the goodwill window is closed. The decision tree records the refund (pending operator approval); the confirmation reply is composed in advance and sent automatically once approved. Multiple refund-attempts is a product-quality signal worth logging.
 
 ## What the classifier should remember from this file
 
