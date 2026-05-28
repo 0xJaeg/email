@@ -5,7 +5,7 @@ import type { ServerClient } from "@workspace/db/client"
 function mockSupabase() {
   const auditInsert = vi.fn().mockResolvedValue({ data: null, error: null })
   const supabase = {
-    from: vi.fn((table: string) => ({
+    from: vi.fn(() => ({
       insert: auditInsert,
     })),
   } as unknown as ServerClient

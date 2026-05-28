@@ -9,6 +9,7 @@
     "PORT",
     "AGENT_MAIL_WEBHOOK_SECRET",
     "AGENT_MAIL_API_KEY",
+    "AGENT_MAIL_INBOX_ID",
     "ANTHROPIC_API_KEY"
   ],
   "tasks": {
