@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
-import { getActionSupabase, getAnonActionSupabase } from "@/lib/supabase/server"
+import { getAnonActionSupabase } from "@/lib/supabase/server"
 
 export async function signIn(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase()
@@ -24,7 +24,8 @@ export async function signIn(formData: FormData): Promise<{ error?: string; ok?:
 }
 
 export async function signOut(): Promise<void> {
-  const { supabase } = await getActionSupabase()
+  // Anon client so an already-expired session still clears cleanly without a 500.
+  const { supabase } = await getAnonActionSupabase()
   await supabase.auth.signOut()
   redirect("/login")
 }
