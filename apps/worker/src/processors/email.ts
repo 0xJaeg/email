@@ -165,8 +165,47 @@ export async function processEmail(job: Job) {
         payload: { decision_id: row.id, template },
       })
     }
+  } else if (isRefundDecision) {
+    const templateMap = {
+      issue_refund: "REFUND_CONFIRMATION",
+      issue_refund_chargeback: "REFUND_CHARGEBACK_APOLOGY",
+    } as const
+    const template = templateMap[dec.decision as keyof typeof templateMap]
+    try {
+      const reply = await generateReply({ template, email, anthropic })
+      await supabase
+        .from("decisions")
+        .update({
+          status: "pending_approval",
+          draft_reply_text: reply.text,
+        })
+        .eq("id", row.id)
+      await supabase.from("audit_log").insert({
+        action: "refund_pending_approval",
+        email_id: email.id,
+        status: "success",
+        payload: {
+          decision_id: row.id,
+          template,
+          draft_reply_text: reply.text,
+          usage: reply.usage,
+        },
+      })
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err)
+      await supabase
+        .from("decisions")
+        .update({ status: "failed" })
+        .eq("id", row.id)
+      await supabase.from("audit_log").insert({
+        action: "generate_reply_failed",
+        email_id: email.id,
+        status: "failure",
+        error,
+        payload: { decision_id: row.id, template },
+      })
+    }
   }
-  // Refund branches handled in Task 8.
 
   return {
     decisionId: row.id,
