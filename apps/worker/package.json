@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
-    "@workspace/actions": "workspace:^",
+    "@workspace/actions": "workspace:*",
     "@workspace/db": "workspace:*",
     "bullmq": "^5.13.0",
     "dotenv-flow": "^4.1.0",
