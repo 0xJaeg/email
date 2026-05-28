@@ -37,7 +37,7 @@ describe("generateReply", () => {
       ttl: "1h",
     })
     expect(callArgs?.messages[0].content).toContain("REFUND_CONFIRMATION")
-    expect(callArgs.messages[0].content).toContain("alice@x.com")
+    expect(callArgs?.messages[0].content).toContain("alice@x.com")
   })
 
   it("throws on empty text response", async () => {
