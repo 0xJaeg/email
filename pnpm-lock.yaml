@@ -108,6 +108,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@workspace/actions':
+        specifier: workspace:^
+        version: link:../../packages/actions
       '@workspace/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -172,6 +175,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.98.0
         version: 0.98.0(zod@3.25.76)
+      '@workspace/actions':
+        specifier: workspace:^
+        version: link:../../packages/actions
       '@workspace/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -209,6 +215,28 @@ importers:
       vitest:
         specifier: ^4.1.7
         version: 4.1.7(@types/node@25.2.3)(msw@2.14.6(@types/node@25.2.3)(typescript@5.9.3))(vite@8.0.14(@types/node@25.2.3)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0))
+
+  packages/actions:
+    dependencies:
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../db
+      agentmail:
+        specifier: ^0.1.19
+        version: 0.1.19
+    devDependencies:
+      '@types/node':
+        specifier: ^25.1.0
+        version: 25.2.3
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/db:
     dependencies:
@@ -2435,6 +2463,10 @@ packages:
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
+
+  agentmail@0.1.19:
+    resolution: {integrity: sha512-L0au0GnyH24Ob7l0QrkkdwJWL25Aa26f6YnuQlpvwtQMVOTu6IiMftJ8LnVVwQtKwBSZ6cWLS+9SdCvgw+LWGg==}
+    engines: {node: '>=18.0.0'}
 
   aggregate-error@3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
@@ -5334,6 +5366,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.21.0:
+    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   wsl-utils@0.3.1:
     resolution: {integrity: sha512-g/eziiSUNBSsdDJtCLB8bdYEUMj4jR7AGeUo96p/3dTafgjHhpF4RiCFPiRILwjQoDXx5MqkBr4fwWtR3Ky4Wg==}
     engines: {node: '>=20'}
@@ -7435,6 +7479,13 @@ snapshots:
   acorn@8.15.0: {}
 
   agent-base@7.1.4: {}
+
+  agentmail@0.1.19:
+    dependencies:
+      ws: 8.21.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   aggregate-error@3.1.0:
     dependencies:
@@ -10599,6 +10650,8 @@ snapshots:
       strip-ansi: 6.0.1
 
   wrappy@1.0.2: {}
+
+  ws@8.21.0: {}
 
   wsl-utils@0.3.1:
     dependencies:
