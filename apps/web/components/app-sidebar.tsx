@@ -12,6 +12,7 @@ import {
   IconDashboard,
   IconListDetails,
   IconInnerShadowTop,
+  IconClipboardCheck,
 } from "@tabler/icons-react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -32,6 +33,11 @@ const data = {
       title: "Activity",
       url: "/activity",
       icon: <IconListDetails />,
+    },
+    {
+      title: "Approvals",
+      url: "/approvals",
+      icon: <IconClipboardCheck />,
     },
   ],
 }
