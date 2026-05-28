@@ -150,19 +150,18 @@ Everything downstream (queue, workers, agents, storage, refund logic) stays unto
 
 ## Current status
 
-**Built + verified end-to-end (2026-05-27):**
+**Built + verified end-to-end (2026-05-28):**
 
 - **A — Foundation:** monorepo (pnpm + Turbo), Supabase Postgres + migrations, Redis/BullMQ broker, shared UI package.
 - **B — Ingestion:** Hono webhook server with Svix signature verification, Supabase persist, BullMQ enqueue; idempotent on duplicate `agent_mail_message_id`.
 - **C — Classifier:** Haiku 4.5 with the instructions block prompt-cached (~4844 tokens, above the 4096-token Haiku cache floor); cache reuse confirmed across calls.
 - **D — Refund decision tree:** 30-day prior-refund count per sender, chargeback regex gate at `priorRefunds == 1`, Sonnet 4.6 confirms genuine chargeback threats. Seven simulated scenarios passed: classifier labels, offer 1 → offer 2 → refund ladder, Sonnet-confirmed chargeback escalation, prompt-cache hits, live dashboard updates.
+- **E — Action layer:** `sendReply` via Agent Mail (auto-fires from the worker for reply-based decisions), refund-approval queue at `/approvals` in the dashboard (refund decisions land in `pending_approval`; a human approves before money moves), `refundCustomer` ClickBank stub (real API swap pending credentials). Reply generation via Haiku 4.5 with the cached instructions block. Race-safe conditional update on approve.
 - **F — Dashboard:** Next.js + shadcn/ui — Realtime ticket feed + stat cards + action log + theme toggle. SSR via the Supabase secret-key client; Realtime via the publishable-key browser client.
 
 **Remaining:**
 
-- **E — Action layer:** `sendReply` via Agent Mail (auto-fires from the worker for reply-based decisions), the **refund approval queue** in the dashboard (refund decisions land in `pending_approval`; a human approves before money moves), and `refundCustomer(orderId)` (ClickBank API call, invoked only by the approval handler post-approval).
 - **Auth:** replace the permissive `anon` RLS policy with auth-scoped policies before any real deploy.
-- Reconcile the `instructions/` system-prompt store (still says "issue an immediate refund" — needs to align with the approval gate; re-verify slices C/D after rewording).
 
 ## Open questions
 
