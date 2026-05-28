@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-Webhook-driven email agent + a Next.js dashboard for live oversight. Agent Mail handles inbound/outbound (abstracted so we can swap to self-hosted later). Plain Node workers consume a Redis queue, call Claude via the Anthropic SDK with prompt caching, and either reply or trigger a ClickBank refund. Instructions live as version-controlled markdown. Dashboard gives you live visibility + approval workflow during the trust-building phase. MVP in 4 days. Scales to 1k+ emails/min without architectural changes. Blended cost ~$0.0007/email.
+Webhook-driven email agent + a Next.js dashboard for live oversight. Agent Mail handles inbound/outbound (abstracted so we can swap to self-hosted later). Plain Node workers consume a Redis queue, call Claude via the Anthropic SDK with prompt caching, and either reply or trigger a ClickBank refund. Instructions live as version-controlled markdown. Dashboard gives you live visibility + approval workflow during the trust-building phase. Core pipeline (ingestion + classify + decide) verified end-to-end; remaining work is the action layer + refund-approval queue + auth. Scales to 1k+ emails/min without architectural changes. Blended cost ~$0.0007/email.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ Webhook handler returns 200 in <20ms (just enqueues); workers do the slow work a
 1. **Ingestion service** — Hono server. Verifies Agent Mail webhook signature, persists raw email to Supabase, enqueues processing job, returns 200.
 2. **Queue** — Redis + BullMQ. Concurrency configurable per worker pool, retries with exponential backoff, dead-letter queue for failures needing human review.
 3. **Worker pool** — N plain Node processes under PM2. Each worker pulls a job, fetches thread context + sender's email history, runs `classify → decide → act`, logs everything.
-4. **Action layer** — Two functions for MVP: `sendReply(threadId, body)` (via Agent Mail) and `refundCustomer(orderId)` (via ClickBank API). Both fully audit-logged with reasoning trail.
+4. **Action layer** — Two functions for MVP: `sendReply(threadId, body)` (via Agent Mail, invoked from the worker for reply-based decisions) and `refundCustomer(orderId)` (via ClickBank API, invoked **only** from the dashboard's approval handler — never directly by the worker, since refunds always require explicit human approval). Both fully audit-logged with reasoning trail.
 5. **Instructions store** — Markdown in the repo, loaded into Claude context per request with prompt caching. Editing instructions = editing markdown, no deploy.
 6. **Dashboard** — Next.js app, reads same Supabase tables the workers write to. Live ticket feed, review queue, audit log, stats.
 
@@ -63,14 +63,14 @@ For every inbound message:
 3. Branch:
    - **Request #1** → send retention offer 1 (`[OFFER_1]`)
    - **Request #2**:
-     - If message contains chargeback threat (regex pre-filter for "chargeback / dispute / bank / credit card company" → confirmed by Sonnet) → **immediate refund + apology**
+     - If message contains chargeback threat (regex pre-filter for "chargeback / dispute / bank / credit card company" → confirmed by Sonnet) → **refund + chargeback apology (pending human approval)**
      - Otherwise → send retention offer 2 (`[OFFER_2]`)
-   - **Request #3+** → **immediate refund + confirmation reply**
-4. Refund execution:
-   - Call ClickBank API with order ID (parsed from email body, or looked up by customer email)
-   - On success → send confirmation reply via Agent Mail
-   - On failure → push to dead-letter queue, flag for human
-5. Every decision logged: template used, refund decision, full LLM reasoning, API response
+   - **Request #3+** → **refund + confirmation reply (pending human approval)**
+4. Refund approval & execution:
+   - The worker terminates after writing the decision — it never calls ClickBank. Refund decisions land in a `pending_approval` state and surface in the dashboard review queue.
+   - On human **approve** → call ClickBank API with order ID (parsed from email body, or looked up by customer email) → on success, send confirmation reply via Agent Mail; on failure, push to the dead-letter queue and flag for re-review.
+   - On human **reject / edit** → audit, no money moved; the approver may compose an alternative reply.
+5. Every decision and approval action logged: template used, refund decision, full LLM reasoning, approver identity, ClickBank API response.
 
 ## Instructions / training storage
 
@@ -94,13 +94,13 @@ Built so you have live visibility into what the agent is doing — and a safety 
 **MVP scope:**
 
 - **Live ticket feed** — inbox view, newest first. Each row: sender, subject, agent's classification, action taken, status. Click for full thread + agent reasoning + which instruction file was used.
-- **Review queue** — toggleable "human approval required" mode. Replies sit in pending state before sending. One-click approve / edit / discard. Toggleable per category (e.g., always require approval for refunds, auto-send FAQ replies).
+- **Review queue** — human-approval gate for outgoing actions. Pending replies and refunds sit here before firing. One-click approve / edit / discard. **Refunds always require approval (firm invariant); FAQ replies and retention offers are toggleable per the autonomy model below.**
 - **Action log** — every decision + why. Full audit trail.
-- **Quick stats strip** — emails today, % auto-replied, % refunds, % retention saves, today's LLM cost.
+- **Quick stats strip** — emails today, % auto-replied, % refunds, % retention saves, **pending refund approvals**, today's LLM cost.
 
 **Rollout plan for week 1:**
 
-System defaults to "all replies require approval." You see every reply, one-click approve or edit. Once you're comfortable (likely 2-3 days), we flip categories one at a time to autonomous: FAQ first, then retention offers, finally refunds. This is the safety mechanism — no autonomous reply goes to a real customer without you signing off in the first phase.
+System defaults to "all replies require approval." You see every reply, one-click approve or edit. Once you're comfortable (likely 2-3 days), we flip the reply categories one at a time to autonomous: FAQ first, then retention offers. **Refunds always require human approval — they never flip to autonomous.** Reply autonomy is the safety mechanism for the trust-building phase; the refund gate is permanent.
 
 **v1.5 additions** (post-MVP):
 
@@ -148,37 +148,23 @@ Email I/O is abstracted behind 2 interfaces, so swapping providers is isolated. 
 
 Everything downstream (queue, workers, agents, storage, refund logic) stays untouched.
 
-## Build timeline (4 days)
+## Current status
 
-**Day 1 — Agent core**
+**Built + verified end-to-end (2026-05-27):**
 
-- 0-1h: Agent Mail signup + webhook pointed at ngrok tunnel
-- 1-3h: Hono webhook server + Supabase schema + Redis/BullMQ wired up
-- 3-5h: Worker skeleton + Anthropic SDK with prompt caching + Haiku classifier
-- 5-7h: Refund decision logic + templates (placeholders)
-- 7-8h: ClickBank API stub + dead-letter handling
+- **A — Foundation:** monorepo (pnpm + Turbo), Supabase Postgres + migrations, Redis/BullMQ broker, shared UI package.
+- **B — Ingestion:** Hono webhook server with Svix signature verification, Supabase persist, BullMQ enqueue; idempotent on duplicate `agent_mail_message_id`.
+- **C — Classifier:** Haiku 4.5 with the instructions block prompt-cached (~4844 tokens, above the 4096-token Haiku cache floor); cache reuse confirmed across calls.
+- **D — Refund decision tree:** 30-day prior-refund count per sender, chargeback regex gate at `priorRefunds == 1`, Sonnet 4.6 confirms genuine chargeback threats. Seven simulated scenarios passed: classifier labels, offer 1 → offer 2 → refund ladder, Sonnet-confirmed chargeback escalation, prompt-cache hits, live dashboard updates.
+- **F — Dashboard:** Next.js + shadcn/ui — Realtime ticket feed + stat cards + action log + theme toggle. SSR via the Supabase secret-key client; Realtime via the publishable-key browser client.
 
-**Day 2 — Testing and polish**
+**Remaining:**
 
-- 0-4h: End-to-end test with synthetic emails, refine prompts
-- 4-8h: Logging, audit trail, error handling, edge cases
-
-**Day 3 — Dashboard**
-
-- 0-2h: Next.js scaffold + Supabase auth + Realtime hooks
-- 2-5h: Live ticket feed + full thread view + agent reasoning display
-- 5-7h: Review queue with approve / edit / discard
-- 7-8h: Quick stats strip
-
-**Day 4 — Go-live**
-
-- 0-2h: Replace ClickBank stub with real API (once access lands)
-- 2-5h: End-to-end test through the dashboard
-- 5-7h: Deploy workers to VPS + dashboard to Vercel
-- 7-8h: First real emails flowing through, monitor live
+- **E — Action layer:** `sendReply` via Agent Mail (auto-fires from the worker for reply-based decisions), the **refund approval queue** in the dashboard (refund decisions land in `pending_approval`; a human approves before money moves), and `refundCustomer(orderId)` (ClickBank API call, invoked only by the approval handler post-approval).
+- **Auth:** replace the permissive `anon` RLS policy with auth-scoped policies before any real deploy.
+- Reconcile the `instructions/` system-prompt store (still says "issue an immediate refund" — needs to align with the approval gate; re-verify slices C/D after rewording).
 
 ## Open questions
 
-- Timeline for ClickBank API access? (Day 4 assumes it's available by then; if not, we run on stub until it lands.)
-- Current daily email volume (to right-size the worker pool for day 1)?
-- Worth using SendGrid's inbound parse webhook instead of Agent Mail to avoid double-paying on email infra you already have? (Trade-off: SendGrid inbound parse works but is less agent-tooling-friendly than Agent Mail. Could be the eventual migration target instead of self-hosted.)
+- Timeline for ClickBank API access? Slice E ships on the stub until real access lands.
+- Current daily email volume (to right-size the worker pool when slice E goes live)?
