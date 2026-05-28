@@ -158,10 +158,7 @@ Everything downstream (queue, workers, agents, storage, refund logic) stays unto
 - **D — Refund decision tree:** 30-day prior-refund count per sender, chargeback regex gate at `priorRefunds == 1`, Sonnet 4.6 confirms genuine chargeback threats. Seven simulated scenarios passed: classifier labels, offer 1 → offer 2 → refund ladder, Sonnet-confirmed chargeback escalation, prompt-cache hits, live dashboard updates.
 - **E — Action layer:** `sendReply` via Agent Mail (auto-fires from the worker for reply-based decisions), refund-approval queue at `/approvals` in the dashboard (refund decisions land in `pending_approval`; a human approves before money moves), `refundCustomer` ClickBank stub (real API swap pending credentials). Reply generation via Haiku 4.5 with the cached instructions block. Race-safe conditional update on approve.
 - **F — Dashboard:** Next.js + shadcn/ui — Realtime ticket feed + stat cards + action log + theme toggle. SSR via the Supabase secret-key client; Realtime via the publishable-key browser client.
-
-**Remaining:**
-
-- **Auth:** replace the permissive `anon` RLS policy with auth-scoped policies before any real deploy.
+- **G — Auth + auth-scoped RLS:** Supabase Auth magic-link sign-in (`/login` + `/auth/callback`); `profiles` allow-list with role column; Next.js 16 `proxy.ts` route guard (doorman model — secret-key SSR reads remain unchanged); RLS replaced permissive `anon` SELECT with `authenticated` SELECT on `threads` / `emails` / `decisions` / `audit_log`; `approveRefund` / `rejectRefund` write real `approved_by = user.email`. File layout moved to `apps/web/lib/supabase/` per official Supabase docs convention. The `experimental.extensionAlias` attempt (T12) rolled back; build chain for `@workspace/actions` stays in place.
 
 ## Open questions
 
