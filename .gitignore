@@ -38,3 +38,6 @@ npm-debug.log*
 # Playwright MCP / verification scratch
 .playwright-mcp/
 verify-*.png
+
+# Supabase CLI scratch at repo root (real config is in packages/db/supabase/)
+/supabase/
