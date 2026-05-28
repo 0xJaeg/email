@@ -1,12 +1,28 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar"
+import { getActionSupabase } from "@/lib/supabase/server"
+import { getServerSupabase } from "@/lib/supabase/admin"
 
-export default function DashboardLayout({
+export const dynamic = "force-dynamic"
+
+export default async function OverviewLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{ children: React.ReactNode }>) {
+  const { user } = await getActionSupabase()
+  const admin = getServerSupabase()
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("name, email, role")
+    .eq("id", user.id)
+    .single()
+
+  const navUser = {
+    name: profile?.name ?? user.email ?? "Operator",
+    email: profile?.email ?? user.email ?? "",
+    role: profile?.role ?? "operator",
+  }
+
   return (
     <SidebarProvider
       style={
@@ -16,7 +32,7 @@ export default function DashboardLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar variant="inset" user={navUser} />
       <SidebarInset>
         <SiteHeader />
         <main className="flex-1 p-2 lg:p-4">{children}</main>
