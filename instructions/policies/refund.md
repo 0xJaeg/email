@@ -7,7 +7,7 @@
 - **60-day money-back guarantee** on every digital product, no questions asked. This is the ClickBank standard and customers know it.
 - **Refunds are processed via the original payment method** through the ClickBank API. Typical processing time: 3–5 business days for credit cards, 5–10 for PayPal.
 - **Customers do not need to "return" anything** — the products are digital. Their access is revoked when the refund is issued.
-- **Chargebacks and bank disputes** are treated as immediate refund requests to avoid the merchant losing the chargeback fee on top of the refund. The bar to escalate to "immediate refund + apology" on chargeback language is intentionally low.
+- **Chargebacks and bank disputes** are treated as refund requests to avoid the merchant losing the chargeback fee on top of the refund. The bar to route the decision down the "refund + chargeback apology" path is intentionally low; the operator still approves before money moves.
 
 ## Retention offer ladder
 
@@ -32,7 +32,7 @@ Send a shorter, more direct message that:
 2. Offers either a refund OR a 1:1 video walkthrough with a human support specialist (15 minutes, scheduled via a Calendly link).
 3. If the second email contains any chargeback or dispute language, **skip the offer ladder entirely — the decision tree records this as a refund + chargeback apology, which the operator approves before money moves**.
 
-### Third request → immediate refund
+### Third request → refund (pending approval)
 
 By the third request the goodwill window is closed. The decision tree records the refund (pending operator approval); the confirmation reply is composed in advance and sent automatically once approved. Multiple refund-attempts is a product-quality signal worth logging.
 
