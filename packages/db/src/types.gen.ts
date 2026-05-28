@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       audit_log: {
@@ -79,36 +54,48 @@ export type Database = {
       }
       decisions: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           classification: string | null
           created_at: string
           decision: string | null
+          draft_reply_text: string | null
           email_id: string
           id: string
           llm_model: string | null
           llm_reasoning: string | null
           refund_request_count: number | null
+          status: string
           template_used: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           classification?: string | null
           created_at?: string
           decision?: string | null
+          draft_reply_text?: string | null
           email_id: string
           id?: string
           llm_model?: string | null
           llm_reasoning?: string | null
           refund_request_count?: number | null
+          status?: string
           template_used?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           classification?: string | null
           created_at?: string
           decision?: string | null
+          draft_reply_text?: string | null
           email_id?: string
           id?: string
           llm_model?: string | null
           llm_reasoning?: string | null
           refund_request_count?: number | null
+          status?: string
           template_used?: string | null
         }
         Relationships: [
@@ -335,9 +322,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
