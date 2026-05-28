@@ -29,14 +29,14 @@ describe("generateReply", () => {
     })
     expect(result.text).toBe("Hi Alice — refund issued. — Sam")
     expect(result.usage.cache_read_input_tokens).toBe(4844)
-    const callArgs = (anthropic.messages.create as ReturnType<typeof vi.fn>).mock
-      .calls[0][0]
-    expect(callArgs.model).toBe("claude-haiku-4-5")
-    expect(callArgs.system[0].cache_control).toEqual({
+    const create = anthropic.messages.create as ReturnType<typeof vi.fn>
+    const callArgs = create.mock.calls[0]?.[0]
+    expect(callArgs?.model).toBe("claude-haiku-4-5")
+    expect(callArgs?.system[0].cache_control).toEqual({
       type: "ephemeral",
       ttl: "1h",
     })
-    expect(callArgs.messages[0].content).toContain("REFUND_CONFIRMATION")
+    expect(callArgs?.messages[0].content).toContain("REFUND_CONFIRMATION")
     expect(callArgs.messages[0].content).toContain("alice@x.com")
   })
 
