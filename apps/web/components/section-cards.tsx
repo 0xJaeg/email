@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { getBrowserSupabase } from "@/lib/supabase-browser"
+import { getBrowserSupabase } from "@/lib/supabase/client"
 import { fetchStats, type DashboardStats } from "@/lib/tickets"
 
 export function SectionCards({ initial }: { initial: DashboardStats }) {

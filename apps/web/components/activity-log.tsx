@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import { getBrowserSupabase } from "@/lib/supabase-browser"
+import { getBrowserSupabase } from "@/lib/supabase/client"
 import { fetchActivity, type ActivityRow } from "@/lib/tickets"
 import { AuditStatusBadge } from "./status-badges"
 
