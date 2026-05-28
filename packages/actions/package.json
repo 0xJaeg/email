@@ -4,13 +4,33 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "tsc --project tsconfig.build.json",
     "lint": "eslint",
     "format": "prettier --write \"**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./send-reply": {
+      "types": "./src/sendReply.ts",
+      "default": "./dist/sendReply.js"
+    },
+    "./refund-customer": {
+      "types": "./src/refundCustomer.ts",
+      "default": "./dist/refundCustomer.js"
+    },
+    "./agent-mail": {
+      "types": "./src/agent-mail.ts",
+      "default": "./dist/agent-mail.js"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "default": "./dist/types.js"
+    }
   },
   "dependencies": {
     "@workspace/db": "workspace:*",

@@ -8,7 +8,7 @@ export default async function ApprovalsPage() {
   const supabase = getServerSupabase()
   const rows = await fetchPendingApprovals(supabase)
   return (
-    <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
+    <div className="flex flex-col gap-4 md:gap-6">
       <div>
         <h1 className="text-2xl font-semibold">Refund approvals</h1>
         <p className="text-muted-foreground text-sm">

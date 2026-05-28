@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -16,7 +16,7 @@ import type { PendingApprovalRow } from "@/lib/decisions"
 
 export function ApprovalsTable({ initial }: { initial: PendingApprovalRow[] }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [pendingId, setPendingId] = useState<string | null>(null)
 
   if (initial.length === 0) {
     return (
@@ -55,26 +55,32 @@ export function ApprovalsTable({ initial }: { initial: PendingApprovalRow[] }) {
                 <Button
                   variant="default"
                   size="sm"
-                  disabled={isPending}
-                  onClick={() =>
-                    startTransition(async () => {
+                  disabled={pendingId !== null}
+                  onClick={async () => {
+                    setPendingId(r.id)
+                    try {
                       await approveRefund(r.id)
                       router.refresh()
-                    })
-                  }
+                    } finally {
+                      setPendingId(null)
+                    }
+                  }}
                 >
                   Approve
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={isPending}
-                  onClick={() =>
-                    startTransition(async () => {
+                  disabled={pendingId !== null}
+                  onClick={async () => {
+                    setPendingId(r.id)
+                    try {
                       await rejectRefund(r.id)
                       router.refresh()
-                    })
-                  }
+                    } finally {
+                      setPendingId(null)
+                    }
+                  }}
                 >
                   Reject
                 </Button>
