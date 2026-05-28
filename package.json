@@ -10,7 +10,9 @@
     "typecheck": "turbo typecheck",
     "db:start": "docker compose up -d redis",
     "db:stop": "docker compose down",
-    "sim": "tsx --env-file=.env.local scripts/sim-webhook.ts"
+    "sim": "tsx --env-file=.env.local scripts/sim-webhook.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
@@ -20,7 +22,8 @@
     "svix": "^1.94.0",
     "tsx": "^4.19.0",
     "turbo": "^2.8.17",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.1.7"
   },
   "packageManager": "pnpm@9.15.9",
   "engines": {
