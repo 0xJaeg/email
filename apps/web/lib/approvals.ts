@@ -3,7 +3,7 @@
 import { sendReply } from "@workspace/actions/send-reply"
 import { refundCustomer } from "@workspace/actions/refund-customer"
 import { getAgentMailInboxId } from "@workspace/actions/agent-mail"
-import { getServerSupabase } from "@/lib/supabase-server"
+import { getServerSupabase } from "@/lib/supabase/admin"
 
 const APPROVER = "mvp-operator" // placeholder until auth lands
 

@@ -1,4 +1,4 @@
-import { getServerSupabase } from "@/lib/supabase-server"
+import { getServerSupabase } from "@/lib/supabase/admin"
 import { fetchPendingApprovals } from "@/lib/decisions"
 import { ApprovalsTable } from "@/components/approvals-table"
 

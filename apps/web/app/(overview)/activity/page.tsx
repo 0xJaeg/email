@@ -1,5 +1,5 @@
 import { ActivityLog } from "@/components/activity-log"
-import { getServerSupabase } from "@/lib/supabase-server"
+import { getServerSupabase } from "@/lib/supabase/admin"
 import { fetchActivity } from "@/lib/tickets"
 
 export const dynamic = "force-dynamic"

@@ -1,6 +1,6 @@
 import { SectionCards } from "@/components/section-cards"
 import { TicketsTable } from "@/components/tickets-table"
-import { getServerSupabase } from "@/lib/supabase-server"
+import { getServerSupabase } from "@/lib/supabase/admin"
 import { fetchStats, fetchTickets } from "@/lib/tickets"
 
 export const dynamic = "force-dynamic"
