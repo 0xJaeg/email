@@ -35,6 +35,6 @@ export const config: ProxyConfig = {
   matcher: [
     // Match everything except: static files, image optimization, the favicon,
     // and the unauthenticated pages themselves.
-    "/((?!_next/static|_next/image|favicon.ico|login|auth/callback|no-access).*)",
+    "/((?!_next/static|_next/image|favicon.ico|login|no-access).*)",
   ],
 }
