@@ -16,6 +16,7 @@ import {
   IconListDetails,
   IconInnerShadowTop,
   IconClipboardCheck,
+  IconUsers,
 } from "@tabler/icons-react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -50,6 +51,11 @@ export function AppSidebar({
   user,
   ...props
 }: ComponentProps<typeof Sidebar> & { user: NavUserData }) {
+  const navMain =
+    user.role === "admin"
+      ? [...data.navMain, { title: "Users", url: "/users", icon: <IconUsers /> }]
+      : data.navMain
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="flex flex-row items-center justify-between gap-2 border-b group-data-[collapsible=icon]:justify-center">
@@ -71,7 +77,7 @@ export function AppSidebar({
         <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
