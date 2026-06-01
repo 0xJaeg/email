@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import {
   Table,
@@ -85,12 +86,20 @@ export function TicketsTable({ initial }: { initial: TicketRow[] }) {
             </TableRow>
           ) : (
             rows.map((r) => (
-              <TableRow key={r.id}>
+              <TableRow
+                key={r.id}
+                className="relative cursor-pointer hover:bg-muted/50"
+              >
                 <TableCell className="max-w-50 truncate font-medium">
                   {r.sender}
                 </TableCell>
                 <TableCell className="max-w-70 truncate text-muted-foreground">
-                  {r.subject}
+                  <Link
+                    href={`/tickets/${r.threadId}`}
+                    className="after:absolute after:inset-0"
+                  >
+                    {r.subject}
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <ClassificationBadge value={r.classification} />

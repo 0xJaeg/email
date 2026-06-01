@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import { getTickets } from "@/lib/tickets"
 import {
@@ -65,12 +66,20 @@ export async function TicketsTable({
               </TableRow>
             ) : (
               data.map((t) => (
-                <TableRow key={t.id}>
+                <TableRow
+                  key={t.id}
+                  className="hover:bg-muted/50 relative cursor-pointer"
+                >
                   <TableCell className="max-w-50 truncate font-medium">
                     {t.sender}
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-70 truncate">
-                    {t.subject}
+                    <Link
+                      href={`/tickets/${t.id}`}
+                      className="after:absolute after:inset-0"
+                    >
+                      {t.subject}
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <ClassificationBadge value={t.classification} />

@@ -7,6 +7,7 @@ type DbClient = ServerClient
 
 export type TicketRow = {
   id: string
+  threadId: string
   sender: string
   subject: string
   receivedAt: string
@@ -35,7 +36,7 @@ export async function fetchTickets(client: DbClient): Promise<TicketRow[]> {
   const { data, error } = await client
     .from("emails")
     .select(
-      "id, from_email, subject, received_at, threads(status), decisions(classification, decision, created_at)"
+      "id, thread_id, from_email, subject, received_at, threads(status), decisions(classification, decision, created_at)"
     )
     .eq("direction", "inbound")
     .order("received_at", { ascending: false })
@@ -48,6 +49,7 @@ export async function fetchTickets(client: DbClient): Promise<TicketRow[]> {
     )[0]
     return {
       id: e.id,
+      threadId: e.thread_id,
       sender: e.from_email,
       subject: e.subject,
       receivedAt: e.received_at,
@@ -183,5 +185,109 @@ export async function getTickets(
       }
     }),
     count: count ?? 0,
+  }
+}
+
+export type ThreadDecision = {
+  id: string
+  classification: string | null
+  decision: string | null
+  refundRequestCount: number | null
+  templateUsed: string | null
+  llmModel: string | null
+  llmReasoning: string | null
+  status: string
+  approvedAt: string | null
+  approvedBy: string | null
+  createdAt: string
+}
+
+export type ThreadAudit = {
+  id: string
+  action: string
+  status: string
+  error: string | null
+  createdAt: string
+}
+
+export type ThreadEmail = {
+  id: string
+  direction: string
+  from: string
+  to: string
+  subject: string
+  bodyText: string | null
+  receivedAt: string
+  decisions: ThreadDecision[]
+  audit: ThreadAudit[]
+}
+
+export type ThreadDetail = {
+  id: string
+  sender: string
+  subject: string
+  status: string
+  createdAt: string
+  emails: ThreadEmail[]
+}
+
+const byCreatedAt = (a: { created_at: string }, b: { created_at: string }) =>
+  (a.created_at ?? "").localeCompare(b.created_at ?? "")
+
+// Full thread drill-down: the conversation's emails, each with its decisions
+// and audit entries. One nested query (threads → emails → {decisions, audit_log}).
+export async function getThreadDetail(
+  client: DbClient,
+  threadId: string
+): Promise<ThreadDetail | null> {
+  const { data, error } = await client
+    .from("threads")
+    .select(
+      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, approved_at, approved_by, created_at), audit_log(id, action, status, error, created_at))"
+    )
+    .eq("id", threadId)
+    .maybeSingle()
+  if (error) throw new Error(`getThreadDetail failed: ${error.message}`)
+  if (!data) return null
+
+  const emails = [...(data.emails ?? [])]
+    .sort((a, b) => (a.received_at ?? "").localeCompare(b.received_at ?? ""))
+    .map((e) => ({
+      id: e.id,
+      direction: e.direction,
+      from: e.from_email,
+      to: e.to_email,
+      subject: e.subject,
+      bodyText: e.body_text,
+      receivedAt: e.received_at,
+      decisions: [...(e.decisions ?? [])].sort(byCreatedAt).map((d) => ({
+        id: d.id,
+        classification: d.classification,
+        decision: d.decision,
+        refundRequestCount: d.refund_request_count,
+        templateUsed: d.template_used,
+        llmModel: d.llm_model,
+        llmReasoning: d.llm_reasoning,
+        status: d.status,
+        approvedAt: d.approved_at,
+        approvedBy: d.approved_by,
+        createdAt: d.created_at,
+      })),
+      audit: [...(e.audit_log ?? [])].sort(byCreatedAt).map((a) => ({
+        id: a.id,
+        action: a.action,
+        status: a.status,
+        error: a.error,
+        createdAt: a.created_at,
+      })),
+    }))
+
+  return {
+    id: data.id,
+    sender: data.sender_email,
+    subject: data.subject,
+    status: data.status,
+    createdAt: data.created_at,
+    emails,
   }
 }
