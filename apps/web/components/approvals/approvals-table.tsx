@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import { TablePagination } from "@/components/table-pagination"
+import { TablePagination } from "@/components/shared/table-pagination"
 import { ApprovalActions } from "./approval-actions"
 
 export async function ApprovalsTable({

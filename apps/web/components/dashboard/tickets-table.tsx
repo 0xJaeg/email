@@ -15,7 +15,7 @@ import {
   ClassificationBadge,
   DecisionBadge,
   ThreadStatusBadge,
-} from "./status-badges"
+} from "@/components/shared/status-badges"
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {

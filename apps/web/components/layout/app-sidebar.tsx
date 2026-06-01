@@ -17,9 +17,10 @@ import {
   IconInnerShadowTop,
   IconClipboardCheck,
   IconUsers,
+  IconTicket,
 } from "@tabler/icons-react"
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/layout/nav-main"
+import { NavUser } from "@/components/layout/nav-user"
 
 type NavUserData = {
   name: string
@@ -33,6 +34,11 @@ const data = {
       title: "Dashboard",
       url: "/",
       icon: <IconDashboard />,
+    },
+    {
+      title: "Tickets",
+      url: "/tickets",
+      icon: <IconTicket />,
     },
     {
       title: "Activity",

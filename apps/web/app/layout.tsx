@@ -1,6 +1,6 @@
 import NextTopLoader from "nextjs-toploader"
 import { Geist_Mono, Inter, JetBrains_Mono } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/layout/theme-provider"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { Toaster } from "@workspace/ui/components/sonner"
 import { cn } from "@workspace/ui/lib/utils"

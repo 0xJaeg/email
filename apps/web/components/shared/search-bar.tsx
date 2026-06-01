@@ -26,13 +26,13 @@ export function SearchBar({ placeholder }: { placeholder?: string }) {
 
   return (
     <div className="relative w-full">
-      <IconSearch className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
+      <IconSearch className="text-muted-foreground absolute top-1.5 left-2.5 size-4" />
       <Input
         onChange={(e) => handleSearch(e.target.value)}
         defaultValue={searchParams.get("query")?.toString()}
         type="text"
         placeholder={placeholder ?? "Search..."}
-        className="w-full rounded-md pl-8 md:w-[400px]"
+        className="w-full rounded-md pl-8 md:w-100"
       />
     </div>
   )

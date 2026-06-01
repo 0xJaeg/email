@@ -8,8 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import { TablePagination } from "@/components/table-pagination"
-import { AuditStatusBadge } from "@/components/status-badges"
+import { TablePagination } from "@/components/shared/table-pagination"
+import { AuditStatusBadge } from "@/components/shared/status-badges"
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {

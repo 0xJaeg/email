@@ -1,7 +1,7 @@
 import { Suspense } from "react"
-import { SearchBar } from "@/components/search-bar"
-import { ActivityTable } from "./activity-table"
-import { ActivityRealtime } from "./activity-realtime"
+import { SearchBar } from "@/components/shared/search-bar"
+import { ActivityTable } from "@/components/activity/activity-table"
+import { ActivityRealtime } from "@/components/activity/activity-realtime"
 
 export const dynamic = "force-dynamic"
 
@@ -16,7 +16,7 @@ export default async function ActivityPage({
   const size = Number(params.size) || 10
 
   return (
-    <div className="flex flex-col gap-4 md:gap-6">
+    <div className="flex flex-col gap-2 md:gap-4">
       <Suspense>
         <SearchBar placeholder="Search action or error" />
       </Suspense>

@@ -2,9 +2,9 @@ import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { getActionSupabase } from "@/lib/supabase/server"
 import { getServerSupabase } from "@/lib/supabase/admin"
-import { SearchBar } from "@/components/search-bar"
-import { AddUserButton } from "./add-user-button"
-import { UsersTable } from "./users-table"
+import { SearchBar } from "@/components/shared/search-bar"
+import { AddUserButton } from "@/components/users/add-user-button"
+import { UsersTable } from "@/components/users/users-table"
 
 export const dynamic = "force-dynamic"
 
@@ -30,15 +30,7 @@ export default async function UsersPage({
   const size = Number(params.size) || 10
 
   return (
-    <div className="flex flex-col gap-4 md:gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Users</h1>
-        <p className="text-muted-foreground text-sm">
-          Create and manage dashboard accounts. Admins can manage users;
-          operators have dashboard access only.
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-2 md:gap-4">
       <div className="flex items-center justify-between gap-2">
         <Suspense>
           <SearchBar placeholder="Search email or name" />
@@ -48,7 +40,7 @@ export default async function UsersPage({
 
       <Suspense
         key={`${query}-${page}-${size}`}
-        fallback={<p className="text-muted-foreground text-sm">Loading…</p>}
+        fallback={<p className="text-sm text-muted-foreground">Loading…</p>}
       >
         <UsersTable query={query} page={page} size={size} />
       </Suspense>

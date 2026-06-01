@@ -7,6 +7,13 @@ import type { UserRow } from "@/lib/users"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
 import { IconLoader2 } from "@tabler/icons-react"
 
 export function UserForm({
@@ -68,16 +75,19 @@ export function UserForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor="role">Role</Label>
-        <select
-          id="role"
+        <Select
           name="role"
           defaultValue={user?.role ?? "operator"}
           disabled={isPending}
-          className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs"
         >
-          <option value="operator">operator</option>
-          <option value="admin">admin</option>
-        </select>
+          <SelectTrigger id="role" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="operator">operator</SelectItem>
+            <SelectItem value="admin">admin</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">
