@@ -1,5 +1,6 @@
 import "server-only"
 import { getServerSupabase } from "@/lib/supabase/admin"
+import { sanitizeSearch } from "@/lib/search"
 
 export type UserRow = {
   id: string
@@ -7,12 +8,6 @@ export type UserRow = {
   name: string | null
   role: string
   created_at: string
-}
-
-// Escape PostgREST .or() filter metacharacters so user input can't break out of
-// the ilike pattern or inject extra filter clauses.
-function sanitize(query: string): string {
-  return query.replace(/[%,()\\"]/g, " ").trim()
 }
 
 // Uses the secret-key client (bypasses RLS) — the dashboard's doorman model.
@@ -29,7 +24,7 @@ export async function getUsers(
     .select("id, email, name, role, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
 
-  const esc = sanitize(query)
+  const esc = sanitizeSearch(query)
   if (esc) {
     q = q.or(`email.ilike.%${esc}%,name.ilike.%${esc}%`)
   }

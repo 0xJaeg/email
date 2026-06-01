@@ -1,4 +1,5 @@
 import type { ServerClient } from "@workspace/db/client"
+import { sanitizeSearch } from "@/lib/search"
 
 // ServerClient and BrowserClient are both SupabaseClient<Database> — this type
 // accepts either. Imported as a type only (no secret-key runtime code).
@@ -90,19 +91,38 @@ export async function fetchStats(client: DbClient): Promise<DashboardStats> {
   }
 }
 
-export async function fetchActivity(client: DbClient): Promise<ActivityRow[]> {
-  const { data, error } = await client
+export async function fetchActivity(
+  client: DbClient,
+  query: string,
+  page: number,
+  size: number
+): Promise<{ data: ActivityRow[]; count: number }> {
+  let q = client
     .from("audit_log")
-    .select("id, action, status, email_id, error, created_at")
+    .select("id, action, status, email_id, error, created_at", {
+      count: "exact",
+    })
     .order("created_at", { ascending: false })
-    .limit(100)
+
+  const esc = sanitizeSearch(query)
+  if (esc) {
+    q = q.or(`action.ilike.%${esc}%,error.ilike.%${esc}%`)
+  }
+
+  const { data, error, count } = await q.range(
+    (page - 1) * size,
+    page * size - 1
+  )
   if (error) throw new Error(`fetchActivity failed: ${error.message}`)
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    action: r.action,
-    status: r.status,
-    emailId: r.email_id,
-    error: r.error,
-    createdAt: r.created_at,
-  }))
+  return {
+    data: (data ?? []).map((r) => ({
+      id: r.id,
+      action: r.action,
+      status: r.status,
+      emailId: r.email_id,
+      error: r.error,
+      createdAt: r.created_at,
+    })),
+    count: count ?? 0,
+  }
 }
