@@ -32,9 +32,9 @@ export function SiteHeader() {
                   className={!isLast ? "hidden md:block" : undefined}
                 >
                   {isLast ? (
-                    <BreadcrumbPage>{crumb.title}</BreadcrumbPage>
+                    <BreadcrumbPage className="text-sm md:text-base">{crumb.title}</BreadcrumbPage>
                   ) : (
-                    <BreadcrumbLink href={crumb.href}>
+                    <BreadcrumbLink href={crumb.href} className="text-sm md:text-base">
                       {crumb.title}
                     </BreadcrumbLink>
                   )}
