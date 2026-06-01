@@ -126,3 +126,62 @@ export async function fetchActivity(
     count: count ?? 0,
   }
 }
+
+export type ThreadTicketRow = {
+  id: string
+  sender: string
+  subject: string
+  status: string
+  classification: string | null
+  decision: string | null
+  createdAt: string
+}
+
+// Per-thread ticket list (one row = one conversation), searchable + paginated.
+// Takes a client param so this module stays client-safe (the dashboard's
+// realtime tickets-table imports fetchTickets from here).
+export async function getTickets(
+  client: DbClient,
+  query: string,
+  page: number,
+  size: number
+): Promise<{ data: ThreadTicketRow[]; count: number }> {
+  let q = client
+    .from("threads")
+    .select(
+      "id, sender_email, subject, status, created_at, emails(decisions(classification, decision, created_at))",
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+
+  const esc = sanitizeSearch(query)
+  if (esc) {
+    q = q.or(`sender_email.ilike.%${esc}%,subject.ilike.%${esc}%`)
+  }
+
+  const { data, error, count } = await q.range(
+    (page - 1) * size,
+    page * size - 1
+  )
+  if (error) throw new Error(`getTickets failed: ${error.message}`)
+
+  return {
+    data: (data ?? []).map((t) => {
+      // Latest decision across the thread's emails — same reduce as fetchTickets.
+      const decisions = (t.emails ?? []).flatMap((e) => e.decisions ?? [])
+      const latest = [...decisions].sort((a, b) =>
+        (b.created_at ?? "").localeCompare(a.created_at ?? "")
+      )[0]
+      return {
+        id: t.id,
+        sender: t.sender_email,
+        subject: t.subject,
+        status: t.status,
+        classification: latest?.classification ?? null,
+        decision: latest?.decision ?? null,
+        createdAt: t.created_at,
+      }
+    }),
+    count: count ?? 0,
+  }
+}
