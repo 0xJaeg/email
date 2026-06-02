@@ -1,7 +1,5 @@
 # Refund Policy and Retention Workflow
 
-**Note for slice C**: this file is loaded into the classifier's system prompt for context only. The decision tree that uses it lands in slice D. The classifier does NOT need to apply this policy — it only needs to recognize refund-related intent.
-
 ## Customer-facing policy
 
 - **60-day money-back guarantee** on every digital product, no questions asked. This is the ClickBank standard and customers know it.
@@ -11,7 +9,7 @@
 
 ## Retention offer ladder
 
-The refund decision tree (slice D) progresses through these templates based on the number of prior refund requests from the same sender:
+These retention templates are selected based on the number of prior refund requests from the same sender:
 
 ### `[OFFER_1]` — First refund request
 

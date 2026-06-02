@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk"
-import { INSTRUCTIONS_TEXT } from "./instructions.js"
+import { REPLY_INSTRUCTIONS_TEXT } from "./instructions.js"
 
 export type Template =
   | "FAQ_REPLY"
@@ -30,9 +30,9 @@ export async function generateReply(
   args: GenerateReplyArgs
 ): Promise<GenerateReplyResult> {
   const userMessage =
-    `Compose a ${args.template} reply to this email. Follow the policy and ` +
-    `voice guidance in the system prompt. Plain text only, no greeting line ` +
-    `unless the template calls for one.\n\n` +
+    `Write the customer-facing email reply for the message below, using the ` +
+    `${args.template} approach from your guidance. Plain text only — just the ` +
+    `reply body.\n\n` +
     `From: ${args.email.from_email}\n` +
     `Subject: ${args.email.subject}\n\n` +
     (args.email.body_text ?? "(empty body)")
@@ -43,7 +43,7 @@ export async function generateReply(
     system: [
       {
         type: "text",
-        text: INSTRUCTIONS_TEXT,
+        text: REPLY_INSTRUCTIONS_TEXT,
         cache_control: { type: "ephemeral", ttl: "1h" },
       },
     ],
