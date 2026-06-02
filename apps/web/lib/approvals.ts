@@ -22,7 +22,7 @@ export async function approveRefund(decisionId: string): Promise<void> {
     .eq("id", decisionId)
     .eq("status", "pending_approval")
     .select(
-      "id, draft_reply_text, emails(id, from_email, agent_mail_message_id, body_text)"
+      "id, draft_reply_text, emails(id, from_email, subject, agent_mail_message_id, body_text)"
     )
     .maybeSingle()
 
@@ -62,7 +62,11 @@ export async function approveRefund(decisionId: string): Promise<void> {
     // Rewind status so a human can retry.
     await supabase
       .from("decisions")
-      .update({ status: "pending_approval", approved_at: null, approved_by: null })
+      .update({
+        status: "pending_approval",
+        approved_at: null,
+        approved_by: null,
+      })
       .eq("id", decisionId)
     await supabase.from("audit_log").insert({
       action: "approve_refund_failed",
@@ -89,6 +93,9 @@ export async function approveRefund(decisionId: string): Promise<void> {
       inReplyToMessageId: emailRow.agent_mail_message_id ?? "",
       replyText: claimed.draft_reply_text ?? "",
       decisionId,
+      emailId: emailRow.id,
+      to: emailRow.from_email,
+      subject: `Re: ${emailRow.subject}`,
       supabase,
     })
   })()

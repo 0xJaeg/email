@@ -9,6 +9,12 @@ export type SendReplyArgs = {
   replyText: string
   /** Internal decision id, for audit linkage. */
   decisionId: string
+  /** Internal email id — links the audit row to its thread. */
+  emailId: string
+  /** Customer address — recipient when sending a new message (no real thread to reply to). */
+  to: string
+  /** Subject for the new message (ignored on the threaded reply path). */
+  subject: string
   supabase: ServerClient
 }
 

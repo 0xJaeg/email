@@ -34,7 +34,9 @@ export async function processEmail(job: Job) {
   // 1. Fetch the email
   const { data: email, error: emailErr } = await supabase
     .from("emails")
-    .select("id, from_email, to_email, subject, body_text, agent_mail_message_id")
+    .select(
+      "id, from_email, to_email, subject, body_text, agent_mail_message_id"
+    )
     .eq("id", emailId)
     .single()
   if (emailErr || !email) {
@@ -148,6 +150,9 @@ export async function processEmail(job: Job) {
         inReplyToMessageId: email.agent_mail_message_id ?? "",
         replyText: reply.text,
         decisionId: row.id,
+        emailId: email.id,
+        to: email.from_email,
+        subject: `Re: ${email.subject}`,
         supabase,
       })
       await supabase
