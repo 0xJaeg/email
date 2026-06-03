@@ -17,7 +17,7 @@ export default async function ActivityPage({
 
   return (
     <div className="flex flex-col gap-2 md:gap-4">
-      <Suspense>
+      <Suspense>  
         <SearchBar placeholder="Search activity" />
       </Suspense>
       <Suspense

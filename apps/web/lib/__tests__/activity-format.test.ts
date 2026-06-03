@@ -11,11 +11,21 @@ describe("humanizeAction", () => {
     expect(humanizeAction("refund_pending_approval")).toBe(
       "Refund waiting for approval"
     )
+    expect(humanizeAction("reply_pending_approval")).toBe(
+      "Reply waiting for approval"
+    )
     expect(humanizeAction("send_reply")).toBe("Reply sent")
     expect(humanizeAction("refund_customer_stub")).toBe(
       "Refund issued (test mode)"
     )
     expect(humanizeAction("reject_refund")).toBe("Refund rejected")
+    expect(humanizeAction("reject_decision")).toBe("Rejected by operator")
+    expect(humanizeAction("approve_decision_failed")).toBe("Approval failed")
+    expect(humanizeAction("unknown_inbox")).toBe(
+      "Email to an unrecognized inbox"
+    )
+    expect(humanizeAction("gather_context")).toBe("Checked purchase & access")
+    expect(humanizeAction("suppress_contact")).toBe("Added to suppression list")
   })
 
   it("prettifies unknown actions instead of showing raw snake_case", () => {

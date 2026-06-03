@@ -66,6 +66,27 @@ The classifier should attend to these signals (non-exhaustive, ordered by streng
 - **Email with both a refund and a thank-you**: `refund_request` (refund intent dominates).
 - **Empty body, suggestive subject** (e.g. subject "Refund please", body empty): trust the subject — `refund_request`.
 
+## Inquiry type (second axis)
+
+Independently of the label above, decide whether the sender is an **existing member** or a **prospective buyer**. This gates whether we look up their purchase + account access before replying (we don't want to tell someone asking "how much to join?" that we can't find their purchase).
+
+### `existing_member`
+
+The sender references something they already bought or an account they already have:
+
+- Any refund request (they bought something to refund) → almost always `existing_member`.
+- "Where do I download what I purchased", "I can't log in to my account", "my access stopped working", "I bought X on Monday".
+- Mentions of an order id, receipt, login, or "my account".
+
+### `prospective_buyer`
+
+The sender is asking about buying or joining, with no sign of an existing purchase:
+
+- "How much does it cost?", "What's included if I join?", "Do you offer a trial?", "Is this right for beginners before I buy?".
+- General pre-sale questions.
+
+When unsure, prefer `existing_member` for refund / login / download / access emails, and `prospective_buyer` for pricing / what's-included / pre-sale emails. If still ambiguous, default to `prospective_buyer`.
+
 ## Output format
 
 Return exactly:
@@ -73,6 +94,7 @@ Return exactly:
 ```json
 {
   "classification": "refund_request" | "faq" | "other",
+  "inquiry_type": "existing_member" | "prospective_buyer",
   "reasoning": "One or two sentences explaining the signals that drove this label."
 }
 ```

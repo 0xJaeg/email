@@ -3,13 +3,19 @@ import { z } from "zod/v4"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
 import { getAnthropic } from "../lib/anthropic.js"
 import { getSupabase } from "../lib/supabase.js"
-import { INSTRUCTIONS_TEXT } from "../lib/instructions.js"
+import { getInstructions } from "../lib/instructions.js"
 import { decideRefund, type RefundDecision } from "../lib/refund-decision.js"
-import { sendReply, getAgentMailInboxId } from "@workspace/actions"
 import { generateReply } from "../lib/generate-reply.js"
+import { getAdapter, type ProposedAction } from "@workspace/actions"
+import { gatherCustomerContext } from "../lib/customer-context.js"
 
 const ClassificationResult = z.object({
   classification: z.enum(["refund_request", "faq", "other"]),
+  inquiry_type: z
+    .enum(["existing_member", "prospective_buyer"])
+    .describe(
+      "existing_member if they reference a purchase/account they already have; prospective_buyer if they're asking about buying or joining"
+    ),
   reasoning: z
     .string()
     .describe("1-2 sentences explaining the signals that drove this label"),
@@ -30,12 +36,13 @@ export async function processEmail(job: Job) {
 
   const supabase = getSupabase()
   const anthropic = getAnthropic()
+  const instructions = await getInstructions(supabase)
 
   // 1. Fetch the email
   const { data: email, error: emailErr } = await supabase
     .from("emails")
     .select(
-      "id, from_email, to_email, subject, body_text, agent_mail_message_id"
+      "id, thread_id, from_email, to_email, subject, body_text, agent_mail_message_id"
     )
     .eq("id", emailId)
     .single()
@@ -55,7 +62,7 @@ export async function processEmail(job: Job) {
     system: [
       {
         type: "text",
-        text: INSTRUCTIONS_TEXT,
+        text: instructions.classifier,
         cache_control: { type: "ephemeral", ttl: "1h" },
       },
     ],
@@ -67,20 +74,87 @@ export async function processEmail(job: Job) {
   }
   const cls = classifyResp.parsed_output
 
+  // 2b. Resolve the product; for existing members, gather verified purchase +
+  // access context before drafting (Ben: "first thing we do is check that they
+  // bought ... then check they have access").
+  const product = await resolveProduct(supabase, email.thread_id)
+  let enrichment: Awaited<ReturnType<typeof gatherCustomerContext>> | null = null
+  if (cls.inquiry_type === "existing_member" && product?.adapterKey) {
+    try {
+      enrichment = await gatherCustomerContext(
+        getAdapter(product.adapterKey),
+        email
+      )
+      await supabase.from("audit_log").insert({
+        action: "gather_context",
+        email_id: email.id,
+        status: "success",
+        payload: {
+          found: enrichment.context.orders.length > 0,
+          order_count: enrichment.context.orders.length,
+          has_access: enrichment.context.access.hasAccess,
+        },
+      })
+    } catch (err) {
+      await supabase.from("audit_log").insert({
+        action: "gather_context",
+        email_id: email.id,
+        status: "failure",
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+  const context = enrichment
+    ? { inquiry_type: cls.inquiry_type, ...enrichment.context }
+    : { inquiry_type: cls.inquiry_type }
+
   // 3. Decide what to do with this email
-  const dec: DecisionShape = await decide(cls, email, supabase, anthropic)
+  const dec: DecisionShape = await decide(
+    cls,
+    email,
+    supabase,
+    anthropic,
+    instructions.classifier
+  )
+
+  const isRefundDecision =
+    dec.decision === "issue_refund" ||
+    dec.decision === "issue_refund_chargeback"
+  const isReplyDecision =
+    dec.decision === "send_offer_1" ||
+    dec.decision === "send_offer_2" ||
+    dec.decision === "send_faq_reply"
+  const isEscalate = dec.decision === "escalate"
+
+  // Refund decisions propose the refund + suppressing the contact from outbound
+  // email; both execute only on human approval.
+  const proposedActions: ProposedAction[] = isRefundDecision
+    ? [
+        { type: "issue_refund" },
+        {
+          type: "suppress_contact",
+          reason:
+            dec.decision === "issue_refund_chargeback"
+              ? "chargeback"
+              : "refund",
+        },
+      ]
+    : []
 
   // 4. Insert the complete decisions row
   const { data: row, error: decErr } = await supabase
     .from("decisions")
     .insert({
       email_id: email.id,
+      product_id: product?.productId ?? null,
       classification: cls.classification,
       llm_model: dec.llmModel,
       llm_reasoning: dec.combinedReasoning,
       decision: dec.decision,
       template_used: dec.template_used,
       refund_request_count: dec.refund_request_count,
+      context,
+      proposed_actions: proposedActions,
     })
     .select("id")
     .single()
@@ -116,15 +190,6 @@ export async function processEmail(job: Job) {
     `[worker] ${email.id}: classify=${cls.classification} decide=${dec.decision} cache_read=${classifyResp.usage.cache_read_input_tokens}`
   )
 
-  const isRefundDecision =
-    dec.decision === "issue_refund" ||
-    dec.decision === "issue_refund_chargeback"
-  const isReplyDecision =
-    dec.decision === "send_offer_1" ||
-    dec.decision === "send_offer_2" ||
-    dec.decision === "send_faq_reply"
-  const isEscalate = dec.decision === "escalate"
-
   if (isEscalate) {
     await supabase
       .from("decisions")
@@ -144,24 +209,31 @@ export async function processEmail(job: Job) {
     } as const
     const template = templateMap[dec.decision as keyof typeof templateMap]
     try {
-      const reply = await generateReply({ template, email, anthropic })
-      const sent = await sendReply({
-        inboxId: getAgentMailInboxId(),
-        inReplyToMessageId: email.agent_mail_message_id ?? "",
-        replyText: reply.text,
-        decisionId: row.id,
-        emailId: email.id,
-        to: email.from_email,
-        subject: `Re: ${email.subject}`,
-        supabase,
+      const reply = await generateReply({
+        template,
+        email,
+        customerContext: enrichment?.customerContext,
+        replyInstructions: instructions.reply,
+        anthropic,
       })
       await supabase
         .from("decisions")
         .update({
-          status: sent.ok ? "sent" : "failed",
+          status: "pending_approval",
           draft_reply_text: reply.text,
         })
         .eq("id", row.id)
+      await supabase.from("audit_log").insert({
+        action: "reply_pending_approval",
+        email_id: email.id,
+        status: "success",
+        payload: {
+          decision_id: row.id,
+          template,
+          draft_reply_text: reply.text,
+          usage: reply.usage,
+        },
+      })
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
       await supabase
@@ -183,7 +255,13 @@ export async function processEmail(job: Job) {
     } as const
     const template = templateMap[dec.decision as keyof typeof templateMap]
     try {
-      const reply = await generateReply({ template, email, anthropic })
+      const reply = await generateReply({
+        template,
+        email,
+        customerContext: enrichment?.customerContext,
+        replyInstructions: instructions.reply,
+        anthropic,
+      })
       await supabase
         .from("decisions")
         .update({
@@ -229,10 +307,11 @@ async function decide(
   cls: z.infer<typeof ClassificationResult>,
   email: { id: string; from_email: string; body_text: string | null },
   supabase: ReturnType<typeof getSupabase>,
-  anthropic: ReturnType<typeof getAnthropic>
+  anthropic: ReturnType<typeof getAnthropic>,
+  instructions: string
 ): Promise<DecisionShape> {
   if (cls.classification === "refund_request") {
-    const r = await decideRefund({ email, supabase, anthropic })
+    const r = await decideRefund({ email, supabase, anthropic, instructions })
     const combinedReasoning = r.sonnet_reasoning
       ? `${cls.reasoning}\n\nSonnet chargeback check: ${r.sonnet_reasoning}`
       : cls.reasoning
@@ -264,5 +343,30 @@ async function decide(
     refund_request_count: null,
     combinedReasoning: cls.reasoning,
     llmModel: "claude-haiku-4-5",
+  }
+}
+
+// Resolves the thread's product + which adapter handles it. Returns null when
+// the thread has no product (un-routed / legacy), in which case enrichment is
+// skipped and the email is still drafted for human review.
+async function resolveProduct(
+  supabase: ReturnType<typeof getSupabase>,
+  threadId: string | null
+): Promise<{ productId: string; adapterKey: string | null } | null> {
+  if (!threadId) return null
+  const { data: thread } = await supabase
+    .from("threads")
+    .select("product_id")
+    .eq("id", threadId)
+    .maybeSingle()
+  if (!thread?.product_id) return null
+  const { data: product } = await supabase
+    .from("products")
+    .select("adapter_key")
+    .eq("id", thread.product_id)
+    .maybeSingle()
+  return {
+    productId: thread.product_id,
+    adapterKey: product?.adapter_key ?? null,
   }
 }

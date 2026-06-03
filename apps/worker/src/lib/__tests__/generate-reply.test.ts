@@ -25,6 +25,7 @@ describe("generateReply", () => {
         subject: "refund pls",
         body_text: "Please refund.",
       },
+      replyInstructions: "BRAND VOICE GUIDE",
       anthropic,
     })
     expect(result.text).toBe("Hi Alice — refund issued. — Sam")
@@ -32,12 +33,27 @@ describe("generateReply", () => {
     const create = anthropic.messages.create as ReturnType<typeof vi.fn>
     const callArgs = create.mock.calls[0]?.[0]
     expect(callArgs?.model).toBe("claude-haiku-4-5")
+    expect(callArgs?.system[0].text).toBe("BRAND VOICE GUIDE")
     expect(callArgs?.system[0].cache_control).toEqual({
       type: "ephemeral",
       ttl: "1h",
     })
     expect(callArgs?.messages[0].content).toContain("REFUND_CONFIRMATION")
     expect(callArgs?.messages[0].content).toContain("alice@x.com")
+  })
+
+  it("includes verified customer context in the prompt when provided", async () => {
+    const anthropic = mockAnthropic("ok")
+    await generateReply({
+      template: "FAQ_REPLY",
+      email: { from_email: "a@x.com", subject: "s", body_text: "b" },
+      customerContext: "- Purchase: Pro Course, order O-1",
+      replyInstructions: "guide",
+      anthropic,
+    })
+    const create = anthropic.messages.create as ReturnType<typeof vi.fn>
+    const userContent = create.mock.calls[0]?.[0]?.messages[0].content
+    expect(userContent).toContain("order O-1")
   })
 
   it("throws on empty text response", async () => {
@@ -50,6 +66,7 @@ describe("generateReply", () => {
       generateReply({
         template: "FAQ_REPLY",
         email: { from_email: "x@x.com", subject: "s", body_text: "b" },
+        replyInstructions: "guide",
         anthropic,
       })
     ).rejects.toThrow(/empty/)

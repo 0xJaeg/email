@@ -23,6 +23,10 @@
       "types": "./src/refundCustomer.ts",
       "default": "./dist/refundCustomer.js"
     },
+    "./suppress-contact": {
+      "types": "./src/suppressContact.ts",
+      "default": "./dist/suppressContact.js"
+    },
     "./agent-mail": {
       "types": "./src/agent-mail.ts",
       "default": "./dist/agent-mail.js"

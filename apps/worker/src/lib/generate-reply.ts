@@ -1,5 +1,4 @@
 import type Anthropic from "@anthropic-ai/sdk"
-import { REPLY_INSTRUCTIONS_TEXT } from "./instructions.js"
 
 export type Template =
   | "FAQ_REPLY"
@@ -18,6 +17,10 @@ type Usage = {
 export type GenerateReplyArgs = {
   template: Template
   email: { from_email: string; subject: string; body_text: string | null }
+  /** Verified purchase/access context to ground the reply, if gathered. */
+  customerContext?: string
+  /** Customer-facing reply guidance (assembled from prompt_configs). */
+  replyInstructions: string
   anthropic: Anthropic
 }
 
@@ -29,13 +32,17 @@ export type GenerateReplyResult = {
 export async function generateReply(
   args: GenerateReplyArgs
 ): Promise<GenerateReplyResult> {
+  const contextBlock = args.customerContext
+    ? `\n\nVerified customer context — use it; do not invent details beyond it:\n${args.customerContext}`
+    : ""
   const userMessage =
     `Write the customer-facing email reply for the message below, using the ` +
     `${args.template} approach from your guidance. Plain text only — just the ` +
     `reply body.\n\n` +
     `From: ${args.email.from_email}\n` +
     `Subject: ${args.email.subject}\n\n` +
-    (args.email.body_text ?? "(empty body)")
+    (args.email.body_text ?? "(empty body)") +
+    contextBlock
 
   const response = await args.anthropic.messages.create({
     model: "claude-haiku-4-5",
@@ -43,7 +50,7 @@ export async function generateReply(
     system: [
       {
         type: "text",
-        text: REPLY_INSTRUCTIONS_TEXT,
+        text: args.replyInstructions,
         cache_control: { type: "ephemeral", ttl: "1h" },
       },
     ],
