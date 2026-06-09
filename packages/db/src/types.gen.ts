@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_triggers: {
+        Row: {
+          action: string
+          condition: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          condition?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          condition?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_triggers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -205,6 +246,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "inboxes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_credentials: {
+        Row: {
+          ciphertext: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          last4: string | null
+          platform: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          ciphertext: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          last4?: string | null
+          platform: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          ciphertext?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          last4?: string | null
+          platform?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_credentials_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"

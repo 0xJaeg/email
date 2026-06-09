@@ -114,7 +114,8 @@ export async function processEmail(job: Job) {
     email,
     supabase,
     anthropic,
-    instructions.classifier
+    instructions.classifier,
+    product?.productId ?? null
   )
 
   const isRefundDecision =
@@ -308,10 +309,17 @@ async function decide(
   email: { id: string; from_email: string; body_text: string | null },
   supabase: ReturnType<typeof getSupabase>,
   anthropic: ReturnType<typeof getAnthropic>,
-  instructions: string
+  instructions: string,
+  productId: string | null
 ): Promise<DecisionShape> {
   if (cls.classification === "refund_request") {
-    const r = await decideRefund({ email, supabase, anthropic, instructions })
+    const r = await decideRefund({
+      email,
+      supabase,
+      anthropic,
+      instructions,
+      productId,
+    })
     const combinedReasoning = r.sonnet_reasoning
       ? `${cls.reasoning}\n\nSonnet chargeback check: ${r.sonnet_reasoning}`
       : cls.reasoning

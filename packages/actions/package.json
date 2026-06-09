@@ -27,6 +27,10 @@
       "types": "./src/suppressContact.ts",
       "default": "./dist/suppressContact.js"
     },
+    "./crypto": {
+      "types": "./src/crypto.ts",
+      "default": "./dist/crypto.js"
+    },
     "./agent-mail": {
       "types": "./src/agent-mail.ts",
       "default": "./dist/agent-mail.js"
