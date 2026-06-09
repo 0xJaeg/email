@@ -2,7 +2,6 @@ import { z } from "zod/v4"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
 import type Anthropic from "@anthropic-ai/sdk"
 import type { ServerClient } from "@workspace/db/client"
-import { INSTRUCTIONS_TEXT } from "./instructions.js"
 import { normalizeEmailAddress } from "./email-address.js"
 
 export const CHARGEBACK_RE =
@@ -40,8 +39,10 @@ export async function decideRefund(opts: {
   email: { id: string; from_email: string; body_text: string | null }
   supabase: ServerClient
   anthropic: Anthropic
+  /** Classifier instructions, reused as the cached system block for the Sonnet check. */
+  instructions: string
 }): Promise<RefundDecision> {
-  const { email, supabase, anthropic } = opts
+  const { email, supabase, anthropic, instructions } = opts
   const senderAddress = normalizeEmailAddress(email.from_email)
   const priorRefunds = await countPriorRefunds(supabase, senderAddress)
   const requestNumber = priorRefunds + 1
@@ -59,7 +60,7 @@ export async function decideRefund(opts: {
   if (priorRefunds === 1) {
     const body = email.body_text ?? ""
     if (CHARGEBACK_RE.test(body)) {
-      const sonnet = await confirmChargebackThreat(anthropic, body)
+      const sonnet = await confirmChargebackThreat(anthropic, body, instructions)
       return {
         decision: sonnet.confirmed
           ? "issue_refund_chargeback"
@@ -108,7 +109,8 @@ async function countPriorRefunds(
 
 async function confirmChargebackThreat(
   anthropic: Anthropic,
-  emailBody: string
+  emailBody: string,
+  instructions: string
 ): Promise<{ confirmed: boolean; reasoning: string; usage: Usage }> {
   const response = await anthropic.messages.parse({
     model: "claude-sonnet-4-6",
@@ -116,7 +118,7 @@ async function confirmChargebackThreat(
     system: [
       {
         type: "text",
-        text: INSTRUCTIONS_TEXT,
+        text: instructions,
         cache_control: { type: "ephemeral", ttl: "1h" },
       },
     ],

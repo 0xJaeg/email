@@ -1,0 +1,52 @@
+[
+  {
+    "from": "dev+jordan@kaizenisoconsulting.com",
+    "subject": "Where do I download what I bought?",
+    "text": "Hi there, I purchased the Pro course on Monday but I can't figure out where to actually download it. I checked my email but don't see a link anywhere. Could you point me in the right direction? Thanks, Jordan"
+  },
+  {
+    "from": "dev+priya@kaizenisoconsulting.com",
+    "subject": "Can't log in - reset email never arrives",
+    "text": "Hello, I've been trying to log into my account for the past hour. I clicked 'forgot password' a few times but the reset email never shows up (I checked spam too). Is there another way to get back in? - Priya"
+  },
+  {
+    "from": "dev+rachel@kaizenisoconsulting.com",
+    "subject": "Would like to return my purchase",
+    "text": "Hi, I bought your bundle last week (order #KZN-48213) and honestly it's just not what I was expecting. I'd like to request a refund please. Thanks, Rachel",
+    "thread": "rachel-refund"
+  },
+  {
+    "from": "dev+rachel@kaizenisoconsulting.com",
+    "subject": "Re: Would like to return my purchase",
+    "text": "Following up on my refund request from a few days ago. I appreciate the offer, but I really just want my money back - the material isn't a fit for what I need. Order #KZN-48213.",
+    "thread": "rachel-refund"
+  },
+  {
+    "from": "dev+rachel@kaizenisoconsulting.com",
+    "subject": "Re: Would like to return my purchase",
+    "text": "This is the third time I'm asking. Please just process the refund for order #KZN-48213 - I'd like this resolved today. Thank you.",
+    "thread": "rachel-refund"
+  },
+  {
+    "from": "dev+mark@kaizenisoconsulting.com",
+    "subject": "Refund request",
+    "text": "Hey, I signed up for the membership (order #KZN-50917) but it's really not working out for me. Can I get a refund? Mark",
+    "thread": "mark-refund"
+  },
+  {
+    "from": "dev+mark@kaizenisoconsulting.com",
+    "subject": "Re: Refund request",
+    "text": "I still haven't gotten my refund for order #KZN-50917. If this isn't sorted by end of day I'm going to contact my bank and file a chargeback to dispute the charge on my credit card. I don't want to do that, but I will.",
+    "thread": "mark-refund"
+  },
+  {
+    "from": "dev+dana@kaizenisoconsulting.com",
+    "subject": "Just wanted to say thanks",
+    "text": "No issue here - just wanted to say the onboarding workshop was genuinely excellent. Learned a ton. Keep it up! Dana"
+  },
+  {
+    "from": "dev+sam@kaizenisoconsulting.com",
+    "subject": "Charged twice?",
+    "text": "Hi, looking at my card statement it looks like I was charged twice this month for the subscription. Was that a mistake? Can you check and fix it if so? Thanks, Sam"
+  }
+]

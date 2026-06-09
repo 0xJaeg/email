@@ -1,9 +1,8 @@
-import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
-import { Badge } from "@workspace/ui/components/badge"
 import {
   ClassificationBadge,
   DecisionBadge,
 } from "@/components/shared/status-badges"
+import { Badge } from "@workspace/ui/components/badge"
 import { cn } from "@workspace/ui/lib/utils"
 import { IconArrowRight, IconMail, IconRobot } from "@tabler/icons-react"
 import type { ThreadEmail } from "@/lib/tickets"
@@ -21,6 +20,23 @@ function initial(name: string): string {
   return (name.trim().match(/[a-z0-9]/i)?.[0] ?? "?").toUpperCase()
 }
 
+// Label the agent's reply by what happened to it.
+function replyLabel(status: string): string {
+  switch (status) {
+    case "sent":
+    case "approved":
+      return "Agent reply · sent"
+    case "pending_approval":
+      return "Drafted reply · awaiting approval"
+    case "failed":
+      return "Reply draft · send failed"
+    case "rejected":
+      return "Drafted reply · rejected"
+    default:
+      return "Agent reply"
+  }
+}
+
 // One email in the thread's conversation timeline.
 export function EmailCard({
   email,
@@ -33,20 +49,6 @@ export function EmailCard({
 
   return (
     <li className="relative flex gap-3.5">
-      <div className="flex flex-col items-center">
-        <Avatar className="size-9 rounded-[9px] border">
-          <AvatarFallback
-            className={cn(
-              "rounded-[9px] text-xs",
-              !inbound && "bg-primary text-primary-foreground"
-            )}
-          >
-            {initial(email.from)}
-          </AvatarFallback>
-        </Avatar>
-        {!isLast && <div className="bg-border mt-1 w-px flex-1" />}
-      </div>
-
       <div className={cn("min-w-0 flex-1", !isLast && "pb-6")}>
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-sm font-semibold">{email.from}</span>
@@ -55,23 +57,23 @@ export function EmailCard({
           </Badge>
           <span
             suppressHydrationWarning
-            className="text-muted-foreground ml-auto text-xs tabular-nums"
+            className="ml-auto text-xs text-muted-foreground tabular-nums"
           >
             {formatDateTime(email.receivedAt)}
           </span>
         </div>
-        <p className="text-muted-foreground mt-1 truncate text-xs">
+        <p className="mt-1 truncate text-xs text-muted-foreground">
           to <span className="font-heading">{email.to}</span>
         </p>
 
         <div
           className={cn(
             "mt-2.5 rounded-xl border p-3.5 text-sm leading-relaxed",
-            inbound ? "bg-muted" : "border-l-primary border-l-[2.5px]"
+            inbound && "bg-muted"
           )}
         >
           {email.subject ? (
-            <div className="text-muted-foreground font-heading mb-2 flex items-center gap-1.5 text-[11px] tracking-wide uppercase">
+            <div className="mb-2 flex items-center gap-1.5 font-heading text-[11px] tracking-wide text-muted-foreground uppercase">
               <IconMail className="size-3" />
               Subject — {email.subject}
             </div>
@@ -82,15 +84,23 @@ export function EmailCard({
         </div>
 
         {email.decisions.map((d) => (
-          <div
-            key={d.id}
-            className="border-border bg-muted/40 mt-2.5 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs"
-          >
-            <IconRobot className="text-muted-foreground size-3.5" />
-            <span className="text-muted-foreground">Agent responded</span>
-            <ClassificationBadge value={d.classification} />
-            <IconArrowRight className="text-muted-foreground size-3" />
-            <DecisionBadge value={d.decision} />
+          <div key={d.id} className="mt-2.5 space-y-2">
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+              <IconRobot className="size-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Agent responded</span>
+              <ClassificationBadge value={d.classification} />
+              <IconArrowRight className="size-3 text-muted-foreground" />
+              <DecisionBadge value={d.decision} />
+            </div>
+            {d.draftReplyText ? (
+              <div className="rounded-xl border bg-background p-3.5 text-sm leading-relaxed">
+                <div className="mb-2 flex items-center gap-1.5 font-heading text-[11px] tracking-wide text-muted-foreground uppercase">
+                  <IconRobot className="size-3" />
+                  {replyLabel(d.status)}
+                </div>
+                <p className="whitespace-pre-wrap">{d.draftReplyText}</p>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>

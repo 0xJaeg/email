@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { approveRefund, rejectRefund } from "@/lib/approvals"
+import { approveDecision, rejectDecision } from "@/lib/approvals"
 import { Button } from "@workspace/ui/components/button"
 
 export function ApprovalActions({ id }: { id: string }) {
@@ -25,7 +25,7 @@ export function ApprovalActions({ id }: { id: string }) {
         variant="default"
         size="sm"
         disabled={pending}
-        onClick={() => run(approveRefund)}
+        onClick={() => run(approveDecision)}
       >
         Approve
       </Button>
@@ -33,7 +33,7 @@ export function ApprovalActions({ id }: { id: string }) {
         variant="outline"
         size="sm"
         disabled={pending}
-        onClick={() => run(rejectRefund)}
+        onClick={() => run(rejectDecision)}
       >
         Reject
       </Button>

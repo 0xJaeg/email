@@ -27,8 +27,12 @@ export type ActivityRow = {
   id: string
   action: string
   status: string
-  emailId: string | null
   error: string | null
+  sender: string | null
+  subject: string | null
+  threadId: string | null
+  /** The reply the agent sent, on send_reply rows (from the audit payload). */
+  replyText: string | null
   createdAt: string
 }
 
@@ -101,9 +105,10 @@ export async function fetchActivity(
 ): Promise<{ data: ActivityRow[]; count: number }> {
   let q = client
     .from("audit_log")
-    .select("id, action, status, email_id, error, created_at", {
-      count: "exact",
-    })
+    .select(
+      "id, action, status, error, created_at, payload, emails(thread_id, from_email, subject)",
+      { count: "exact" }
+    )
     .order("created_at", { ascending: false })
 
   const esc = sanitizeSearch(query)
@@ -117,14 +122,25 @@ export async function fetchActivity(
   )
   if (error) throw new Error(`fetchActivity failed: ${error.message}`)
   return {
-    data: (data ?? []).map((r) => ({
-      id: r.id,
-      action: r.action,
-      status: r.status,
-      emailId: r.email_id,
-      error: r.error,
-      createdAt: r.created_at,
-    })),
+    data: (data ?? []).map((r) => {
+      // email_id has on-delete-set-null and is absent for system events;
+      // the to-one embed comes back as object-or-array depending on PostgREST.
+      const email = Array.isArray(r.emails) ? r.emails[0] : r.emails
+      const payload = (r.payload ?? {}) as Record<string, unknown>
+      const replyText =
+        typeof payload.reply_text === "string" ? payload.reply_text : null
+      return {
+        id: r.id,
+        action: r.action,
+        status: r.status,
+        error: r.error,
+        sender: email?.from_email ?? null,
+        subject: email?.subject ?? null,
+        threadId: email?.thread_id ?? null,
+        replyText,
+        createdAt: r.created_at,
+      }
+    }),
     count: count ?? 0,
   }
 }
@@ -197,6 +213,7 @@ export type ThreadDecision = {
   llmModel: string | null
   llmReasoning: string | null
   status: string
+  draftReplyText: string | null
   approvedAt: string | null
   approvedBy: string | null
   createdAt: string
@@ -243,7 +260,7 @@ export async function getThreadDetail(
   const { data, error } = await client
     .from("threads")
     .select(
-      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, approved_at, approved_by, created_at), audit_log(id, action, status, error, created_at))"
+      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, draft_reply_text, approved_at, approved_by, created_at), audit_log(id, action, status, error, created_at))"
     )
     .eq("id", threadId)
     .maybeSingle()
@@ -269,6 +286,7 @@ export async function getThreadDetail(
         llmModel: d.llm_model,
         llmReasoning: d.llm_reasoning,
         status: d.status,
+        draftReplyText: d.draft_reply_text,
         approvedAt: d.approved_at,
         approvedBy: d.approved_by,
         createdAt: d.created_at,

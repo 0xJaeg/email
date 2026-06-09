@@ -11,6 +11,16 @@ import {
 import { TablePagination } from "@/components/shared/table-pagination"
 import { ApprovalActions } from "./approval-actions"
 
+// The queue mixes reply drafts and refunds; surface which is which so an
+// operator never approves a money-moving refund thinking it's a plain reply.
+const DECISION_LABELS: Record<string, string> = {
+  send_faq_reply: "FAQ reply",
+  send_offer_1: "Offer (1st)",
+  send_offer_2: "Offer (2nd)",
+  issue_refund: "Refund",
+  issue_refund_chargeback: "Refund (chargeback)",
+}
+
 export async function ApprovalsTable({
   query,
   page,
@@ -35,7 +45,7 @@ export async function ApprovalsTable({
             <TableRow>
               <TableHead>Sender</TableHead>
               <TableHead>Subject</TableHead>
-              <TableHead>Template</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Draft reply</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -47,7 +57,7 @@ export async function ApprovalsTable({
                   colSpan={5}
                   className="text-muted-foreground py-10 text-center"
                 >
-                  No refunds awaiting approval.
+                  Nothing awaiting approval.
                 </TableCell>
               </TableRow>
             ) : (
@@ -60,7 +70,7 @@ export async function ApprovalsTable({
                     {r.subject}
                   </TableCell>
                   <TableCell className="text-xs">
-                    {r.templateUsed ?? "-"}
+                    {DECISION_LABELS[r.decision] ?? r.decision}
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-96 truncate">
                     {r.draftReplyText ?? "(no draft)"}

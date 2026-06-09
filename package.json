@@ -11,6 +11,7 @@
     "db:start": "docker compose up -d redis",
     "db:stop": "docker compose down",
     "sim": "tsx --env-file=.env.local scripts/sim-webhook.ts",
+    "sim:batch": "tsx --env-file=.env.local scripts/sim-batch.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

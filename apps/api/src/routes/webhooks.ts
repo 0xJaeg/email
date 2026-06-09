@@ -3,6 +3,7 @@ import { Webhook } from "svix"
 import type { Json } from "@workspace/db/types"
 import { MessageReceivedEvent } from "../lib/agent-mail-schema.js"
 import { getSupabase } from "../lib/supabase.js"
+import { resolveInboxRouting } from "../lib/inbox-routing.js"
 import { getEmailsQueue } from "../lib/queue.js"
 
 const toJson = (v: unknown): Json => JSON.parse(JSON.stringify(v)) as Json
@@ -63,6 +64,9 @@ export const webhooksRoute = new Hono().post("/agent-mail", async (c) => {
   const event = parsed.data
   const supabase = getSupabase()
 
+  // Route the message to a product/inbox before persisting the thread.
+  const routing = await resolveInboxRouting(supabase, event.message.inbox_id)
+
   const { data: thread, error: threadErr } = await supabase
     .from("threads")
     .upsert(
@@ -71,6 +75,8 @@ export const webhooksRoute = new Hono().post("/agent-mail", async (c) => {
         sender_email: event.message.from,
         subject:
           event.message.subject ?? event.thread.subject ?? "(no subject)",
+        product_id: routing.productId,
+        inbox_id: routing.inboxId,
       },
       { onConflict: "agent_mail_thread_id" }
     )

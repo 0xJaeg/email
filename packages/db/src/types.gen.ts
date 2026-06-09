@@ -57,6 +57,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           classification: string | null
+          context: Json | null
           created_at: string
           decision: string | null
           draft_reply_text: string | null
@@ -64,6 +65,8 @@ export type Database = {
           id: string
           llm_model: string | null
           llm_reasoning: string | null
+          product_id: string | null
+          proposed_actions: Json
           refund_request_count: number | null
           status: string
           template_used: string | null
@@ -72,6 +75,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           classification?: string | null
+          context?: Json | null
           created_at?: string
           decision?: string | null
           draft_reply_text?: string | null
@@ -79,6 +83,8 @@ export type Database = {
           id?: string
           llm_model?: string | null
           llm_reasoning?: string | null
+          product_id?: string | null
+          proposed_actions?: Json
           refund_request_count?: number | null
           status?: string
           template_used?: string | null
@@ -87,6 +93,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           classification?: string | null
+          context?: Json | null
           created_at?: string
           decision?: string | null
           draft_reply_text?: string | null
@@ -94,6 +101,8 @@ export type Database = {
           id?: string
           llm_model?: string | null
           llm_reasoning?: string | null
+          product_id?: string | null
+          proposed_actions?: Json
           refund_request_count?: number | null
           status?: string
           template_used?: string | null
@@ -104,6 +113,13 @@ export type Database = {
             columns: ["email_id"]
             isOneToOne: false
             referencedRelation: "emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decisions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -158,6 +174,77 @@ export type Database = {
           },
         ]
       }
+      inboxes: {
+        Row: {
+          address: string | null
+          agent_mail_inbox_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          agent_mail_inbox_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          agent_mail_inbox_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inboxes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          adapter_key: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          platform: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          adapter_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          platform: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          adapter_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          platform?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -185,11 +272,78 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_configs: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      suppression_list: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          reason: string | null
+          source_decision_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          reason?: string | null
+          source_decision_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          reason?: string | null
+          source_decision_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppression_list_source_decision_id_fkey"
+            columns: ["source_decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       threads: {
         Row: {
           agent_mail_thread_id: string | null
           created_at: string
           id: string
+          inbox_id: string | null
+          product_id: string | null
           sender_email: string
           status: string
           subject: string
@@ -199,6 +353,8 @@ export type Database = {
           agent_mail_thread_id?: string | null
           created_at?: string
           id?: string
+          inbox_id?: string | null
+          product_id?: string | null
           sender_email: string
           status?: string
           subject: string
@@ -208,12 +364,29 @@ export type Database = {
           agent_mail_thread_id?: string | null
           created_at?: string
           id?: string
+          inbox_id?: string | null
+          product_id?: string | null
           sender_email?: string
           status?: string
           subject?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "threads_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "threads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

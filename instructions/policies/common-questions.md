@@ -1,6 +1,6 @@
 # Common Questions (FAQ skeleton)
 
-This file gives the classifier concrete examples of what `faq`-classed emails look like. It also doubles as the canned-answer source for slice E's auto-replies. For slice C, the classifier only needs to recognize the shapes.
+Common operational questions and the canned answers to draw from when replying. These also serve as concrete examples of what `faq`-classed emails look like.
 
 ## Access and login
 

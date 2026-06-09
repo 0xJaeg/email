@@ -18,6 +18,9 @@ import {
   IconClipboardCheck,
   IconUsers,
   IconTicket,
+  IconFileText,
+  IconBox,
+  IconInbox,
 } from "@tabler/icons-react"
 import { NavMain } from "@/components/layout/nav-main"
 import { NavUser } from "@/components/layout/nav-user"
@@ -59,7 +62,13 @@ export function AppSidebar({
 }: ComponentProps<typeof Sidebar> & { user: NavUserData }) {
   const navMain =
     user.role === "admin"
-      ? [...data.navMain, { title: "Users", url: "/users", icon: <IconUsers /> }]
+      ? [
+          ...data.navMain,
+          { title: "Products", url: "/products", icon: <IconBox /> },
+          { title: "Inboxes", url: "/inboxes", icon: <IconInbox /> },
+          { title: "Prompts", url: "/prompts", icon: <IconFileText /> },
+          { title: "Users", url: "/users", icon: <IconUsers /> },
+        ]
       : data.navMain
 
   return (

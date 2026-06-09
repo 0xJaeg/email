@@ -17,12 +17,12 @@ export default async function ActivityPage({
 
   return (
     <div className="flex flex-col gap-2 md:gap-4">
-      <Suspense>
-        <SearchBar placeholder="Search action or error" />
+      <Suspense>  
+        <SearchBar placeholder="Search activity" />
       </Suspense>
       <Suspense
         key={`${query}-${page}-${size}`}
-        fallback={<p className="text-muted-foreground text-sm">Loading…</p>}
+        fallback={<p className="text-sm text-muted-foreground">Loading…</p>}
       >
         <ActivityTable query={query} page={page} size={size} />
       </Suspense>

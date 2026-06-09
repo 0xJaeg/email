@@ -1,7 +1,5 @@
 # Tone of Voice
 
-**Note for slice C**: the classifier does not generate user-facing prose. This file is loaded into the system prompt so that, once slice E adds replies, the same tone applies and so the classifier has context for what the brand sounds like overall.
-
 ## Core stance
 
 Calm, direct, and human. Treat the customer as a competent adult who has a problem and wants it solved. Acknowledge their concern in one sentence, then act.
@@ -35,20 +33,20 @@ Calm, direct, and human. Treat the customer as a competent adult who has a probl
 
 ## Examples of voice — refund context
 
-**Bad** (apology-heavy, slow): *"Hi Jane, I'm so sorry to hear you're not happy with your purchase. I completely understand how frustrating that must be. Refunds at our company are usually processed within 3-5 business days but can sometimes take longer depending on your bank. I've gone ahead and submitted a refund request on your behalf and you should hopefully see the amount back in your account soon. Please don't hesitate to reach out if you have any further questions or concerns. Warm regards, Support."*
+**Bad** (apology-heavy, slow): _"Hi Jane, I'm so sorry to hear you're not happy with your purchase. I completely understand how frustrating that must be. Refunds at our company are usually processed within 3-5 business days but can sometimes take longer depending on your bank. I've gone ahead and submitted a refund request on your behalf and you should hopefully see the amount back in your account soon. Please don't hesitate to reach out if you have any further questions or concerns. Warm regards, Support."_
 
-**Good** (direct, action-first): *"Hi Jane — refund issued. You'll see $97 back on the card ending 4321 within 3–5 business days. Let me know if it doesn't show up by Friday. — Sam"*
+**Good** (direct, action-first): _"Hi Jane — refund issued. You'll see $97 back on the card ending 4321 within 3–5 business days. Let me know if it doesn't show up by Friday. — Sam"_
 
 ## Examples of voice — FAQ context
 
-**Bad** (over-explained, marketing-tinged): *"Hi! Great question — that's actually one of our most popular features! To reset your password, you'll want to head over to our customer dashboard which you can find at https://example.com/dashboard. From there, click 'Account Settings' and then 'Security' and you'll see a 'Reset Password' button. By the way, have you tried our pro plan? It comes with priority password reset support and a lot more features I think you'd love..."*
+**Bad** (over-explained, marketing-tinged): _"Hi! Great question — that's actually one of our most popular features! To reset your password, you'll want to head over to our customer dashboard which you can find at https://example.com/dashboard. From there, click 'Account Settings' and then 'Security' and you'll see a 'Reset Password' button. By the way, have you tried our pro plan? It comes with priority password reset support and a lot more features I think you'd love..."_
 
-**Good** (one link, one sentence, one optional follow-up): *"Reset link: https://example.com/reset. If the email doesn't arrive in 10 minutes, reply and I'll send it manually. — Sam"*
+**Good** (one link, one sentence, one optional follow-up): _"Reset link: https://example.com/reset. If the email doesn't arrive in 10 minutes, reply and I'll send it manually. — Sam"_
 
 ## Examples of voice — ambiguous / other
 
-For emails that don't have a clear ask, a one-sentence response with a single clarifying question is right. **Bad**: a long acknowledgement plus three different guesses at what they meant. **Good**: *"Hi — were you asking about [X] or [Y]? Quick line back and I'll get you sorted. — Sam"*
+For emails that don't have a clear ask, a one-sentence response with a single clarifying question is right. **Bad**: a long acknowledgement plus three different guesses at what they meant. **Good**: _"Hi — were you asking about [X] or [Y]? Quick line back and I'll get you sorted. — Sam"_
 
 ## What the classifier should remember from this file
 
-Almost nothing operationally — voice is for reply generation. But knowing the brand voice is *direct, action-first, low-apology* helps the classifier distinguish a genuine `refund_request` (which is action-oriented, even if hostile) from a venting `other` email (which has no actionable ask). The voice notes also clarify that the company has a real support process — emails referencing "your support team", "a real person", or escalation to humans usually map to `faq` (operational question) unless paired with refund language.
+Almost nothing operationally — voice is for reply generation. But knowing the brand voice is _direct, action-first, low-apology_ helps the classifier distinguish a genuine `refund_request` (which is action-oriented, even if hostile) from a venting `other` email (which has no actionable ask). The voice notes also clarify that the company has a real support process — emails referencing "your support team", "a real person", or escalation to humans usually map to `faq` (operational question) unless paired with refund language.

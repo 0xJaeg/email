@@ -65,12 +65,17 @@ export async function createUser(formData: FormData): Promise<Result> {
     return { error: true, message: msg || "Could not create user." }
   }
 
-  const { error: profileErr } = await admin.from("profiles").insert({
-    id: data.user.id,
-    email,
-    name: name || null,
-    role,
-  })
+  // The on_auth_user_created trigger already inserted a default 'operator'
+  // profile for this auth user; upsert to set the chosen role/name.
+  const { error: profileErr } = await admin.from("profiles").upsert(
+    {
+      id: data.user.id,
+      email,
+      name: name || null,
+      role,
+    },
+    { onConflict: "id" }
+  )
   if (profileErr) return { error: true, message: profileErr.message }
 
   revalidatePath("/users")
