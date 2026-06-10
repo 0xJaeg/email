@@ -22,6 +22,7 @@ describe("suppressContact", () => {
     const { supabase, auditInsert, upsert } = mockSupabase()
     const r = await suppressContact({
       decisionId: "d1",
+      emailId: "email-1",
       email: "  Alice@Example.com ",
       reason: "refund",
       supabase,
@@ -32,7 +33,11 @@ describe("suppressContact", () => {
       expect.anything()
     )
     expect(auditInsert).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "suppress_contact", status: "success" })
+      expect.objectContaining({
+        action: "suppress_contact",
+        status: "success",
+        email_id: "email-1",
+      })
     )
   })
 
@@ -40,6 +45,7 @@ describe("suppressContact", () => {
     const { supabase, auditInsert } = mockSupabase({ message: "db down" })
     const r = await suppressContact({
       decisionId: "d1",
+      emailId: "email-1",
       email: "a@x.com",
       reason: "refund",
       supabase,

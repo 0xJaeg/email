@@ -41,6 +41,7 @@ export async function suppressContact(
   const ok = !dbErr
   await args.supabase.from("audit_log").insert({
     action: "suppress_contact",
+    email_id: args.emailId,
     status: ok ? "success" : "failure",
     error: ok ? null : dbErr.message,
     payload: {

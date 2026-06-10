@@ -101,6 +101,7 @@ export async function approveDecision(
       const adapterKey = await resolveAdapterKey(supabase, emailRow.thread_id)
       const refund = await refundCustomer({
         decisionId,
+        emailId: emailRow.id,
         customerEmail: emailRow.from_email,
         orderId,
         amount: null,
@@ -115,6 +116,7 @@ export async function approveDecision(
     } else if (action.type === "suppress_contact") {
       const suppressed = await suppressContact({
         decisionId,
+        emailId: emailRow.id,
         email: emailRow.from_email,
         reason: action.reason,
         supabase,

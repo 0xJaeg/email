@@ -23,6 +23,7 @@ export async function refundCustomer(
   const isMock = args.adapterKey === "mock"
   await args.supabase.from("audit_log").insert({
     action: isMock ? "refund_customer_stub" : "refund_customer",
+    email_id: args.emailId,
     status: result.ok ? "success" : "failure",
     error: result.ok ? null : result.error,
     payload: {
