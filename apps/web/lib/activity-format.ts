@@ -12,6 +12,7 @@ const ACTION_LABELS: Record<string, string> = {
   generate_reply_failed: "Couldn't draft a reply",
   refund_pending_approval: "Refund waiting for approval",
   reply_pending_approval: "Reply waiting for approval",
+  draft_edited: "Draft edited before approval",
   send_reply: "Reply sent",
   refund_customer_stub: "Refund issued (test mode)",
   refund_customer: "Refund issued",
@@ -32,6 +33,24 @@ export function humanizeAction(action: string): string {
   if (known) return known
   // Unknown action: prettify rather than leak raw snake_case.
   const spaced = action.replace(/_/g, " ").trim()
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
+// Decision lifecycle states → plain language for operators.
+const DECISION_STATUS_LABELS: Record<string, string> = {
+  pending_action: "Processing",
+  pending_approval: "Waiting for approval",
+  needs_human: "Needs a person",
+  approved: "Approved",
+  sent: "Sent",
+  failed: "Send failed",
+  rejected: "Rejected",
+}
+
+export function humanizeDecisionStatus(status: string): string {
+  const known = DECISION_STATUS_LABELS[status]
+  if (known) return known
+  const spaced = status.replace(/_/g, " ").trim()
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 

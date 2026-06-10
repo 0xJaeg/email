@@ -42,15 +42,24 @@ export function DecisionBadge({ value }: { value: string | null }) {
   return <Badge variant="outline">{label}</Badge>
 }
 
+// Title-case a raw enum fallback so nothing renders as lowercase snake_case.
+function titleCase(value: string): string {
+  const spaced = value.replace(/_/g, " ").trim()
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
 export function ThreadStatusBadge({ value }: { value: string }) {
-  if (value === "resolved") return <Badge className={emerald}>resolved</Badge>
-  if (value === "escalated") return <Badge variant="destructive">escalated</Badge>
-  return <Badge variant="secondary">{value}</Badge>
+  if (value === "resolved") return <Badge className={emerald}>Resolved</Badge>
+  if (value === "escalated")
+    return <Badge variant="destructive">Escalated</Badge>
+  return <Badge variant="secondary">{titleCase(value)}</Badge>
 }
 
 export function AuditStatusBadge({ value }: { value: string }) {
-  if (value === "success") return <Badge className={emerald}>success</Badge>
-  if (value === "failure") return <Badge variant="destructive">failure</Badge>
-  if (value === "pending") return <Badge className={amber}>pending</Badge>
-  return <Badge variant="secondary">{value}</Badge>
+  if (value === "success") return <Badge className={emerald}>Done</Badge>
+  if (value === "failure") return <Badge variant="destructive">Failed</Badge>
+  if (value === "pending") return <Badge className={amber}>Pending</Badge>
+  if (value === "skipped")
+    return <Badge variant="secondary">No action needed</Badge>
+  return <Badge variant="secondary">{titleCase(value)}</Badge>
 }

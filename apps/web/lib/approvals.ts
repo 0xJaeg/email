@@ -8,7 +8,10 @@ import type { ProposedAction } from "@workspace/actions/types"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import { getActionSupabase } from "@/lib/supabase/server"
 
-export async function approveDecision(decisionId: string): Promise<void> {
+export async function approveDecision(
+  decisionId: string,
+  editedText?: string
+): Promise<void> {
   const { user } = await getActionSupabase()
   const approvedBy = user.email ?? user.id
   const supabase = getServerSupabase()
@@ -49,6 +52,27 @@ export async function approveDecision(decisionId: string): Promise<void> {
     throw new Error(
       `approveDecision: email row missing for decision ${decisionId}`
     )
+
+  // If the operator edited the draft before approving, that edited text is what
+  // we send (and store) — record the edit for the audit trail.
+  const trimmedEdit = editedText?.trim()
+  const replyText =
+    trimmedEdit && trimmedEdit !== (claimed.draft_reply_text ?? "").trim()
+      ? trimmedEdit
+      : (claimed.draft_reply_text ?? "")
+  const wasEdited = replyText !== (claimed.draft_reply_text ?? "")
+  if (wasEdited) {
+    await supabase
+      .from("decisions")
+      .update({ draft_reply_text: replyText })
+      .eq("id", decisionId)
+    await supabase.from("audit_log").insert({
+      action: "draft_edited",
+      email_id: emailRow.id,
+      status: "success",
+      payload: { decision_id: decisionId, edited_by: approvedBy },
+    })
+  }
 
   // Execute the proposed mutating actions in order. Any failure rewinds the
   // approval (so a human can retry) and stops before the reply is sent.
@@ -116,7 +140,7 @@ export async function approveDecision(decisionId: string): Promise<void> {
     return sendReply({
       inboxId,
       inReplyToMessageId: emailRow.agent_mail_message_id ?? "",
-      replyText: claimed.draft_reply_text ?? "",
+      replyText,
       decisionId,
       emailId: emailRow.id,
       to: emailRow.from_email,

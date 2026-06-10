@@ -3,16 +3,33 @@ import { sanitizeSearch } from "@/lib/search"
 
 type DbClient = ServerClient
 
+export type EnrichmentContext = {
+  inquiry_type?: string
+  orders?: Array<{
+    orderId?: string
+    productName?: string
+    amount?: number
+    currency?: string
+    purchasedAt?: string
+  }>
+  access?: { hasAccess?: boolean; details?: string | null }
+}
+
+export type ProposedActionRow = { type: string; reason?: string }
+
 export type PendingApprovalRow = {
   id: string
   receivedAt: string
   sender: string
   subject: string
+  body: string | null
   classification: string
   decision: string
   templateUsed: string | null
   llmReasoning: string | null
   draftReplyText: string | null
+  context: EnrichmentContext | null
+  proposedActions: ProposedActionRow[]
 }
 
 export async function fetchPendingApprovals(
@@ -25,7 +42,7 @@ export async function fetchPendingApprovals(
   let q = client
     .from("decisions")
     .select(
-      "id, created_at, classification, decision, template_used, llm_reasoning, draft_reply_text, emails!inner(from_email, subject)",
+      "id, created_at, classification, decision, template_used, llm_reasoning, draft_reply_text, context, proposed_actions, emails!inner(from_email, subject, body_text)",
       { count: "exact" }
     )
     .eq("status", "pending_approval")
@@ -49,11 +66,14 @@ export async function fetchPendingApprovals(
       receivedAt: row.created_at,
       sender: row.emails?.from_email ?? "(unknown)",
       subject: row.emails?.subject ?? "(no subject)",
+      body: row.emails?.body_text ?? null,
       classification: row.classification ?? "",
       decision: row.decision ?? "",
       templateUsed: row.template_used,
       llmReasoning: row.llm_reasoning,
       draftReplyText: row.draft_reply_text,
+      context: (row.context as EnrichmentContext | null) ?? null,
+      proposedActions: (row.proposed_actions as ProposedActionRow[] | null) ?? [],
     })),
     count: count ?? 0,
   }

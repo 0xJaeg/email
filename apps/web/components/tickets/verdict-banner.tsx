@@ -6,6 +6,7 @@ import {
   IconClock,
   IconRobot,
 } from "@tabler/icons-react"
+import { humanizeDecisionStatus } from "@/lib/activity-format"
 import type { ThreadDecision } from "@/lib/tickets"
 
 // Verb-form headline for the verdict (the small chips still use DecisionBadge).
@@ -64,14 +65,13 @@ export function VerdictBanner({
     decision.decision ??
     "No action"
   const failed = decision.status === "failed"
-  const pending =
-    decision.status.startsWith("pending") || decision.status === "rejected"
+  // Only "sent"/"approved" are a finished, good outcome (green). Everything else
+  // (waiting, needs-a-person, rejected) is an in-between state, shown neutrally.
+  const done = decision.status === "sent" || decision.status === "approved"
 
   const meta: Array<[string, string]> = []
-  if (decision.llmModel) meta.push(["Model", decision.llmModel])
-  if (decision.templateUsed) meta.push(["Template", decision.templateUsed])
   if (decision.refundRequestCount != null)
-    meta.push(["Refund #", String(decision.refundRequestCount)])
+    meta.push(["Refund request #", String(decision.refundRequestCount)])
   meta.push(["Decided", formatDateTime(decision.createdAt)])
   if (decision.approvedBy) meta.push(["Approved by", decision.approvedBy])
 
@@ -106,17 +106,17 @@ export function VerdictBanner({
           {failed ? (
             <span className="border-destructive text-destructive bg-destructive/10 inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold">
               <IconAlertTriangle className="size-4" />
-              Action failed
+              {humanizeDecisionStatus(decision.status)}
             </span>
-          ) : pending ? (
-            <span className="text-muted-foreground bg-muted inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold">
-              <IconClock className="size-4" />
-              Pending review
-            </span>
-          ) : (
+          ) : done ? (
             <span className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-emerald-600/30 bg-emerald-500/10 px-3 py-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
               <IconCircleCheck className="size-4" />
-              {decision.status}
+              {humanizeDecisionStatus(decision.status)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground bg-muted inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold">
+              <IconClock className="size-4" />
+              {humanizeDecisionStatus(decision.status)}
             </span>
           )}
         </div>

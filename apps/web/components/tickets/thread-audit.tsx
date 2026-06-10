@@ -1,4 +1,5 @@
 import { AuditStatusBadge } from "@/components/shared/status-badges"
+import { humanizeAction, humanizeError } from "@/lib/activity-format"
 import { cn } from "@workspace/ui/lib/utils"
 import {
   IconAlertCircle,
@@ -44,7 +45,7 @@ export function ThreadAudit({ entries }: { entries: ThreadAuditEntry[] }) {
   return (
     <section className="flex flex-col gap-3.5">
       <h2 className="text-muted-foreground font-heading text-[11px] font-semibold tracking-wider uppercase">
-        Audit trail — run pipeline
+        What the assistant did
       </h2>
       <ol className="bg-card divide-border divide-y rounded-xl border">
         {entries.map((a, i) => (
@@ -63,8 +64,8 @@ export function ThreadAudit({ entries }: { entries: ThreadAuditEntry[] }) {
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="font-heading text-sm font-medium">
-                  {a.action}
+                <span className="font-heading text-sm font-medium" title={a.action}>
+                  {humanizeAction(a.action)}
                 </span>
                 <AuditStatusBadge value={a.status} />
                 <span
@@ -77,8 +78,11 @@ export function ThreadAudit({ entries }: { entries: ThreadAuditEntry[] }) {
               {a.error ? (
                 <div className="text-destructive flex items-center gap-1.5 text-xs">
                   <IconAlertCircle className="size-3.5 shrink-0" />
-                  <span className="bg-destructive/10 font-heading rounded px-1.5 py-0.5 text-[11px]">
-                    {a.error}
+                  <span
+                    className="bg-destructive/10 font-heading rounded px-1.5 py-0.5 text-[11px]"
+                    title={a.error}
+                  >
+                    {humanizeError(a.error)}
                   </span>
                 </div>
               ) : null}

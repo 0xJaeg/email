@@ -53,7 +53,7 @@ export function EmailCard({
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-sm font-semibold">{email.from}</span>
           <Badge variant={inbound ? "secondary" : "outline"}>
-            {email.direction}
+            {inbound ? "Received" : "Sent"}
           </Badge>
           <span
             suppressHydrationWarning
