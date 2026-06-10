@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { TablePagination } from "@/components/shared/table-pagination"
-import { ApprovalActions } from "./approval-actions"
+import { ReviewApprovalSheet } from "./review-approval-sheet"
 
 // The queue mixes reply drafts and refunds; surface which is which so an
 // operator never approves a money-moving refund thinking it's a plain reply.
@@ -76,7 +76,18 @@ export async function ApprovalsTable({
                     {r.draftReplyText ?? "(no draft)"}
                   </TableCell>
                   <TableCell className="flex justify-end gap-2 text-right">
-                    <ApprovalActions id={r.id} />
+                    <ReviewApprovalSheet
+                      row={{
+                        id: r.id,
+                        sender: r.sender,
+                        subject: r.subject,
+                        decisionLabel: DECISION_LABELS[r.decision] ?? r.decision,
+                        body: r.body,
+                        draftReplyText: r.draftReplyText,
+                        context: r.context,
+                        proposedActions: r.proposedActions,
+                      }}
+                    />
                   </TableCell>
                 </TableRow>
               ))

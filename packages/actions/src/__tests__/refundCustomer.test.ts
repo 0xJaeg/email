@@ -15,6 +15,7 @@ describe("refundCustomer", () => {
     const { supabase } = mockSupabase()
     const result = await refundCustomer({
       decisionId: "decision-1",
+      emailId: "email-1",
       customerEmail: "alice@example.com",
       orderId: "ord_123",
       amount: 97,
@@ -29,6 +30,7 @@ describe("refundCustomer", () => {
     const { supabase, auditInsert } = mockSupabase()
     await refundCustomer({
       decisionId: "decision-1",
+      emailId: "email-1",
       customerEmail: "alice@example.com",
       orderId: "ord_123",
       amount: 97,
@@ -40,6 +42,7 @@ describe("refundCustomer", () => {
       expect.objectContaining({
         action: "refund_customer_stub",
         status: "success",
+        email_id: "email-1",
         payload: expect.objectContaining({
           decision_id: "decision-1",
           customer_email: "alice@example.com",
@@ -56,6 +59,7 @@ describe("refundCustomer", () => {
     const { supabase, auditInsert } = mockSupabase()
     const result = await refundCustomer({
       decisionId: "decision-2",
+      emailId: "email-2",
       customerEmail: "bob@example.com",
       orderId: null,
       amount: null,

@@ -95,6 +95,32 @@ describe("approveDecision", () => {
     expect(mockSendReply).toHaveBeenCalledTimes(1)
   })
 
+  it("sends the operator's edited text when an edit is provided", async () => {
+    serverSupabase = makeServerSupabase({
+      id: "dec-1b",
+      decision: "send_faq_reply",
+      draft_reply_text: "Original draft.",
+      emails,
+    })
+    await approveDecision("dec-1b", "Operator-polished reply.")
+    expect(mockSendReply).toHaveBeenCalledWith(
+      expect.objectContaining({ replyText: "Operator-polished reply." })
+    )
+  })
+
+  it("sends the original draft when the edit is unchanged/blank", async () => {
+    serverSupabase = makeServerSupabase({
+      id: "dec-1c",
+      decision: "send_faq_reply",
+      draft_reply_text: "Original draft.",
+      emails,
+    })
+    await approveDecision("dec-1c", "   ")
+    expect(mockSendReply).toHaveBeenCalledWith(
+      expect.objectContaining({ replyText: "Original draft." })
+    )
+  })
+
   it("for a refund decision, issues the refund (default mock adapter) then sends", async () => {
     serverSupabase = makeServerSupabase({
       id: "dec-2",

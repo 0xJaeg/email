@@ -21,6 +21,8 @@ import {
   IconFileText,
   IconBox,
   IconInbox,
+  IconKey,
+  IconBolt,
 } from "@tabler/icons-react"
 import { NavMain } from "@/components/layout/nav-main"
 import { NavUser } from "@/components/layout/nav-user"
@@ -66,6 +68,8 @@ export function AppSidebar({
           ...data.navMain,
           { title: "Products", url: "/products", icon: <IconBox /> },
           { title: "Inboxes", url: "/inboxes", icon: <IconInbox /> },
+          { title: "API keys", url: "/credentials", icon: <IconKey /> },
+          { title: "Triggers", url: "/triggers", icon: <IconBolt /> },
           { title: "Prompts", url: "/prompts", icon: <IconFileText /> },
           { title: "Users", url: "/users", icon: <IconUsers /> },
         ]

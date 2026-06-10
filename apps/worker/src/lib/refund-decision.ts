@@ -41,14 +41,17 @@ export async function decideRefund(opts: {
   anthropic: Anthropic
   /** Classifier instructions, reused as the cached system block for the Sonnet check. */
   instructions: string
+  /** Product whose action_triggers configure the refund threshold (null = global default). */
+  productId: string | null
 }): Promise<RefundDecision> {
-  const { email, supabase, anthropic, instructions } = opts
+  const { email, supabase, anthropic, instructions, productId } = opts
   const senderAddress = normalizeEmailAddress(email.from_email)
   const priorRefunds = await countPriorRefunds(supabase, senderAddress)
   const requestNumber = priorRefunds + 1
+  const threshold = await resolveRefundThreshold(supabase, productId)
 
-  // Request #3+ → immediate refund (no offers, no Sonnet)
-  if (priorRefunds >= 2) {
+  // At or over the configured threshold → issue the refund (no more offers, no Sonnet).
+  if (requestNumber >= threshold) {
     return {
       decision: "issue_refund",
       refund_request_count: requestNumber,
@@ -56,36 +59,55 @@ export async function decideRefund(opts: {
     }
   }
 
-  // Request #2 → chargeback path or offer 2
-  if (priorRefunds === 1) {
-    const body = email.body_text ?? ""
-    if (CHARGEBACK_RE.test(body)) {
-      const sonnet = await confirmChargebackThreat(anthropic, body, instructions)
-      return {
-        decision: sonnet.confirmed
-          ? "issue_refund_chargeback"
-          : "send_offer_2",
-        refund_request_count: requestNumber,
-        template_used: sonnet.confirmed
-          ? "REFUND_CHARGEBACK_APOLOGY"
-          : "OFFER_2",
-        sonnet_usage: sonnet.usage,
-        sonnet_reasoning: sonnet.reasoning,
-      }
-    }
+  // First request → retention offer 1.
+  if (requestNumber === 1) {
     return {
-      decision: "send_offer_2",
+      decision: "send_offer_1",
       refund_request_count: requestNumber,
-      template_used: "OFFER_2",
+      template_used: "OFFER_1",
     }
   }
 
-  // Request #1 → retention offer 1
-  return {
-    decision: "send_offer_1",
-    refund_request_count: requestNumber,
-    template_used: "OFFER_1",
+  // Between the first request and the threshold → chargeback path or offer 2.
+  const body = email.body_text ?? ""
+  if (CHARGEBACK_RE.test(body)) {
+    const sonnet = await confirmChargebackThreat(anthropic, body, instructions)
+    return {
+      decision: sonnet.confirmed ? "issue_refund_chargeback" : "send_offer_2",
+      refund_request_count: requestNumber,
+      template_used: sonnet.confirmed
+        ? "REFUND_CHARGEBACK_APOLOGY"
+        : "OFFER_2",
+      sonnet_usage: sonnet.usage,
+      sonnet_reasoning: sonnet.reasoning,
+    }
   }
+  return {
+    decision: "send_offer_2",
+    refund_request_count: requestNumber,
+    template_used: "OFFER_2",
+  }
+}
+
+const DEFAULT_REFUND_THRESHOLD = 3
+
+// The request number at which we issue a refund, from the product's active
+// issue_refund trigger. Defaults to 3 (offer twice, then refund).
+async function resolveRefundThreshold(
+  supabase: ServerClient,
+  productId: string | null
+): Promise<number> {
+  if (!productId) return DEFAULT_REFUND_THRESHOLD
+  const { data } = await supabase
+    .from("action_triggers")
+    .select("condition")
+    .eq("product_id", productId)
+    .eq("action", "issue_refund")
+    .eq("is_active", true)
+    .maybeSingle()
+  const n = (data?.condition as { after_n_requests?: number } | null)
+    ?.after_n_requests
+  return typeof n === "number" && n >= 1 ? n : DEFAULT_REFUND_THRESHOLD
 }
 
 async function countPriorRefunds(

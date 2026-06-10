@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest"
-import { humanizeAction, humanizeError } from "../activity-format.js"
+import {
+  humanizeAction,
+  humanizeError,
+  humanizeDecisionStatus,
+} from "../activity-format.js"
 
 describe("humanizeAction", () => {
   it("maps known machine actions to plain phrases", () => {
@@ -26,6 +30,7 @@ describe("humanizeAction", () => {
     )
     expect(humanizeAction("gather_context")).toBe("Checked purchase & access")
     expect(humanizeAction("suppress_contact")).toBe("Added to suppression list")
+    expect(humanizeAction("draft_edited")).toBe("Draft edited before approval")
   })
 
   it("prettifies unknown actions instead of showing raw snake_case", () => {
@@ -47,5 +52,20 @@ describe("humanizeError", () => {
     expect(humanizeError("database connection lost")).toBe(
       "database connection lost"
     )
+  })
+})
+
+describe("humanizeDecisionStatus", () => {
+  it("maps lifecycle states to plain language", () => {
+    expect(humanizeDecisionStatus("pending_approval")).toBe(
+      "Waiting for approval"
+    )
+    expect(humanizeDecisionStatus("needs_human")).toBe("Needs a person")
+    expect(humanizeDecisionStatus("sent")).toBe("Sent")
+    expect(humanizeDecisionStatus("failed")).toBe("Send failed")
+  })
+
+  it("prettifies unknown statuses instead of raw snake_case", () => {
+    expect(humanizeDecisionStatus("some_new_state")).toBe("Some new state")
   })
 })

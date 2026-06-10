@@ -24,6 +24,8 @@ export type SendReplyResult =
 
 export type RefundCustomerArgs = {
   decisionId: string
+  /** Links the audit row to the thread so it shows in the ticket's timeline. */
+  emailId: string
   customerEmail: string
   /** Best-effort extraction from email body. Mock doesn't validate; real ClickBank will. */
   orderId: string | null
@@ -80,6 +82,8 @@ export type ProposedAction =
 
 export type SuppressContactArgs = {
   decisionId: string
+  /** Links the audit row to the thread so it shows in the ticket's timeline. */
+  emailId: string
   email: string
   reason: string
   supabase: ServerClient

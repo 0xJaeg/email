@@ -156,6 +156,42 @@ create table prompt_configs (
 );
 
 -- ----------------------------------------------------------------------------
+-- integration_credentials  (encrypted per-product API keys; ciphertext only).
+-- RLS enabled with NO select policy on purpose — only the secret-key server
+-- reads/decrypts these; the browser never sees ciphertext.
+-- ----------------------------------------------------------------------------
+create table integration_credentials (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  platform text not null,
+  label text not null,
+  ciphertext text not null,
+  last4 text,
+  created_by text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index integration_credentials_product_id_idx on integration_credentials (product_id);
+alter table integration_credentials enable row level security;
+
+-- ----------------------------------------------------------------------------
+-- action_triggers  (configurable per-product rules, e.g. the refund threshold)
+-- ----------------------------------------------------------------------------
+create table action_triggers (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid references products(id) on delete cascade,
+  name text not null,
+  action text not null,
+  condition jsonb not null default '{}'::jsonb,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index action_triggers_product_id_idx on action_triggers (product_id);
+alter table action_triggers enable row level security;
+create policy "authenticated read action_triggers" on action_triggers for select to authenticated using (true);
+
+-- ----------------------------------------------------------------------------
 -- Row Level Security
 --   The dashboard's SSR reads use the SECRET (service-role) key, which bypasses
 --   RLS. These policies gate the browser/authenticated client (incl. Realtime).

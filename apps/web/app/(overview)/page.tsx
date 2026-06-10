@@ -1,34 +1,21 @@
-import Link from "next/link"
-import { SectionCards } from "@/components/dashboard/section-cards"
-import { TicketsTable } from "@/components/dashboard/tickets-table"
+import { ReportCards } from "@/components/reports/report-cards"
+import { VolumeChart } from "@/components/reports/volume-chart"
+import { HandledChart } from "@/components/reports/handled-chart"
 import { getServerSupabase } from "@/lib/supabase/admin"
-import { fetchStats, fetchTickets } from "@/lib/tickets"
+import { fetchReportStats } from "@/lib/reports"
 
 export const dynamic = "force-dynamic"
 
 export default async function Page() {
-  const supabase = getServerSupabase()
-  const [tickets, stats] = await Promise.all([
-    fetchTickets(supabase),
-    fetchStats(supabase),
-  ])
+  const stats = await fetchReportStats(getServerSupabase())
 
   return (
-    <div className="@container/main space-y-2 lg:space-y-4">
-      <SectionCards initial={stats} />
-
-      <div className="flex items-center justify-between">
-        <h2 className="text-muted-foreground text-sm font-medium">
-          Recent tickets
-        </h2>
-        <Link
-          href="/tickets"
-          className="text-primary text-sm font-medium hover:underline"
-        >
-          View all
-        </Link>
+    <div className="@container/main flex flex-col gap-4 lg:gap-6">
+      <ReportCards stats={stats} />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-6">
+        <VolumeChart data={stats.volumeByDay} />
+        <HandledChart byDecision={stats.byDecision} />
       </div>
-      <TicketsTable initial={tickets} />
     </div>
   )
 }
