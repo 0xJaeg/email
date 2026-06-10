@@ -1,6 +1,6 @@
 "use client"
 
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
   Card,
   CardDescription,
@@ -33,14 +33,8 @@ export function VolumeChart({ data }: { data: VolumePoint[] }) {
           </span>
         </CardTitle>
       </CardHeader>
-      <ChartContainer config={config} className="h-[220px] w-full px-2">
-        <AreaChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
-          <defs>
-            <linearGradient id="fillVolume" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-count)" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="var(--color-count)" stopOpacity={0.02} />
-            </linearGradient>
-          </defs>
+      <ChartContainer config={config} className="h-[340px] w-full px-2">
+        <BarChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
           <XAxis
             dataKey="label"
@@ -58,14 +52,13 @@ export function VolumeChart({ data }: { data: VolumePoint[] }) {
             fontSize={11}
           />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          <Area
+          <Bar
             dataKey="count"
-            type="monotone"
-            stroke="var(--color-count)"
-            strokeWidth={2}
-            fill="url(#fillVolume)"
+            fill="var(--color-count)"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={36}
           />
-        </AreaChart>
+        </BarChart>
       </ChartContainer>
     </Card>
   )

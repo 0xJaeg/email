@@ -53,7 +53,7 @@ export function HandledChart({
           No decisions yet.
         </p>
       ) : (
-        <ChartContainer config={config} className="mx-auto h-[260px] w-full">
+        <ChartContainer config={config} className="mx-auto h-[340px] w-full">
           <PieChart>
             <ChartTooltip
               cursor={false}
@@ -63,7 +63,8 @@ export function HandledChart({
               data={data}
               dataKey="value"
               nameKey="key"
-              innerRadius={62}
+              innerRadius={80}
+              outerRadius={120}
               strokeWidth={4}
             >
               {data.map((d) => (
@@ -72,23 +73,20 @@ export function HandledChart({
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    const cx = viewBox.cx ?? 0
+                    const cy = viewBox.cy ?? 0
                     return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
+                      <text x={cx} y={cy} textAnchor="middle">
                         <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-2xl font-bold"
+                          x={cx}
+                          y={cy - 6}
+                          className="fill-foreground text-3xl font-bold"
                         >
                           {total}
                         </tspan>
                         <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy ?? 0) + 20}
+                          x={cx}
+                          y={cy + 18}
                           className="fill-muted-foreground text-xs"
                         >
                           tickets
@@ -101,7 +99,7 @@ export function HandledChart({
             </Pie>
             <ChartLegend
               content={<ChartLegendContent nameKey="key" />}
-              className="flex-wrap gap-x-3 gap-y-1"
+              className="mt-2 flex-wrap gap-x-3 gap-y-1"
             />
           </PieChart>
         </ChartContainer>
