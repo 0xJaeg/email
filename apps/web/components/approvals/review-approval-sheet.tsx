@@ -113,7 +113,7 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
         <IconEye className="size-4" />
         Review
       </Button>
-      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-250!">
+      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-250">
         <SheetHeader className="border-b">
           <SheetTitle>{row.decisionLabel}</SheetTitle>
           <SheetDescription>

@@ -24,7 +24,7 @@ export function AddProductButton() {
           <span className="hidden md:block">New product</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="gap-4 overflow-y-auto sm:max-w-150!">
+      <SheetContent className="gap-4 overflow-y-auto sm:max-w-150">
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2">
             <IconPlus size={18} strokeWidth={1.2} />
