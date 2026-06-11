@@ -33,47 +33,45 @@ type NavUserData = {
   role: string
 }
 
-const data = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/",
-      icon: <IconDashboard />,
-    },
-    {
-      title: "Tickets",
-      url: "/tickets",
-      icon: <IconTicket />,
-    },
-    {
-      title: "Activity",
-      url: "/activity",
-      icon: <IconListDetails />,
-    },
-    {
-      title: "Approvals",
-      url: "/approvals",
-      icon: <IconClipboardCheck />,
-    },
+const overview = {
+  label: "Overview",
+  items: [{ title: "Dashboard", url: "/", icon: <IconDashboard /> }],
+}
+
+const operations = {
+  label: "Operations",
+  items: [
+    { title: "Tickets", url: "/tickets", icon: <IconTicket /> },
+    { title: "Approvals", url: "/approvals", icon: <IconClipboardCheck /> },
+    { title: "Activity", url: "/activity", icon: <IconListDetails /> },
   ],
+}
+
+// Admin-only groups — operators see Overview + Operations only.
+const configuration = {
+  label: "Configuration",
+  items: [
+    { title: "Products", url: "/products", icon: <IconBox /> },
+    { title: "Inboxes", url: "/inboxes", icon: <IconInbox /> },
+    { title: "API keys", url: "/credentials", icon: <IconKey /> },
+    { title: "Triggers", url: "/triggers", icon: <IconBolt /> },
+    { title: "Prompts", url: "/prompts", icon: <IconFileText /> },
+  ],
+}
+
+const admin = {
+  label: "Admin",
+  items: [{ title: "Users", url: "/users", icon: <IconUsers /> }],
 }
 
 export function AppSidebar({
   user,
   ...props
 }: ComponentProps<typeof Sidebar> & { user: NavUserData }) {
-  const navMain =
+  const groups =
     user.role === "admin"
-      ? [
-          ...data.navMain,
-          { title: "Products", url: "/products", icon: <IconBox /> },
-          { title: "Inboxes", url: "/inboxes", icon: <IconInbox /> },
-          { title: "API keys", url: "/credentials", icon: <IconKey /> },
-          { title: "Triggers", url: "/triggers", icon: <IconBolt /> },
-          { title: "Prompts", url: "/prompts", icon: <IconFileText /> },
-          { title: "Users", url: "/users", icon: <IconUsers /> },
-        ]
-      : data.navMain
+      ? [overview, operations, configuration, admin]
+      : [overview, operations]
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -96,7 +94,7 @@ export function AppSidebar({
         <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain groups={groups} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
