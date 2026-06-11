@@ -16,10 +16,6 @@ function formatDateTime(iso: string): string {
   })
 }
 
-function initial(name: string): string {
-  return (name.trim().match(/[a-z0-9]/i)?.[0] ?? "?").toUpperCase()
-}
-
 // Label the agent's reply by what happened to it.
 function replyLabel(status: string): string {
   switch (status) {
