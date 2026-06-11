@@ -14,7 +14,7 @@ const email = {
 
 // Per-test routing for resolveProduct + the adapter returned by getAdapter.
 let productRow: { product_id: string } | null = null
-let productMeta: { adapter_key: string } | null = null
+let productMeta: Record<string, unknown> | null = null
 let mockAdapter: {
   key: string
   lookupOrder: () => Promise<unknown>
@@ -245,5 +245,32 @@ describe("processEmail", () => {
       { type: "issue_refund" },
       { type: "suppress_contact", reason: "refund" },
     ])
+  })
+
+  it("passes the product's configured support facts to the reply", async () => {
+    productRow = { product_id: "prod-1" }
+    productMeta = {
+      adapter_key: "mock",
+      name: "Mobile Profits",
+      support_config: { login_url: "https://acme.test/login" },
+    }
+    mockParse.mockResolvedValue({
+      parsed_output: {
+        classification: "faq",
+        inquiry_type: "prospective_buyer",
+        reasoning: "asking how to access",
+      },
+      usage: {
+        input_tokens: 10,
+        output_tokens: 5,
+        cache_read_input_tokens: 4844,
+        cache_creation_input_tokens: 0,
+      },
+    })
+    await processEmail(job)
+    const replyArgs = mockGenerateReply.mock.calls[0]?.[0] as {
+      productFacts?: string
+    }
+    expect(replyArgs.productFacts).toContain("https://acme.test/login")
   })
 })

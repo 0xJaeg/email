@@ -48,7 +48,7 @@ export function PromptForm({
         defaultValue={prompt.content}
         required
         disabled={isPending}
-        className="min-h-[55vh] flex-1 font-mono text-xs"
+        className="max-h-[70vh] min-h-[40vh] flex-1 overflow-y-auto font-mono text-xs"
         spellCheck={false}
       />
       {error && <p className="text-destructive text-sm">{error}</p>}

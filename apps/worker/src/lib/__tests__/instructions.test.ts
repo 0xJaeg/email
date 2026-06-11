@@ -42,6 +42,10 @@ describe("assembleInstructions — reply prompt (customer-facing)", () => {
     expect(reply).toMatch(/60-day money-back guarantee/i)
     expect(reply).toMatch(/Lead with the action/i)
   })
+
+  it("forbids inventing URLs / using placeholder links", () => {
+    expect(reply).toMatch(/never invent.*url|only use links that appear/i)
+  })
 })
 
 describe("assembleInstructions — classifier prompt", () => {

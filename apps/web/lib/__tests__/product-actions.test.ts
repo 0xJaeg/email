@@ -93,6 +93,34 @@ describe("product-actions", () => {
     expect(insertSpy).not.toHaveBeenCalled()
   })
 
+  it("createProduct saves non-empty support_config fields and omits blanks", async () => {
+    const r = await createProduct(
+      form({
+        ...valid,
+        support_platform: "Digistore24",
+        login_url: "https://acme.test/login",
+        reset_url: "",
+        support_notes: "use the purchase email",
+      })
+    )
+    expect(r.error).toBe(false)
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        support_config: {
+          platform: "Digistore24",
+          login_url: "https://acme.test/login",
+          notes: "use the purchase email",
+        },
+      })
+    )
+  })
+
+  it("createProduct rejects a non-URL support link", async () => {
+    const r = await createProduct(form({ ...valid, login_url: "notaurl" }))
+    expect(r.error).toBe(true)
+    expect(insertSpy).not.toHaveBeenCalled()
+  })
+
   it("deleteProduct refuses to delete the default product", async () => {
     targetSlug = "default"
     const r = await deleteProduct("p-default")

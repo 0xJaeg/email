@@ -23,8 +23,7 @@ export const MockAdapter: ProductAdapter = {
   async checkAccess() {
     return {
       hasAccess: true,
-      details:
-        "Your account is active. Sign in at https://members.example.com using this email address; use the 'Forgot password' link to set a password.",
+      details: "Your account is active.",
     }
   },
   async issueRefund() {

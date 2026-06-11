@@ -12,6 +12,7 @@
     "db:stop": "docker compose down",
     "sim": "tsx --env-file=.env.local scripts/sim-webhook.ts",
     "sim:batch": "tsx --env-file=.env.local scripts/sim-batch.ts",
+    "pull:tickets": "tsx --env-file=.env.local scripts/pull-ticketdesk.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -23,6 +23,7 @@ create table products (
   slug text not null,
   platform text not null,            -- 'clickbank' | 'jvzoo'
   adapter_key text,                  -- which coded ProductAdapter handles this product
+  support_config jsonb not null default '{}'::jsonb,  -- real login/reset/dashboard URLs + platform, fed to reply drafting
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

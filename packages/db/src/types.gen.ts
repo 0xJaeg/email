@@ -306,6 +306,7 @@ export type Database = {
           name: string
           platform: string
           slug: string
+          support_config: Json
           updated_at: string
         }
         Insert: {
@@ -316,6 +317,7 @@ export type Database = {
           name: string
           platform: string
           slug: string
+          support_config?: Json
           updated_at?: string
         }
         Update: {
@@ -326,6 +328,7 @@ export type Database = {
           name?: string
           platform?: string
           slug?: string
+          support_config?: Json
           updated_at?: string
         }
         Relationships: []

@@ -56,6 +56,22 @@ describe("generateReply", () => {
     expect(userContent).toContain("order O-1")
   })
 
+  it("includes product support facts and a never-invent-URLs instruction when provided", async () => {
+    const anthropic = mockAnthropic("ok")
+    await generateReply({
+      template: "FAQ_REPLY",
+      email: { from_email: "a@x.com", subject: "s", body_text: "b" },
+      productFacts:
+        "Product: Mobile Profits (access delivered via Digistore24)\n- Login / sign-in URL: https://acme.test/login",
+      replyInstructions: "guide",
+      anthropic,
+    })
+    const create = anthropic.messages.create as ReturnType<typeof vi.fn>
+    const userContent = create.mock.calls[0]?.[0]?.messages[0].content
+    expect(userContent).toContain("https://acme.test/login")
+    expect(userContent).toMatch(/only real links|never invent/i)
+  })
+
   it("throws on empty text response", async () => {
     const anthropic = {
       messages: {

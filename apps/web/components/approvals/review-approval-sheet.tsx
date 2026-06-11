@@ -113,7 +113,7 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
         <IconEye className="size-4" />
         Review
       </Button>
-      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-[680px]">
+      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-250">
         <SheetHeader className="border-b">
           <SheetTitle>{row.decisionLabel}</SheetTitle>
           <SheetDescription>
@@ -210,7 +210,7 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               disabled={isPending}
-              className="min-h-[30vh] flex-1 text-sm"
+              className="max-h-[45vh] min-h-[30vh] flex-1 overflow-y-auto text-sm"
             />
             <p className="text-muted-foreground text-xs">
               Edit the reply before approving if needed — your edits are what get

@@ -26,7 +26,7 @@ export function EditProductButton({ product }: { product: ProductRow }) {
       >
         <IconPencil />
       </Button>
-      <SheetContent className="gap-4 overflow-y-auto sm:max-w-120">
+      <SheetContent className="gap-4 overflow-y-auto sm:max-w-150">
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2">
             <IconPencil size={18} strokeWidth={1.2} />

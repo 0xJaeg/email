@@ -7,6 +7,7 @@ import type { ProductRow } from "@/lib/products"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
+import { Textarea } from "@workspace/ui/components/textarea"
 import {
   Select,
   SelectContent,
@@ -107,6 +108,68 @@ export function ProductForm({
         <p className="text-muted-foreground text-xs">
           Keep on “mock” until real API credentials are configured.
         </p>
+      </div>
+      <div className="space-y-1 border-t pt-4">
+        <p className="text-sm font-medium">
+          Support facts (used in customer replies)
+        </p>
+        <p className="text-muted-foreground text-xs">
+          The agent uses ONLY these links in replies and never invents URLs.
+          Leave a field blank if you don’t have it.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="support_platform">Access / membership platform</Label>
+        <Input
+          id="support_platform"
+          name="support_platform"
+          defaultValue={product?.support_config?.platform ?? ""}
+          placeholder="Digistore24"
+          disabled={isPending}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="login_url">Login / sign-in URL</Label>
+        <Input
+          id="login_url"
+          name="login_url"
+          type="url"
+          defaultValue={product?.support_config?.login_url ?? ""}
+          placeholder="https://..."
+          disabled={isPending}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="reset_url">Password reset URL</Label>
+        <Input
+          id="reset_url"
+          name="reset_url"
+          type="url"
+          defaultValue={product?.support_config?.reset_url ?? ""}
+          placeholder="https://..."
+          disabled={isPending}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="dashboard_url">Account dashboard URL</Label>
+        <Input
+          id="dashboard_url"
+          name="dashboard_url"
+          type="url"
+          defaultValue={product?.support_config?.dashboard_url ?? ""}
+          placeholder="https://..."
+          disabled={isPending}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="support_notes">Access notes</Label>
+        <Textarea
+          id="support_notes"
+          name="support_notes"
+          defaultValue={product?.support_config?.notes ?? ""}
+          placeholder="e.g. access is emailed after purchase; use the email you bought with"
+          disabled={isPending}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="is_active">Status</Label>

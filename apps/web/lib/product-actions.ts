@@ -27,6 +27,25 @@ async function requireAdmin(): Promise<
   return { ok: true, admin }
 }
 
+// Real per-product support facts the reply model is allowed to cite. Empty
+// fields are omitted so the agent never sees (and never invents) a blank URL.
+const SUPPORT_FIELDS: [string, string][] = [
+  ["platform", "support_platform"],
+  ["login_url", "login_url"],
+  ["reset_url", "reset_url"],
+  ["dashboard_url", "dashboard_url"],
+  ["notes", "support_notes"],
+]
+
+function buildSupportConfig(formData: FormData): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, field] of SUPPORT_FIELDS) {
+    const v = String(formData.get(field) ?? "").trim()
+    if (v) out[key] = v
+  }
+  return out
+}
+
 function parse(formData: FormData) {
   return {
     name: String(formData.get("name") ?? "").trim(),
@@ -36,6 +55,7 @@ function parse(formData: FormData) {
     platform: String(formData.get("platform") ?? ""),
     adapter_key: String(formData.get("adapter_key") ?? ""),
     is_active: String(formData.get("is_active") ?? "active") === "active",
+    support_config: buildSupportConfig(formData),
   }
 }
 
@@ -46,6 +66,11 @@ function validate(p: ReturnType<typeof parse>): string | null {
   if (!PLATFORMS.includes(p.platform as Platform)) return "Invalid platform."
   if (!ADAPTER_KEYS.includes(p.adapter_key as AdapterKey))
     return "Invalid adapter."
+  for (const k of ["login_url", "reset_url", "dashboard_url"] as const) {
+    const v = p.support_config[k]
+    if (v && !/^https?:\/\/\S+$/i.test(v))
+      return `${k.replace("_", " ")} must be a full URL (http/https).`
+  }
   return null
 }
 

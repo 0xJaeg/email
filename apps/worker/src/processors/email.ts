@@ -8,6 +8,8 @@ import { decideRefund, type RefundDecision } from "../lib/refund-decision.js"
 import { generateReply } from "../lib/generate-reply.js"
 import { getAdapter, type ProposedAction } from "@workspace/actions"
 import { gatherCustomerContext } from "../lib/customer-context.js"
+import { renderProductFacts } from "../lib/product-facts.js"
+import { stripQuotedReply } from "../lib/strip-quotes.js"
 
 const ClassificationResult = z.object({
   classification: z.enum(["refund_request", "faq", "other"]),
@@ -39,15 +41,22 @@ export async function processEmail(job: Job) {
   const instructions = await getInstructions(supabase)
 
   // 1. Fetch the email
-  const { data: email, error: emailErr } = await supabase
+  const { data: emailRow, error: emailErr } = await supabase
     .from("emails")
     .select(
       "id, thread_id, from_email, to_email, subject, body_text, agent_mail_message_id"
     )
     .eq("id", emailId)
     .single()
-  if (emailErr || !email) {
+  if (emailErr || !emailRow) {
     throw new Error(`email_not_found: ${emailId} (${emailErr?.message ?? ""})`)
+  }
+  // Strip quoted reply history / forwarded chains so classification, the refund
+  // regex, and drafting all act on the customer's NEW message — not the quoted
+  // thread underneath. Raw body stays in the DB (emails row) for the thread/audit.
+  const email = {
+    ...emailRow,
+    body_text: stripQuotedReply(emailRow.body_text),
   }
 
   // 2. Classify via Haiku
@@ -78,6 +87,9 @@ export async function processEmail(job: Job) {
   // access context before drafting (Ben: "first thing we do is check that they
   // bought ... then check they have access").
   const product = await resolveProduct(supabase, email.thread_id)
+  const productFacts = product
+    ? (renderProductFacts(product.name, product.supportConfig) ?? undefined)
+    : undefined
   let enrichment: Awaited<ReturnType<typeof gatherCustomerContext>> | null = null
   if (cls.inquiry_type === "existing_member" && product?.adapterKey) {
     try {
@@ -214,6 +226,7 @@ export async function processEmail(job: Job) {
         template,
         email,
         customerContext: enrichment?.customerContext,
+        productFacts,
         replyInstructions: instructions.reply,
         anthropic,
       })
@@ -260,6 +273,7 @@ export async function processEmail(job: Job) {
         template,
         email,
         customerContext: enrichment?.customerContext,
+        productFacts,
         replyInstructions: instructions.reply,
         anthropic,
       })
@@ -360,7 +374,12 @@ async function decide(
 async function resolveProduct(
   supabase: ReturnType<typeof getSupabase>,
   threadId: string | null
-): Promise<{ productId: string; adapterKey: string | null } | null> {
+): Promise<{
+  productId: string
+  adapterKey: string | null
+  name: string
+  supportConfig: unknown
+} | null> {
   if (!threadId) return null
   const { data: thread } = await supabase
     .from("threads")
@@ -370,11 +389,13 @@ async function resolveProduct(
   if (!thread?.product_id) return null
   const { data: product } = await supabase
     .from("products")
-    .select("adapter_key")
+    .select("name, adapter_key, support_config")
     .eq("id", thread.product_id)
     .maybeSingle()
   return {
     productId: thread.product_id,
     adapterKey: product?.adapter_key ?? null,
+    name: product?.name ?? "the product",
+    supportConfig: product?.support_config ?? null,
   }
 }

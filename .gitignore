@@ -42,3 +42,6 @@ verify-*.png
 
 # Supabase CLI scratch at repo root (real config is in packages/db/supabase/)
 /supabase/
+
+# Real ticketdesk pulls contain customer PII — never commit
+scripts/fixtures/ticketdesk-*.json
