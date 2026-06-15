@@ -17,8 +17,14 @@ const ClassificationResult = z.object({
 // Step: classify the inbound email (refund/FAQ/other + existing/prospective).
 export const ClassifyStep: Step = {
   key: "classify",
-  async run(ctx) {
+  async run(ctx, config) {
     const { email, anthropic, instructions } = ctx
+    // Per-flow override: use this step's ai_prompt when set, else the global
+    // classifier instructions (editable at /prompts). Blank = fall back.
+    const classifierPrompt =
+      config.ai_prompt && config.ai_prompt.trim()
+        ? config.ai_prompt
+        : instructions.classifier
     const userText =
       `From: ${email.from_email}\n` +
       `Subject: ${email.subject}\n\n` +
@@ -30,7 +36,7 @@ export const ClassifyStep: Step = {
       system: [
         {
           type: "text",
-          text: instructions.classifier,
+          text: classifierPrompt,
           cache_control: { type: "ephemeral", ttl: "1h" },
         },
       ],
