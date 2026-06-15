@@ -9,6 +9,8 @@ const blue =
   "border-transparent bg-blue-500/15 text-blue-700 dark:text-blue-400"
 const emerald =
   "border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+const zinc =
+  "border-transparent bg-zinc-500/15 text-zinc-600 dark:text-zinc-400"
 
 export function ClassificationBadge({ value }: { value: string | null }) {
   if (!value) {
@@ -20,6 +22,7 @@ export function ClassificationBadge({ value }: { value: string | null }) {
   }
   if (value === "refund_request") return <Badge className={amber}>Refund</Badge>
   if (value === "faq") return <Badge className={blue}>FAQ</Badge>
+  if (value === "spam") return <Badge className={zinc}>Spam</Badge>
   return <Badge variant="secondary">Other</Badge>
 }
 
@@ -30,6 +33,7 @@ const DECISION_LABEL: Record<string, string> = {
   issue_refund_chargeback: "Refund · chargeback",
   send_faq_reply: "FAQ reply",
   escalate: "Escalate",
+  quarantine_spam: "Quarantined",
 }
 
 export function DecisionBadge({ value }: { value: string | null }) {
@@ -39,6 +43,7 @@ export function DecisionBadge({ value }: { value: string | null }) {
     return <Badge variant="destructive">{label}</Badge>
   if (value.startsWith("send_offer")) return <Badge className={amber}>{label}</Badge>
   if (value === "send_faq_reply") return <Badge className={blue}>{label}</Badge>
+  if (value === "quarantine_spam") return <Badge className={zinc}>{label}</Badge>
   return <Badge variant="outline">{label}</Badge>
 }
 
