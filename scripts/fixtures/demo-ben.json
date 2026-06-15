@@ -1,0 +1,122 @@
+[
+  {
+    "from": "demo.maria@example.com",
+    "subject": "Can't log into my dashboard",
+    "text": "Hi, I purchased Mobile Profits but I can't figure out how to log into my dashboard. How do I get access? Thanks, Maria",
+    "thread": "demo-maria"
+  },
+  {
+    "from": "demo.james@example.com",
+    "subject": "Requesting a refund",
+    "text": "I bought Mobile Profits last week and honestly it's not really for me. I'd like to request a refund please. James",
+    "thread": "demo-james"
+  },
+  {
+    "from": "demo.james@example.com",
+    "subject": "Re: Requesting a refund",
+    "text": "Thanks for the offer but I still want the refund - it's just not what I expected. Please go ahead and process it.",
+    "thread": "demo-james"
+  },
+  {
+    "from": "demo.james@example.com",
+    "subject": "Re: Requesting a refund",
+    "text": "This is the third time I'm asking. If I don't get my refund today I'm going to call my bank and dispute the charge as a chargeback. Please just refund me.",
+    "thread": "demo-james"
+  },
+  {
+    "from": "demo.alex@example.com",
+    "subject": "Question before I buy",
+    "text": "Hi, I'm thinking about buying Mobile Profits but haven't purchased yet. Can you tell me what's included and whether it works for total beginners?",
+    "thread": "demo-alex"
+  },
+  {
+    "from": "demo.dana@example.com",
+    "subject": "Re: Your account update",
+    "text": "Ok thanks.",
+    "thread": "demo-dana"
+  },
+  {
+    "from": "demo.priya@example.com",
+    "subject": "Where are my bonuses?",
+    "text": "Hi, I bought the program and I'm logged in but I can't find the bonus materials I was promised. Where do I download them?",
+    "thread": "demo-priya"
+  },
+  {
+    "from": "demo.tom@example.com",
+    "subject": "Training videos not loading",
+    "text": "The training videos in module 2 won't play for me. I've tried Chrome and Safari. Can you help?",
+    "thread": "demo-tom"
+  },
+  {
+    "from": "demo.sara@example.com",
+    "subject": "Refund",
+    "text": "I'd like a refund please, this just isn't for me. Thanks, Sara",
+    "thread": "demo-sara"
+  },
+  {
+    "from": "demo.mike@example.com",
+    "subject": "Cancel and refund",
+    "text": "Please cancel my account and refund my purchase. I haven't had time to use it.",
+    "thread": "demo-mike"
+  },
+  {
+    "from": "demo.linda@example.com",
+    "subject": "Is this beginner friendly?",
+    "text": "I haven't bought yet - is Mobile Profits suitable for someone with zero experience? Want to be sure before I purchase.",
+    "thread": "demo-linda"
+  },
+  {
+    "from": "demo.raj@example.com",
+    "subject": "Pricing question",
+    "text": "What exactly do I get for the price? Is it a one-time payment or a subscription? Considering buying.",
+    "thread": "demo-raj"
+  },
+  {
+    "from": "demo.beth@example.com",
+    "subject": "Charged twice",
+    "text": "I think I was charged twice this month for my membership. Can you look into it and sort it out?",
+    "thread": "demo-beth"
+  },
+  {
+    "from": "demo.carlos@example.com",
+    "subject": "How do I sign in?",
+    "text": "I bought this a few days ago and I'm not sure how to actually sign in to access everything. Help please.",
+    "thread": "demo-carlos"
+  },
+  {
+    "from": "demo.nina@example.com",
+    "subject": "Re: Welcome to Mobile Profits",
+    "text": "Got it working now, thanks so much!",
+    "thread": "demo-nina"
+  },
+  {
+    "from": "demo.omar@example.com",
+    "subject": "Next live call?",
+    "text": "When is the next live coaching call scheduled? I don't want to miss it.",
+    "thread": "demo-omar"
+  },
+  {
+    "from": "demo.kate@example.com",
+    "subject": "Want my money back",
+    "text": "I want a full refund. This wasn't what I was expecting at all.",
+    "thread": "demo-kate"
+  },
+  {
+    "from": "demo.greg@example.com",
+    "subject": "Does it work on mobile?",
+    "text": "Can I access the dashboard and training from my phone, or is it desktop only?",
+    "thread": "demo-greg"
+  },
+  {
+    "from": "demo.amy@example.com",
+    "subject": "Change my email",
+    "text": "I need to update the email address on my account to a new one. How do I do that?",
+    "thread": "demo-amy"
+  },
+  {
+    "from": "demo.paul@example.com",
+    "subject": "Question about module 3",
+    "text": "Loving the program so far. Quick question - in module 3 you mention a tool, is that included or do I buy it separately?",
+    "thread": "demo-paul"
+  }
+]
