@@ -36,7 +36,8 @@ export default async function FlowsPage({
         <InboxPicker inboxes={inboxes} />
         <p className="text-muted-foreground text-sm">
           The exact sequence the agent runs on a ticket for this inbox, top to
-          bottom. (Editing per-step instructions is coming next.)
+          bottom. Use the pencil on a step to override its AI prompt; an empty
+          override falls back to the shared prompt at /prompts.
         </p>
       </div>
       <FlowView steps={steps} />

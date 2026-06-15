@@ -1,9 +1,11 @@
 import { Badge } from "@workspace/ui/components/badge"
 import { IconArrowDown } from "@tabler/icons-react"
-import type { FlowStepRow } from "@/lib/flow-steps"
+import { PROMPT_DRIVEN_STEPS, type FlowStepRow } from "@/lib/flow-steps"
+import { EditStepButton } from "./edit-step-button"
 
 // Renders the decision flow as a numbered top-to-bottom sequence of steps —
-// the exact order the worker runs them. Read-only (editing is Increment 2).
+// the exact order the worker runs them. Prompt-driven steps (classify, draft)
+// are editable; the rest run fixed logic.
 export function FlowView({ steps }: { steps: FlowStepRow[] }) {
   if (!steps.length) {
     return (
@@ -29,6 +31,9 @@ export function FlowView({ steps }: { steps: FlowStepRow[] }) {
                 <Badge variant="outline" className="font-mono text-[10px]">
                   {step.step_key}
                 </Badge>
+                {PROMPT_DRIVEN_STEPS.includes(step.step_key) && (
+                  <EditStepButton step={step} />
+                )}
               </div>
             </div>
             {step.description ? (
