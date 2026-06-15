@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { getProducts } from "@/lib/products"
 import {
   Table,
@@ -41,7 +42,7 @@ export async function ProductsTable({
               <TableRow>
                 <TableCell
                   colSpan={6}
-                  className="text-muted-foreground text-center"
+                  className="text-center text-muted-foreground"
                 >
                   No products found.
                 </TableCell>
@@ -49,8 +50,15 @@ export async function ProductsTable({
             ) : (
               data.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/products/${p.id}`}
+                      className="hover:underline"
+                    >
+                      {p.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
                     {p.slug}
                   </TableCell>
                   <TableCell>{p.platform}</TableCell>

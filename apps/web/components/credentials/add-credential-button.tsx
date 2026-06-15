@@ -16,15 +16,17 @@ import type { ProductOption } from "@/lib/inboxes"
 
 export function AddCredentialButton({
   products,
+  lockedProductId,
 }: {
-  products: ProductOption[]
+  products?: ProductOption[]
+  lockedProductId?: string
 }) {
   const [open, setOpen] = useState(false)
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button disabled={products.length === 0}>
+        <Button disabled={!lockedProductId && (products?.length ?? 0) === 0}>
           <IconPlus />
           <span className="hidden md:block">New credential</span>
         </Button>
@@ -37,7 +39,11 @@ export function AddCredentialButton({
           </SheetTitle>
           <SheetDescription />
         </SheetHeader>
-        <CredentialForm products={products} closeSheet={() => setOpen(false)} />
+        <CredentialForm
+          products={products}
+          lockedProductId={lockedProductId}
+          closeSheet={() => setOpen(false)}
+        />
       </SheetContent>
     </Sheet>
   )

@@ -84,7 +84,10 @@ export async function createProduct(formData: FormData): Promise<Result> {
   const { error } = await auth.admin.from("products").insert(p)
   if (error) {
     if (error.code === "23505")
-      return { error: true, message: "A product with that slug already exists." }
+      return {
+        error: true,
+        message: "A product with that slug already exists.",
+      }
     return { error: true, message: error.message }
   }
   revalidatePath("/products")
@@ -103,10 +106,14 @@ export async function updateProduct(formData: FormData): Promise<Result> {
   const { error } = await auth.admin.from("products").update(p).eq("id", id)
   if (error) {
     if (error.code === "23505")
-      return { error: true, message: "A product with that slug already exists." }
+      return {
+        error: true,
+        message: "A product with that slug already exists.",
+      }
     return { error: true, message: error.message }
   }
   revalidatePath("/products")
+  revalidatePath("/products/[id]", "page")
   return { error: false, message: "Product updated." }
 }
 
@@ -124,7 +131,8 @@ export async function deleteProduct(id: string): Promise<Result> {
   if (target?.slug === "default")
     return {
       error: true,
-      message: "The default product can't be deleted (it's the webhook fallback).",
+      message:
+        "The default product can't be deleted (it's the webhook fallback).",
     }
 
   const { error } = await admin.from("products").delete().eq("id", id)

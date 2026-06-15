@@ -59,6 +59,7 @@ export async function createCredential(formData: FormData): Promise<Result> {
   })
   if (error) return { error: true, message: error.message }
   revalidatePath("/credentials")
+  revalidatePath("/products/[id]", "page")
   return { error: false, message: "Credential saved." }
 }
 
@@ -71,5 +72,6 @@ export async function deleteCredential(id: string): Promise<Result> {
     .eq("id", id)
   if (error) return { error: true, message: error.message }
   revalidatePath("/credentials")
+  revalidatePath("/products/[id]", "page")
   return { error: false, message: "Credential deleted." }
 }

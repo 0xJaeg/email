@@ -21,6 +21,24 @@ export type ProductRow = {
   created_at: string
 }
 
+const PRODUCT_COLS =
+  "id, name, slug, platform, adapter_key, support_config, is_active, created_at"
+
+export async function getProduct(id: string): Promise<ProductRow | null> {
+  const supabase = getServerSupabase()
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_COLS)
+    .eq("id", id)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return {
+    ...data,
+    support_config: (data.support_config ?? {}) as SupportConfig,
+  }
+}
+
 export async function getProducts(
   query: string,
   page: number,
