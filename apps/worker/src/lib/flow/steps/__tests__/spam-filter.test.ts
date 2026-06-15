@@ -2,16 +2,9 @@ import { describe, it, expect, vi } from "vitest"
 import { SpamFilterStep } from "../spam-filter.js"
 import type { StepContext, FlowStepConfig } from "../../types.js"
 
-function makeCtx(isSpam: boolean) {
-  const parse = vi.fn().mockResolvedValue({
-    parsed_output: { is_spam: isSpam, reasoning: "r" },
-    usage: {
-      input_tokens: 1,
-      output_tokens: 1,
-      cache_read_input_tokens: 0,
-      cache_creation_input_tokens: 0,
-    },
-  })
+function makeCtx(parseImpl: () => Promise<unknown>) {
+  const parse = vi.fn(parseImpl)
+  const decisionInserts: Record<string, unknown>[] = []
   const audits: Record<string, unknown>[] = []
   const b: Record<string, unknown> = {}
   b.select = vi.fn(() => b)
@@ -21,6 +14,7 @@ function makeCtx(isSpam: boolean) {
   b.then = (r: (v: unknown) => void) => r({ data: null, error: null })
   const from = (t: string) => {
     b.insert = vi.fn((p: Record<string, unknown>) => {
+      if (t === "decisions") decisionInserts.push(p)
       if (t === "audit_log") audits.push(p)
       return b
     })
@@ -44,8 +38,18 @@ function makeCtx(isSpam: boolean) {
     } as unknown as StepContext["anthropic"],
     instructions: { classifier: "C", reply: "R" },
   }
-  return { ctx, audits }
+  return { ctx, decisionInserts, audits }
 }
+
+const ok = (is_spam: boolean) => async () => ({
+  parsed_output: { is_spam, reasoning: "r" },
+  usage: {
+    input_tokens: 1,
+    output_tokens: 1,
+    cache_read_input_tokens: 0,
+    cache_creation_input_tokens: 0,
+  },
+})
 
 const cfg: FlowStepConfig = {
   step_key: "spam_filter",
@@ -55,16 +59,32 @@ const cfg: FlowStepConfig = {
 }
 
 describe("SpamFilterStep", () => {
-  it("halts + quarantines on spam", async () => {
-    const { ctx, audits } = makeCtx(true)
+  it("halts + writes a quarantined decision on spam", async () => {
+    const { ctx, decisionInserts, audits } = makeCtx(ok(true))
     const patch = await SpamFilterStep.run(ctx, cfg)
     expect(patch.halt).toBe(true)
+    expect(decisionInserts[0]).toMatchObject({
+      email_id: "e1",
+      classification: "spam",
+      decision: "quarantine_spam",
+      status: "quarantined",
+    })
     expect(audits.some((a) => a.action === "spam_quarantined")).toBe(true)
   })
 
-  it("passes through (no halt) when not spam", async () => {
-    const { ctx } = makeCtx(false)
+  it("passes through (no halt, no decision) when not spam", async () => {
+    const { ctx, decisionInserts } = makeCtx(ok(false))
     const patch = await SpamFilterStep.run(ctx, cfg)
     expect(patch.halt).toBeUndefined()
+    expect(decisionInserts).toHaveLength(0)
+  })
+
+  it("fails open (no halt) + audits failure when the AI call throws", async () => {
+    const { ctx, audits } = makeCtx(async () => {
+      throw new Error("api down")
+    })
+    const patch = await SpamFilterStep.run(ctx, cfg)
+    expect(patch.halt).toBeUndefined()
+    expect(audits.some((a) => a.action === "spam_filter_failed")).toBe(true)
   })
 })

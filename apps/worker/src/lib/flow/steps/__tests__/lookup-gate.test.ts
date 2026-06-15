@@ -2,15 +2,18 @@ import { describe, it, expect, vi } from "vitest"
 import { LookupGateStep } from "../lookup-gate.js"
 import type { StepContext, FlowStepConfig } from "../../types.js"
 
-function makeCtx(needs: boolean): StepContext {
-  const parse = vi.fn().mockResolvedValue({
-    parsed_output: { needs_lookup: needs, reasoning: "r" },
-    usage: {
-      input_tokens: 1,
-      output_tokens: 1,
-      cache_read_input_tokens: 0,
-      cache_creation_input_tokens: 0,
-    },
+function makeCtx(opts: { needs?: boolean; throws?: boolean }): StepContext {
+  const parse = vi.fn(async () => {
+    if (opts.throws) throw new Error("api down")
+    return {
+      parsed_output: { needs_lookup: opts.needs, reasoning: "r" },
+      usage: {
+        input_tokens: 1,
+        output_tokens: 1,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      },
+    }
   })
   return {
     email: {
@@ -52,12 +55,19 @@ const cfg: FlowStepConfig = {
 
 describe("LookupGateStep", () => {
   it("sets needsLookup=true when the gate says yes", async () => {
-    expect((await LookupGateStep.run(makeCtx(true), cfg)).needsLookup).toBe(true)
+    expect(
+      (await LookupGateStep.run(makeCtx({ needs: true }), cfg)).needsLookup
+    ).toBe(true)
   })
 
   it("sets needsLookup=false when the gate says no", async () => {
-    expect((await LookupGateStep.run(makeCtx(false), cfg)).needsLookup).toBe(
-      false
-    )
+    expect(
+      (await LookupGateStep.run(makeCtx({ needs: false }), cfg)).needsLookup
+    ).toBe(false)
+  })
+
+  it("fails open (needsLookup undefined) when the AI call throws", async () => {
+    const patch = await LookupGateStep.run(makeCtx({ throws: true }), cfg)
+    expect(patch.needsLookup).toBeUndefined()
   })
 })

@@ -21,29 +21,35 @@ export const LookupGateStep: Step = {
     const { email, anthropic, classification } = ctx
     const prompt = config.ai_prompt?.trim() ? config.ai_prompt : DEFAULT_PROMPT
 
-    const resp = await anthropic.messages.parse({
-      model: "claude-haiku-4-5",
-      max_tokens: 256,
-      system: [
-        {
-          type: "text",
-          text: prompt,
-          cache_control: { type: "ephemeral", ttl: "1h" },
-        },
-      ],
-      messages: [
-        {
-          role: "user",
-          content:
-            `From: ${email.from_email}\n` +
-            `Subject: ${email.subject}\n` +
-            `Classification: ${classification?.classification ?? "unknown"}\n\n` +
-            (email.body_text ?? "(empty body)"),
-        },
-      ],
-      output_config: { format: zodOutputFormat(GateResult) },
-    })
+    try {
+      const resp = await anthropic.messages.parse({
+        model: "claude-haiku-4-5",
+        max_tokens: 256,
+        system: [
+          {
+            type: "text",
+            text: prompt,
+            cache_control: { type: "ephemeral", ttl: "1h" },
+          },
+        ],
+        messages: [
+          {
+            role: "user",
+            content:
+              `From: ${email.from_email}\n` +
+              `Subject: ${email.subject}\n` +
+              `Classification: ${classification?.classification ?? "unknown"}\n\n` +
+              (email.body_text ?? "(empty body)"),
+          },
+        ],
+        output_config: { format: zodOutputFormat(GateResult) },
+      })
 
-    return { needsLookup: resp.parsed_output?.needs_lookup ?? false }
+      return { needsLookup: resp.parsed_output?.needs_lookup ?? false }
+    } catch {
+      // Fail open: leave needsLookup undefined so EnrichStep falls back to its
+      // inquiry_type gate rather than aborting the flow on a gate error.
+      return {}
+    }
   },
 }
