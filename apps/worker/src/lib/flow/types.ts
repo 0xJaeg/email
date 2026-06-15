@@ -1,5 +1,7 @@
 import type { ServerClient } from "@workspace/db/client"
 import type Anthropic from "@anthropic-ai/sdk"
+import type { GatheredContext } from "../customer-context.js"
+import type { RefundDecision } from "../refund-decision.js"
 
 // One step's config as loaded from the flow_steps table (per inbox, ordered).
 export type FlowStepConfig = {
@@ -34,16 +36,21 @@ export type StepContext = {
     classification: string
     inquiry_type: string
     reasoning: string
-    usage: unknown
+    usage: {
+      input_tokens: number
+      output_tokens: number
+      cache_read_input_tokens: number | null
+      cache_creation_input_tokens: number | null
+    }
   }
-  enrichment?: { context: unknown; customerContext: string } | null
+  enrichment?: GatheredContext | null
   decision?: {
     decision: string
     template_used: string | null
     refund_request_count: number | null
     combinedReasoning: string
     llmModel: string
-    sonnetUsage?: unknown
+    sonnetUsage?: RefundDecision["sonnet_usage"]
   }
   decisionId?: string
   supabase: ServerClient

@@ -22,6 +22,14 @@ let mockAdapter: {
   issueRefund: () => Promise<unknown>
 }
 
+// The default flow loadFlow() returns in tests, so processEmail runs all 4 steps.
+const DEFAULT_FLOW = [
+  { step_key: "classify", position: 1, ai_prompt: null, condition: {} },
+  { step_key: "enrich", position: 2, ai_prompt: null, condition: {} },
+  { step_key: "decide", position: 3, ai_prompt: null, condition: {} },
+  { step_key: "draft", position: 4, ai_prompt: null, condition: {} },
+]
+
 // Minimal chainable Supabase stub that records decision updates + audit inserts.
 function makeSupabase() {
   const updates: Record<string, unknown>[] = []
@@ -40,6 +48,12 @@ function makeSupabase() {
       return b
     })
     b.eq = vi.fn(() => b)
+    b.is = vi.fn(() => b)
+    b.order = vi.fn(async () =>
+      table === "flow_steps"
+        ? { data: DEFAULT_FLOW, error: null }
+        : { data: [], error: null }
+    )
     b.single = vi.fn(async () => {
       if (table === "emails") return { data: email, error: null }
       if (table === "decisions") return { data: { id: "dec-1" }, error: null }
