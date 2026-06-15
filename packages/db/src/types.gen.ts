@@ -215,6 +215,56 @@ export type Database = {
           },
         ]
       }
+      flow_steps: {
+        Row: {
+          ai_prompt: string | null
+          condition: Json
+          created_at: string
+          description: string | null
+          id: string
+          inbox_id: string | null
+          is_active: boolean
+          position: number
+          step_key: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_prompt?: string | null
+          condition?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          inbox_id?: string | null
+          is_active?: boolean
+          position: number
+          step_key: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_prompt?: string | null
+          condition?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          inbox_id?: string | null
+          is_active?: boolean
+          position?: number
+          step_key?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_steps_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inboxes: {
         Row: {
           address: string | null
