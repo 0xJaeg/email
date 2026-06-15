@@ -217,6 +217,20 @@ insert into flow_steps (inbox_id, step_key, position, title, description) values
   (null, 'decide',      5, 'Decide the action', 'Run the refund offer-ladder / FAQ / escalation logic and choose the action + template.'),
   (null, 'draft',       6, 'Draft the reply', 'Write the customer-facing reply (when the decision is a reply/refund) and queue it for human approval.');
 
+create table prompt_templates (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  title text not null,
+  content text not null,
+  is_active boolean not null default true,
+  updated_by text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index prompt_templates_name_idx on prompt_templates (name);
+alter table prompt_templates enable row level security;
+create policy "authenticated read prompt_templates" on prompt_templates for select to authenticated using (true);
+
 -- ----------------------------------------------------------------------------
 -- Row Level Security
 --   The dashboard's SSR reads use the SECRET (service-role) key, which bypasses

@@ -99,4 +99,18 @@ describe("generateReply", () => {
     expect(result.text).not.toMatch(/[—–]/)
     expect(result.text).toBe("Hello - world - and 10-20 items")
   })
+
+  it("includes active templates in the prompt when provided", async () => {
+    const anthropic = mockAnthropic("ok")
+    await generateReply({
+      template: "FAQ_REPLY",
+      email: { from_email: "a@x.com", subject: "s", body_text: "b" },
+      replyInstructions: "guide",
+      templates: "### Login help\nGo to the login page.",
+      anthropic,
+    })
+    const create = anthropic.messages.create as ReturnType<typeof vi.fn>
+    const userContent = create.mock.calls[0]?.[0]?.messages[0].content
+    expect(userContent).toContain("Go to the login page.")
+  })
 })
