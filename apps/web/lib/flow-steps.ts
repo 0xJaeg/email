@@ -4,7 +4,12 @@ import { getServerSupabase } from "@/lib/supabase/admin"
 // Steps whose ai_prompt the worker actually consumes (classify + draft run an
 // editable LLM prompt; enrich = adapter lookup, decide = the refund rule-tree).
 // Only these get an edit affordance on /flows.
-export const PROMPT_DRIVEN_STEPS: readonly string[] = ["classify", "draft"]
+export const PROMPT_DRIVEN_STEPS: readonly string[] = [
+  "spam_filter",
+  "classify",
+  "lookup_gate",
+  "draft",
+]
 
 export type FlowStepRow = {
   id: string

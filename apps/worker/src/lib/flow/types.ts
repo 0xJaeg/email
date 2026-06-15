@@ -44,6 +44,9 @@ export type StepContext = {
     }
   }
   enrichment?: GatheredContext | null
+  // Set by the lookup_gate step; EnrichStep honors it (falls back to the
+  // inquiry_type gate when the gate step isn't in the flow).
+  needsLookup?: boolean
   decision?: {
     decision: string
     template_used: string | null

@@ -210,10 +210,12 @@ alter table flow_steps enable row level security;
 create policy "authenticated read flow_steps" on flow_steps for select to authenticated using (true);
 
 insert into flow_steps (inbox_id, step_key, position, title, description) values
-  (null, 'classify', 1, 'Classify the ticket', 'Label the email (refund / FAQ / other) and whether the sender is an existing member or a prospective buyer.'),
-  (null, 'enrich',   2, 'Check purchase & access', 'For existing members, look up their order and product access via the product adapter.'),
-  (null, 'decide',   3, 'Decide the action', 'Run the refund offer-ladder / FAQ / escalation logic and choose the action + template.'),
-  (null, 'draft',    4, 'Draft the reply', 'Write the customer-facing reply (when the decision is a reply/refund) and queue it for human approval.');
+  (null, 'spam_filter', 1, 'Spam filter', 'Cheap AI check — if spam/junk/auto-reply, quarantine and stop (no further processing or API calls).'),
+  (null, 'classify',    2, 'Classify the ticket', 'Label the email (refund / FAQ / other) and whether the sender is an existing member or a prospective buyer.'),
+  (null, 'lookup_gate', 3, 'Order-lookup gate', 'Cheap AI decides whether this ticket needs an order/account lookup, so we do not hit platform APIs on every ticket.'),
+  (null, 'enrich',      4, 'Check purchase & access', 'For existing members, look up their order and product access via the product adapter.'),
+  (null, 'decide',      5, 'Decide the action', 'Run the refund offer-ladder / FAQ / escalation logic and choose the action + template.'),
+  (null, 'draft',       6, 'Draft the reply', 'Write the customer-facing reply (when the decision is a reply/refund) and queue it for human approval.');
 
 -- ----------------------------------------------------------------------------
 -- Row Level Security
