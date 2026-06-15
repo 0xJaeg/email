@@ -17,7 +17,7 @@ const REFUND_TEMPLATES = {
 // sent or refunded here; that happens only on human approval in the dashboard.
 export const DraftStep: Step = {
   key: "draft",
-  async run(ctx) {
+  async run(ctx, config) {
     const {
       email,
       supabase,
@@ -27,6 +27,13 @@ export const DraftStep: Step = {
       decision: dec,
     } = ctx
     if (!cls || !dec) throw new Error("draft: classification/decision missing")
+
+    // Per-flow override: this step's ai_prompt overrides the global reply
+    // instructions (editable at /prompts). Blank = fall back.
+    const replyInstructions =
+      config.ai_prompt && config.ai_prompt.trim()
+        ? config.ai_prompt
+        : ctx.instructions.reply
 
     const isRefund =
       dec.decision === "issue_refund" ||
@@ -105,14 +112,16 @@ export const DraftStep: Step = {
         ctx,
         row.id,
         REPLY_TEMPLATES[dec.decision as keyof typeof REPLY_TEMPLATES],
-        "reply_pending_approval"
+        "reply_pending_approval",
+        replyInstructions
       )
     } else if (isRefund) {
       await draftAndQueue(
         ctx,
         row.id,
         REFUND_TEMPLATES[dec.decision as keyof typeof REFUND_TEMPLATES],
-        "refund_pending_approval"
+        "refund_pending_approval",
+        replyInstructions
       )
     }
 
@@ -127,17 +136,17 @@ async function draftAndQueue(
   ctx: StepContext,
   decisionId: string,
   template: Template,
-  auditAction: "reply_pending_approval" | "refund_pending_approval"
+  auditAction: "reply_pending_approval" | "refund_pending_approval",
+  replyInstructions: string
 ): Promise<void> {
-  const { email, supabase, anthropic, instructions, productFacts, enrichment } =
-    ctx
+  const { email, supabase, anthropic, productFacts, enrichment } = ctx
   try {
     const reply = await generateReply({
       template,
       email,
       customerContext: enrichment?.customerContext,
       productFacts,
-      replyInstructions: instructions.reply,
+      replyInstructions,
       anthropic,
     })
     await supabase
