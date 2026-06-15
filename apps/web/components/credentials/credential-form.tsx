@@ -18,9 +18,11 @@ import { IconLoader2 } from "@tabler/icons-react"
 
 export function CredentialForm({
   products,
+  lockedProductId,
   closeSheet,
 }: {
-  products: ProductOption[]
+  products?: ProductOption[]
+  lockedProductId?: string
   closeSheet: () => void
 }) {
   const [isPending, startTransition] = useTransition()
@@ -45,25 +47,29 @@ export function CredentialForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 px-4">
-      <div className="space-y-2">
-        <Label htmlFor="product_id">Product</Label>
-        <Select
-          name="product_id"
-          defaultValue={products[0]?.id}
-          disabled={isPending}
-        >
-          <SelectTrigger id="product_id" className="w-full">
-            <SelectValue placeholder="Select a product" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {lockedProductId ? (
+        <input type="hidden" name="product_id" value={lockedProductId} />
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="product_id">Product</Label>
+          <Select
+            name="product_id"
+            defaultValue={products?.[0]?.id}
+            disabled={isPending}
+          >
+            <SelectTrigger id="product_id" className="w-full">
+              <SelectValue placeholder="Select a product" />
+            </SelectTrigger>
+            <SelectContent>
+              {(products ?? []).map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="platform">Platform</Label>
         <Select name="platform" defaultValue="clickbank" disabled={isPending}>
@@ -96,14 +102,18 @@ export function CredentialForm({
           required
           disabled={isPending}
         />
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           Stored encrypted at rest. You&apos;ll only ever see the last 4
           characters after saving — to change it, delete and re-add.
         </p>
       </div>
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? <IconLoader2 className="animate-spin" /> : "Save credential"}
+        {isPending ? (
+          <IconLoader2 className="animate-spin" />
+        ) : (
+          "Save credential"
+        )}
       </Button>
     </form>
   )
