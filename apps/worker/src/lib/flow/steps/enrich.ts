@@ -8,10 +8,13 @@ export const EnrichStep: Step = {
   key: "enrich",
   async run(ctx) {
     const { classification, product, email, supabase } = ctx
-    if (
-      classification?.inquiry_type !== "existing_member" ||
-      !product?.adapterKey
-    ) {
+    // Prefer the lookup_gate's decision (ctx.needsLookup); fall back to the
+    // inquiry_type gate when the gate step isn't in the flow.
+    const wantLookup =
+      ctx.needsLookup !== undefined
+        ? ctx.needsLookup
+        : classification?.inquiry_type === "existing_member"
+    if (!wantLookup || !product?.adapterKey) {
       return { enrichment: null }
     }
     try {
