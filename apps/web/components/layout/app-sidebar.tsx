@@ -24,6 +24,7 @@ import {
   IconKey,
   IconBolt,
   IconSitemap,
+  IconTemplate,
 } from "@tabler/icons-react"
 import { NavMain } from "@/components/layout/nav-main"
 import { NavUser } from "@/components/layout/nav-user"
@@ -57,6 +58,7 @@ const configuration = {
     { title: "API keys", url: "/credentials", icon: <IconKey /> },
     { title: "Triggers", url: "/triggers", icon: <IconBolt /> },
     { title: "Prompts", url: "/prompts", icon: <IconFileText /> },
+    { title: "Templates", url: "/templates", icon: <IconTemplate /> },
     { title: "Decision flow", url: "/flows", icon: <IconSitemap /> },
   ],
 }

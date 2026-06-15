@@ -22,6 +22,7 @@ function makeCtx(): StepContext {
   b.update = vi.fn(() => b)
   b.select = vi.fn(() => b)
   b.eq = vi.fn(() => b)
+  b.order = vi.fn(async () => ({ data: [], error: null }))
   b.single = vi.fn(async () => ({ data: { id: "dec-1" }, error: null }))
   b.then = (r: (v: unknown) => void) => r({ data: null, error: null })
   return {

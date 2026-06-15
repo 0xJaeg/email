@@ -23,6 +23,8 @@ export type GenerateReplyArgs = {
   productFacts?: string
   /** Customer-facing reply guidance (assembled from prompt_configs). */
   replyInstructions: string
+  /** Active response templates rendered as a reference block, if any. */
+  templates?: string
   anthropic: Anthropic
 }
 
@@ -46,6 +48,9 @@ export async function generateReply(
   const factsBlock = args.productFacts
     ? `\n\nProduct support facts — the ONLY real links you may use; never invent, guess, or use example URLs:\n${args.productFacts}`
     : ""
+  const templatesBlock = args.templates
+    ? `\n\nReusable response templates you can draw on (adapt the most relevant one; skip them all if none fit):\n${args.templates}`
+    : ""
   const userMessage =
     `Write the customer-facing email reply for the message below, using the ` +
     `${args.template} approach from your guidance. Plain text only — just the ` +
@@ -54,7 +59,8 @@ export async function generateReply(
     `Subject: ${args.email.subject}\n\n` +
     (args.email.body_text ?? "(empty body)") +
     contextBlock +
-    factsBlock
+    factsBlock +
+    templatesBlock
 
   const response = await args.anthropic.messages.create({
     model: "claude-haiku-4-5",

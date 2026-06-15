@@ -1,4 +1,5 @@
 import { generateReply, type Template } from "../../generate-reply.js"
+import { loadTemplateBlock } from "../../templates.js"
 import type { ProposedAction } from "@workspace/actions"
 import type { Step, StepContext } from "../types.js"
 
@@ -141,12 +142,14 @@ async function draftAndQueue(
 ): Promise<void> {
   const { email, supabase, anthropic, productFacts, enrichment } = ctx
   try {
+    const templates = await loadTemplateBlock(supabase)
     const reply = await generateReply({
       template,
       email,
       customerContext: enrichment?.customerContext,
       productFacts,
       replyInstructions,
+      templates: templates || undefined,
       anthropic,
     })
     await supabase
