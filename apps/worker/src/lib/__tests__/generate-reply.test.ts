@@ -28,7 +28,7 @@ describe("generateReply", () => {
       replyInstructions: "BRAND VOICE GUIDE",
       anthropic,
     })
-    expect(result.text).toBe("Hi Alice — refund issued. — Sam")
+    expect(result.text).toBe("Hi Alice - refund issued. - Sam")
     expect(result.usage.cache_read_input_tokens).toBe(4844)
     const create = anthropic.messages.create as ReturnType<typeof vi.fn>
     const callArgs = create.mock.calls[0]?.[0]
@@ -86,5 +86,17 @@ describe("generateReply", () => {
         anthropic,
       })
     ).rejects.toThrow(/empty/)
+  })
+
+  it("strips em and en dashes from the reply text", async () => {
+    const anthropic = mockAnthropic("Hello — world – and 10–20 items")
+    const result = await generateReply({
+      template: "FAQ_REPLY",
+      email: { from_email: "a@x.com", subject: "s", body_text: "b" },
+      replyInstructions: "guide",
+      anthropic,
+    })
+    expect(result.text).not.toMatch(/[—–]/)
+    expect(result.text).toBe("Hello - world - and 10-20 items")
   })
 })

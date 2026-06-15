@@ -31,6 +31,12 @@ export type GenerateReplyResult = {
   usage: Usage
 }
 
+// Customer-facing replies must not contain em/en dashes — they read as
+// AI-written. Replace with a hyphen (prose + numeric ranges both read fine).
+export function stripEmDashes(text: string): string {
+  return text.replace(/[—–]/g, "-")
+}
+
 export async function generateReply(
   args: GenerateReplyArgs
 ): Promise<GenerateReplyResult> {
@@ -69,7 +75,7 @@ export async function generateReply(
   }
 
   return {
-    text: textBlock.text,
+    text: stripEmDashes(textBlock.text),
     usage: {
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,
