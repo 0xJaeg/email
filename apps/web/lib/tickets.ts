@@ -136,7 +136,7 @@ export type DecisionOrder = {
 
 export type DecisionAccess = {
   hasAccess: boolean
-  details: string
+  details?: string
 }
 
 export type DecisionContext = {
