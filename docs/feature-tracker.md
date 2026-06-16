@@ -19,18 +19,16 @@ Living status of every concern/feature raised in the 2026-06-11 demo call (Ben, 
 - [x] Remove em-dashes from generated replies
 - [x] API keys merged into the product page (not a separate setup) — `/products/[id]`
 - [x] Encrypted per-product credential storage — `integration_credentials` (AES-GCM)
+- [x] **Auto-create Agent Mail inbox from the dashboard** — `/inboxes` add-form takes username + display name and creates the inbox via the AgentMail SDK (`createAgentMailInbox`), storing the returned `inboxId`; inbox id is immutable on edit (shipped 2026-06-16, branch `feat/auto-create-inbox`)
 
 ## ⚠️ Partial / deviates — NOT blocked (quick wins)
 - [ ] Least-privilege keys: lookup vs refund vs access per platform — no `key_type` column yet
 - [ ] Remove the "password reset" field from product config — `reset_url` still present in `product-form.tsx`
 - [ ] Delete the now-redundant standalone `/credentials` page (merged into product)
 - [ ] Retention offer should be the "10-day coaching" Ben named — current offers differ (50% discount / 30-day extension / 1:1 walkthrough); prompt content edit
-- [ ] Make the inbox display name mandatory — field exists but not required (display address already shown in the table ✅)
+- [ ] Persist + show a friendly inbox **display label** in our table, and make it **editable** — auto-create now requires a display name, but it's sent to AgentMail only; the `inboxes` table stores/shows the `address` (= email). Adding a stored label column (shown in the table, editable) closes Ben's "mandatory label + show it in the table" + edit-display-name asks.
 - [ ] Full multi-ticket context (whole thread + all of the sender's other tickets) — today the agent reasons over the single inbound email + order/access enrichment; refund ladder is sender-aware via the decision count
 - [ ] Per-inbox flow differentiation (marketing vs support handle "no purchase found" differently) — `flow_steps` supports per-inbox flows; only the global default is configured; only 1 inbox
-
-## 🔧 In progress
-- [ ] **Auto-create Agent Mail inbox from the dashboard** (started 2026-06-16) — today you paste the `agent_mail_inbox_id`; automate it via the Agent Mail SDK (verify the SDK exposes inbox creation first)
 
 ## 🔒 Phase B — blocked (real money + data)
 **Needs from Ben:** ClickBank / JVZoo / Digi Store API keys — ideally least-privilege **lookup** keys + separate **refund** keys per platform.
