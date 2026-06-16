@@ -4,7 +4,8 @@ import { getThreadDetail, type ThreadDecision } from "@/lib/tickets"
 import { ThreadStatusBadge } from "@/components/shared/status-badges"
 import { EmailCard } from "@/components/tickets/email-card"
 import { ThreadSummary } from "@/components/tickets/thread-summary"
-import { ThreadAudit } from "@/components/tickets/thread-audit"
+import { ThreadFlow } from "@/components/tickets/thread-flow"
+import { buildFlowTrace } from "@/lib/flow-trace"
 import { VerdictBanner } from "@/components/tickets/verdict-banner"
 
 export const dynamic = "force-dynamic"
@@ -71,7 +72,7 @@ export default async function TicketDetailPage({
             </ol>
           </section>
 
-          <ThreadAudit entries={auditEntries} />
+          <ThreadFlow steps={buildFlowTrace(latestDecision, auditEntries)} />
         </div>
 
         <ThreadSummary
