@@ -148,6 +148,32 @@ describe("buildFlowTrace", () => {
     })
   })
 
+  it("ends at the actions step for an escalated ticket (no pending/sent)", () => {
+    const steps = buildFlowTrace(
+      decision({
+        classification: "other",
+        decision: "escalate",
+        status: "needs_human",
+        context: null,
+        proposedActions: [],
+      }),
+      [audit("webhook_received"), audit("classify_email")]
+    )
+    expect(steps.map((s) => s.key)).toEqual([
+      "received",
+      "spam",
+      "classify",
+      "gate",
+      "decide",
+      "actions",
+    ])
+    expect(steps.find((s) => s.key === "decide")?.detail).toEqual({
+      kind: "decision",
+      value: "escalate",
+      reasoning: "Login support question, no refund intent.",
+    })
+  })
+
   it("marks the sent step failed when the send audit failed", () => {
     const steps = buildFlowTrace(decision({ status: "failed" }), [
       audit("webhook_received"),

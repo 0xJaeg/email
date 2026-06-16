@@ -56,7 +56,7 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
         <DecisionBadge value={detail.value} />
         {detail.reasoning ? (
           <p className="text-muted-foreground border-border max-w-[60ch] border-l-2 pl-3 text-sm italic">
-            "{detail.reasoning}"
+            “{detail.reasoning}”
           </p>
         ) : null}
       </div>
