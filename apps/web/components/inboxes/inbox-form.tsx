@@ -53,13 +53,6 @@ export function InboxForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4 px-4">
       {!isCreate && <input type="hidden" name="id" value={inbox?.id} />}
-      {!isCreate && (
-        <input
-          type="hidden"
-          name="agent_mail_inbox_id"
-          value={inbox?.agent_mail_inbox_id}
-        />
-      )}
       <div className="space-y-2">
         <Label htmlFor="product_id">Product</Label>
         <Select

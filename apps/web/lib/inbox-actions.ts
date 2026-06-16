@@ -35,9 +35,6 @@ function parseUpdate(formData: FormData) {
   const address = String(formData.get("address") ?? "").trim()
   return {
     product_id: String(formData.get("product_id") ?? ""),
-    agent_mail_inbox_id: String(
-      formData.get("agent_mail_inbox_id") ?? ""
-    ).trim(),
     address: address || null,
     is_active: String(formData.get("is_active") ?? "active") === "active",
   }
@@ -52,7 +49,6 @@ function validateCreate(p: ReturnType<typeof parseCreate>): string | null {
 
 function validateUpdate(p: ReturnType<typeof parseUpdate>): string | null {
   if (!p.product_id) return "Product is required."
-  if (!p.agent_mail_inbox_id) return "Agent Mail inbox id is required."
   return null
 }
 
@@ -86,7 +82,7 @@ export async function createInbox(formData: FormData): Promise<Result> {
   const { error } = await auth.admin.from("inboxes").insert({
     product_id: p.product_id,
     agent_mail_inbox_id: inboxId,
-    address: inboxId,
+    address: inboxId, // AgentMail identifies an inbox by its address — inboxId IS the full email address.
     is_active: p.is_active,
   })
   if (error) return { error: true, message: friendly(error) }
