@@ -45,3 +45,6 @@ verify-*.png
 
 # Real ticketdesk pulls contain customer PII — never commit
 scripts/fixtures/ticketdesk-*.json
+
+# Brainstorm visual-companion scratch
+.superpowers/
