@@ -136,6 +136,18 @@ describe("buildFlowTrace", () => {
     expect(gate?.detail).toEqual({ kind: "text", text: "Skipped — no lookup needed" })
   })
 
+  it("treats an empty orders array as no lookup", () => {
+    const steps = buildFlowTrace(
+      decision({ context: { orders: [], access: null } }),
+      sentAudit
+    )
+    expect(steps.find((s) => s.key === "lookup")).toBeUndefined()
+    expect(steps.find((s) => s.key === "gate")?.detail).toEqual({
+      kind: "text",
+      text: "Skipped — no lookup needed",
+    })
+  })
+
   it("marks the sent step failed when the send audit failed", () => {
     const steps = buildFlowTrace(decision({ status: "failed" }), [
       audit("webhook_received"),

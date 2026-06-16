@@ -71,7 +71,11 @@ export function buildFlowTrace(
 
   // Lookup gate + enrichment — inferred from whether context carries a result.
   const ctx = decision.context
-  const ranLookup = !!(ctx && ((ctx.orders?.length ?? 0) > 0 || ctx.access))
+  const foundOrder = (ctx?.orders?.length ?? 0) > 0
+  // An access RECORD means the lookup ran — NOT that access was granted; a
+  // found-but-no-access result (hasAccess: false) still means enrichment happened.
+  const gotAccessRecord = !!ctx?.access
+  const ranLookup = foundOrder || gotAccessRecord
   steps.push({
     key: "gate",
     title: "Order-lookup gate",
