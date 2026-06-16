@@ -16,7 +16,7 @@ function formatDateTime(iso: string): string {
 function StepDot({ status }: { status: FlowStepStatus }) {
   if (status === "failed")
     return (
-      <span className="bg-destructive text-background grid size-6 place-items-center rounded-full">
+      <span className="bg-destructive text-background dark:text-background grid size-6 place-items-center rounded-full">
         <IconX className="size-3.5" stroke={2.5} />
       </span>
     )
@@ -96,21 +96,23 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
         ) : null}
       </div>
     )
-  // detail.kind === "actions"
-  if (detail.actions.length === 0)
-    return <p className="text-muted-foreground text-sm">None — reply only.</p>
-  return (
-    <div className="flex flex-wrap gap-2">
-      {detail.actions.map((a, i) => (
-        <span
-          key={`${a.type}-${i}`}
-          className="bg-muted text-foreground w-fit rounded-md px-2 py-1 text-xs"
-        >
-          {humanizeAction(a.type)}
-        </span>
-      ))}
-    </div>
-  )
+  if (detail.kind === "actions") {
+    if (detail.actions.length === 0)
+      return <p className="text-muted-foreground text-sm">None — reply only.</p>
+    return (
+      <div className="flex flex-wrap gap-2">
+        {detail.actions.map((a, i) => (
+          <span
+            key={`${a.type}-${i}`}
+            className="bg-muted text-foreground w-fit rounded-md px-2 py-1 text-xs"
+          >
+            {humanizeAction(a.type)}
+          </span>
+        ))}
+      </div>
+    )
+  }
+  return null
 }
 
 // The agent's run on this ticket, step by step, with what each step found.
