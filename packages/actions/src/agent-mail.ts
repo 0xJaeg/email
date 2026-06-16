@@ -1,4 +1,5 @@
 import { AgentMailClient } from "agentmail"
+import type { AgentMail } from "agentmail"
 
 let cached: AgentMailClient | null = null
 
@@ -18,4 +19,14 @@ export function getAgentMailInboxId(): string {
     throw new Error("AGENT_MAIL_INBOX_ID is not set")
   }
   return inboxId
+}
+
+export async function createAgentMailInbox({
+  username,
+  displayName,
+}: {
+  username: string
+  displayName: string
+}): Promise<AgentMail.inboxes.Inbox> {
+  return getAgentMailClient().inboxes.create({ username, displayName })
 }

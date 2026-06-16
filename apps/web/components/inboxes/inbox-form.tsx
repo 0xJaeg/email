@@ -53,6 +53,13 @@ export function InboxForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4 px-4">
       {!isCreate && <input type="hidden" name="id" value={inbox?.id} />}
+      {!isCreate && (
+        <input
+          type="hidden"
+          name="agent_mail_inbox_id"
+          value={inbox?.agent_mail_inbox_id}
+        />
+      )}
       <div className="space-y-2">
         <Label htmlFor="product_id">Product</Label>
         <Select
@@ -72,30 +79,53 @@ export function InboxForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="agent_mail_inbox_id">Agent Mail inbox id</Label>
-        <Input
-          id="agent_mail_inbox_id"
-          name="agent_mail_inbox_id"
-          defaultValue={inbox?.agent_mail_inbox_id}
-          placeholder="name@agentmail.to"
-          required
-          disabled={isPending}
-        />
-        <p className="text-muted-foreground text-xs">
-          Must match the <code>inbox_id</code> Agent Mail sends in its webhook.
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="address">Address (display)</Label>
-        <Input
-          id="address"
-          name="address"
-          defaultValue={inbox?.address ?? ""}
-          placeholder="support@yourdomain.com"
-          disabled={isPending}
-        />
-      </div>
+      {isCreate ? (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              name="username"
+              placeholder="support"
+              required
+              disabled={isPending}
+            />
+            <p className="text-muted-foreground text-xs">
+              The inbox address will be{" "}
+              <code>username@agentmail.to</code>.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="display_name">Display name</Label>
+            <Input
+              id="display_name"
+              name="display_name"
+              placeholder="Support Inbox"
+              required
+              disabled={isPending}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label>Agent Mail inbox</Label>
+            <p className="text-muted-foreground text-sm">
+              {inbox?.agent_mail_inbox_id}
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="address">Address (display)</Label>
+            <Input
+              id="address"
+              name="address"
+              defaultValue={inbox?.address ?? ""}
+              placeholder="support@yourdomain.com"
+              disabled={isPending}
+            />
+          </div>
+        </>
+      )}
       <div className="space-y-2">
         <Label htmlFor="is_active">Status</Label>
         <Select
