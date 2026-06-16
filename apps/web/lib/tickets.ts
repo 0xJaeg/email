@@ -126,6 +126,30 @@ export async function getTickets(
   }
 }
 
+export type DecisionOrder = {
+  orderId: string
+  amount: number
+  currency: string
+  productName: string
+  purchasedAt: string
+}
+
+export type DecisionAccess = {
+  hasAccess: boolean
+  details?: string
+}
+
+export type DecisionContext = {
+  orders?: DecisionOrder[]
+  access?: DecisionAccess | null
+  inquiry_type?: string
+}
+
+export type ProposedAction = {
+  type: string
+  reason?: string
+}
+
 export type ThreadDecision = {
   id: string
   classification: string | null
@@ -139,6 +163,8 @@ export type ThreadDecision = {
   approvedAt: string | null
   approvedBy: string | null
   createdAt: string
+  context: DecisionContext | null
+  proposedActions: ProposedAction[]
 }
 
 export type ThreadAudit = {
@@ -182,7 +208,7 @@ export async function getThreadDetail(
   const { data, error } = await client
     .from("threads")
     .select(
-      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, draft_reply_text, approved_at, approved_by, created_at), audit_log(id, action, status, error, created_at))"
+      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, draft_reply_text, approved_at, approved_by, created_at, context, proposed_actions), audit_log(id, action, status, error, created_at))"
     )
     .eq("id", threadId)
     .maybeSingle()
@@ -212,6 +238,8 @@ export async function getThreadDetail(
         approvedAt: d.approved_at,
         approvedBy: d.approved_by,
         createdAt: d.created_at,
+        context: (d.context ?? null) as DecisionContext | null,
+        proposedActions: (d.proposed_actions ?? []) as ProposedAction[],
       })),
       audit: [...(e.audit_log ?? [])].sort(byCreatedAt).map((a) => ({
         id: a.id,
