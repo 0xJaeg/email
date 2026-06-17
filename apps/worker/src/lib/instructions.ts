@@ -50,34 +50,55 @@ export function assembleInstructions(configs: PromptConfig[]): Instructions {
   return { classifier, reply }
 }
 
-// In-process cache so we don't refetch per email; edits reflect within TTL_MS
-// without a worker restart.
+// In-process cache, keyed per product, so we don't refetch per email; edits
+// reflect within TTL_MS without a worker restart.
 const TTL_MS = 60_000
-let cache: { value: Instructions; fetchedAt: number } | null = null
+const cache = new Map<string, { value: Instructions; fetchedAt: number }>()
 
+// Resolve the system prompts for a product: its own prompt_configs (product_id
+// set) override the shared defaults (product_id null) per kind. Pass null for
+// the defaults only.
 export async function getInstructions(
-  supabase: ServerClient
+  supabase: ServerClient,
+  productId?: string | null
 ): Promise<Instructions> {
+  const key = productId ?? "__default__"
   const now = Date.now()
-  if (cache && now - cache.fetchedAt < TTL_MS) return cache.value
+  const hit = cache.get(key)
+  if (hit && now - hit.fetchedAt < TTL_MS) return hit.value
 
   const { data, error } = await supabase
     .from("prompt_configs")
-    .select("kind, content")
+    .select("kind, content, product_id")
     .eq("is_active", true)
+    .or(
+      productId
+        ? `product_id.eq.${productId},product_id.is.null`
+        : "product_id.is.null"
+    )
   if (error) throw new Error(`load_prompt_configs: ${error.message}`)
-  if (!data || data.length === 0) {
+
+  // Per kind, the product-specific row wins over the shared default.
+  const byKind = new Map<string, PromptConfig>()
+  for (const row of data ?? []) {
+    const existing = byKind.get(row.kind)
+    if (!existing || row.product_id != null) {
+      byKind.set(row.kind, { kind: row.kind, content: row.content })
+    }
+  }
+  const resolved = [...byKind.values()]
+  if (resolved.length === 0) {
     throw new Error(
       "no active prompt_configs — seed them with scripts/seed-prompts.mjs"
     )
   }
 
-  const value = assembleInstructions(data)
-  cache = { value, fetchedAt: now }
+  const value = assembleInstructions(resolved)
+  cache.set(key, { value, fetchedAt: now })
 
   const estTokens = Math.round(value.classifier.length / 4)
   console.log(
-    `[worker] instructions loaded from DB: ${value.classifier.length} chars, ~${estTokens} tokens (classifier); ${value.reply.length} chars (reply)`
+    `[worker] instructions loaded for ${key}: ${value.classifier.length} chars, ~${estTokens} tokens (classifier); ${value.reply.length} chars (reply)`
   )
   if (estTokens < 4096) {
     console.warn(
