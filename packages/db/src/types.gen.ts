@@ -215,6 +215,114 @@ export type Database = {
           },
         ]
       }
+      flow_edges: {
+        Row: {
+          created_at: string
+          from_node_id: string
+          id: string
+          inbox_id: string | null
+          outcome: string
+          position: number
+          to_node_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_node_id: string
+          id?: string
+          inbox_id?: string | null
+          outcome: string
+          position?: number
+          to_node_id: string
+        }
+        Update: {
+          created_at?: string
+          from_node_id?: string
+          id?: string
+          inbox_id?: string | null
+          outcome?: string
+          position?: number
+          to_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_edges_from_node_id_fkey"
+            columns: ["from_node_id"]
+            isOneToOne: false
+            referencedRelation: "flow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_edges_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_edges_to_node_id_fkey"
+            columns: ["to_node_id"]
+            isOneToOne: false
+            referencedRelation: "flow_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_nodes: {
+        Row: {
+          ai_prompt: string | null
+          config: Json
+          created_at: string
+          description: string | null
+          id: string
+          inbox_id: string | null
+          is_active: boolean
+          is_start: boolean
+          model: string | null
+          node_key: string
+          node_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_prompt?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          inbox_id?: string | null
+          is_active?: boolean
+          is_start?: boolean
+          model?: string | null
+          node_key: string
+          node_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_prompt?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          inbox_id?: string | null
+          is_active?: boolean
+          is_start?: boolean
+          model?: string | null
+          node_key?: string
+          node_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_nodes_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flow_steps: {
         Row: {
           ai_prompt: string | null

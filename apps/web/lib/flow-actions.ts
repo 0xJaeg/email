@@ -46,3 +46,27 @@ export async function updateFlowStepPrompt(
   revalidatePath("/flows")
   return { error: false, message: "Step updated." }
 }
+
+// Edit a node's inline AI prompt (the decision tree the worker now runs). Empty
+// clears the override so the node falls back to the shared prompt at /prompts.
+export async function updateFlowNodePrompt(
+  formData: FormData
+): Promise<Result> {
+  const auth = await requireAdmin()
+  if (!auth.ok) return { error: true, message: "Not authorized." }
+
+  const id = String(formData.get("id") ?? "")
+  const raw = String(formData.get("ai_prompt") ?? "")
+  if (!id) return { error: true, message: "Missing node id." }
+
+  const ai_prompt = raw.trim() ? raw : null
+
+  const { error } = await auth.admin
+    .from("flow_nodes")
+    .update({ ai_prompt, updated_at: new Date().toISOString() })
+    .eq("id", id)
+  if (error) return { error: true, message: error.message }
+
+  revalidatePath("/flows")
+  return { error: false, message: "Node updated." }
+}

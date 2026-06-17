@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation"
 import { getActionSupabase } from "@/lib/supabase/server"
 import { getServerSupabase } from "@/lib/supabase/admin"
-import { getInboxOptions, getFlowSteps } from "@/lib/flow-steps"
+import { getInboxOptions } from "@/lib/flow-steps"
+import { getFlowGraph } from "@/lib/flow-graph"
 import { InboxPicker } from "@/components/flow/inbox-picker"
 import { FlowView } from "@/components/flow/flow-view"
 
@@ -25,22 +26,22 @@ export default async function FlowsPage({
 
   const { inbox } = await searchParams
   const inboxId = inbox ?? null
-  const [inboxes, steps] = await Promise.all([
+  const [inboxes, graph] = await Promise.all([
     getInboxOptions(),
-    getFlowSteps(inboxId),
+    getFlowGraph(inboxId),
   ])
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <InboxPicker inboxes={inboxes} />
-        <p className="text-muted-foreground text-sm">
-          The exact sequence the agent runs on a ticket for this inbox, top to
-          bottom. Use the pencil on a step to override its AI prompt; an empty
-          override falls back to the shared prompt at /prompts.
+        <p className="text-sm text-muted-foreground">
+          The decision tree the agent walks for this inbox — each card is a
+          step, and the labelled branch beneath it is the outcome that routes to
+          the next step. This is exactly what the worker runs.
         </p>
       </div>
-      <FlowView steps={steps} />
+      <FlowView nodes={graph.nodes} edges={graph.edges} />
     </div>
   )
 }
