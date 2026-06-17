@@ -6,8 +6,10 @@ import { getActionSupabase } from "@/lib/supabase/server"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import type { ServerClient } from "@workspace/db/client"
 
-const PLATFORMS = ["clickbank", "jvzoo"] as const
+const PLATFORMS = ["clickbank", "jvzoo", "digistore"] as const
 type Platform = (typeof PLATFORMS)[number]
+const SCOPES = ["view", "refund"] as const
+type Scope = (typeof SCOPES)[number]
 
 type Result = { error: boolean; message: string }
 
@@ -31,11 +33,15 @@ export async function createCredential(formData: FormData): Promise<Result> {
 
   const product_id = String(formData.get("product_id") ?? "")
   const platform = String(formData.get("platform") ?? "")
+  const scope = String(formData.get("scope") ?? "view")
+  const platform_order = Number(formData.get("platform_order") ?? 0)
   const label = String(formData.get("label") ?? "").trim()
   const secret = String(formData.get("secret") ?? "")
   if (!product_id) return { error: true, message: "Product is required." }
   if (!PLATFORMS.includes(platform as Platform))
     return { error: true, message: "Invalid platform." }
+  if (!SCOPES.includes(scope as Scope))
+    return { error: true, message: "Invalid scope." }
   if (!label) return { error: true, message: "Label is required." }
   if (!secret) return { error: true, message: "Secret is required." }
 
@@ -52,6 +58,8 @@ export async function createCredential(formData: FormData): Promise<Result> {
   const { error } = await auth.admin.from("integration_credentials").insert({
     product_id,
     platform,
+    scope,
+    platform_order: Number.isFinite(platform_order) ? platform_order : 0,
     label,
     ciphertext,
     last4: secret.slice(-4),

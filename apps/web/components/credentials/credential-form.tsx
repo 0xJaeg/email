@@ -79,8 +79,40 @@ export function CredentialForm({
           <SelectContent>
             <SelectItem value="clickbank">clickbank</SelectItem>
             <SelectItem value="jvzoo">jvzoo</SelectItem>
+            <SelectItem value="digistore">digistore</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="scope">Scope</Label>
+        <Select name="scope" defaultValue="view" disabled={isPending}>
+          <SelectTrigger id="scope" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="view">view (order lookup)</SelectItem>
+            <SelectItem value="refund">refund</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          View keys (least privilege) look up orders; refund keys issue refunds.
+          Keep them separate.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="platform_order">Lookup order</Label>
+        <Input
+          id="platform_order"
+          name="platform_order"
+          type="number"
+          min={0}
+          defaultValue={0}
+          disabled={isPending}
+        />
+        <p className="text-xs text-muted-foreground">
+          For view keys: the order platforms are tried in (lower first) until a
+          purchase is found.
+        </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="label">Label</Label>

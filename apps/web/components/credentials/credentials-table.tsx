@@ -26,6 +26,7 @@ export async function CredentialsTable({
             <TableHead>Label</TableHead>
             <TableHead>Product</TableHead>
             <TableHead>Platform</TableHead>
+            <TableHead>Scope</TableHead>
             <TableHead>Secret</TableHead>
             <TableHead>Added</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -35,8 +36,8 @@ export async function CredentialsTable({
           {data.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={6}
-                className="text-muted-foreground py-10 text-center"
+                colSpan={7}
+                className="py-10 text-center text-muted-foreground"
               >
                 No credentials yet.
               </TableCell>
@@ -46,11 +47,14 @@ export async function CredentialsTable({
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.label}</TableCell>
                 <TableCell>{nameById.get(c.product_id) ?? "—"}</TableCell>
-                <TableCell className="font-mono text-xs">{c.platform}</TableCell>
-                <TableCell className="text-muted-foreground font-mono text-xs">
+                <TableCell className="font-mono text-xs">
+                  {c.platform}
+                </TableCell>
+                <TableCell className="font-mono text-xs">{c.scope}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
                   ••••{c.last4 ?? ""}
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
+                <TableCell className="text-sm text-muted-foreground">
                   {new Date(c.updated_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="flex justify-end">

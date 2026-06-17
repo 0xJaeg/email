@@ -5,12 +5,15 @@ export type CredentialRow = {
   id: string
   product_id: string
   platform: string
+  scope: string
+  platform_order: number
   label: string
   last4: string | null
   updated_at: string
 }
 
-const CRED_COLS = "id, product_id, platform, label, last4, updated_at"
+const CRED_COLS =
+  "id, product_id, platform, scope, platform_order, label, last4, updated_at"
 
 // Deliberately never selects `ciphertext` — the secret value never leaves the
 // server, and the dashboard only ever shows the label + last4.
