@@ -453,7 +453,9 @@ export type Database = {
           label: string
           last4: string | null
           platform: string
+          platform_order: number
           product_id: string
+          scope: string
           updated_at: string
         }
         Insert: {
@@ -464,7 +466,9 @@ export type Database = {
           label: string
           last4?: string | null
           platform: string
+          platform_order?: number
           product_id: string
+          scope?: string
           updated_at?: string
         }
         Update: {
@@ -475,7 +479,9 @@ export type Database = {
           label?: string
           last4?: string | null
           platform?: string
+          platform_order?: number
           product_id?: string
+          scope?: string
           updated_at?: string
         }
         Relationships: [
