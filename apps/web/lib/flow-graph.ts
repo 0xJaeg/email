@@ -23,6 +23,14 @@ export type FlowEdgeRow = {
 
 export type FlowGraphData = { nodes: FlowNodeRow[]; edges: FlowEdgeRow[] }
 
+// Node types whose ai_prompt the worker consumes (an editable LLM prompt) — the
+// only ones that get an edit affordance on /flows.
+export const PROMPT_DRIVEN_NODES: readonly string[] = [
+  "spam_filter",
+  "classify",
+  "send_reply",
+]
+
 const NODE_SEL =
   "id, node_key, node_type, title, description, ai_prompt, is_active, is_start"
 

@@ -1,6 +1,11 @@
 import { Badge } from "@workspace/ui/components/badge"
 import { IconArrowDown } from "@tabler/icons-react"
-import type { FlowNodeRow, FlowEdgeRow } from "@/lib/flow-graph"
+import {
+  PROMPT_DRIVEN_NODES,
+  type FlowNodeRow,
+  type FlowEdgeRow,
+} from "@/lib/flow-graph"
+import { EditNodeButton } from "./edit-node-button"
 
 // Renders the decision tree the worker walks. A linear step stacks top-to-bottom
 // with its branch outcome labelled between cards; a node with multiple outcomes
@@ -123,6 +128,9 @@ function NodeCard({ node }: { node: FlowNodeRow }) {
           <Badge variant="outline" className="font-mono text-[10px]">
             {node.node_type}
           </Badge>
+          {PROMPT_DRIVEN_NODES.includes(node.node_type) ? (
+            <EditNodeButton node={node} />
+          ) : null}
         </div>
       </div>
       {node.description ? (
