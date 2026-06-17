@@ -29,8 +29,20 @@ describe("runGraph", () => {
   it("walks from start, following the edge for each node's outcome", async () => {
     const calls: string[] = []
     const reg: Record<string, NodeType> = {
-      A: { type: "A", run: async () => { calls.push("A"); return { outcome: "go" } } },
-      B: { type: "B", run: async () => { calls.push("B"); return { outcome: "done" } } },
+      A: {
+        type: "A",
+        run: async () => {
+          calls.push("A")
+          return { outcome: "go" }
+        },
+      },
+      B: {
+        type: "B",
+        run: async () => {
+          calls.push("B")
+          return { outcome: "done" }
+        },
+      },
     }
     const g = graph("a", [node("a", "A"), node("b", "B")], [["a", "go", "b"]])
     await runGraph(g, reg, {} as StepContext)
@@ -40,10 +52,26 @@ describe("runGraph", () => {
   it("falls back to the 'default' edge when no edge matches the outcome", async () => {
     const calls: string[] = []
     const reg: Record<string, NodeType> = {
-      A: { type: "A", run: async () => { calls.push("A"); return { outcome: "refund_request" } } },
-      B: { type: "B", run: async () => { calls.push("B"); return { outcome: "done" } } },
+      A: {
+        type: "A",
+        run: async () => {
+          calls.push("A")
+          return { outcome: "refund_request" }
+        },
+      },
+      B: {
+        type: "B",
+        run: async () => {
+          calls.push("B")
+          return { outcome: "done" }
+        },
+      },
     }
-    const g = graph("a", [node("a", "A"), node("b", "B")], [["a", "default", "b"]])
+    const g = graph(
+      "a",
+      [node("a", "A"), node("b", "B")],
+      [["a", "default", "b"]]
+    )
     await runGraph(g, reg, {} as StepContext)
     expect(calls).toEqual(["A", "B"])
   })
@@ -51,20 +79,49 @@ describe("runGraph", () => {
   it("halts when a node returns halt (no edge followed)", async () => {
     const calls: string[] = []
     const reg: Record<string, NodeType> = {
-      A: { type: "A", run: async () => { calls.push("A"); return { outcome: "spam", halt: true } } },
-      B: { type: "B", run: async () => { calls.push("B"); return { outcome: "done" } } },
+      A: {
+        type: "A",
+        run: async () => {
+          calls.push("A")
+          return { outcome: "spam", halt: true }
+        },
+      },
+      B: {
+        type: "B",
+        run: async () => {
+          calls.push("B")
+          return { outcome: "done" }
+        },
+      },
     }
-    const g = graph("a", [node("a", "A"), node("b", "B")], [["a", "not_spam", "b"]])
+    const g = graph(
+      "a",
+      [node("a", "A"), node("b", "B")],
+      [["a", "not_spam", "b"]]
+    )
     await runGraph(g, reg, {} as StepContext)
     expect(calls).toEqual(["A"])
   })
 
   it("merges each node's patch into ctx", async () => {
     const reg: Record<string, NodeType> = {
-      A: { type: "A", run: async () => ({ outcome: "default", productFacts: "x" }) },
-      B: { type: "B", run: async (ctx) => ({ outcome: "done", decisionId: ctx.productFacts ?? "" }) },
+      A: {
+        type: "A",
+        run: async () => ({ outcome: "default", productFacts: "x" }),
+      },
+      B: {
+        type: "B",
+        run: async (ctx) => ({
+          outcome: "done",
+          decisionId: ctx.productFacts ?? "",
+        }),
+      },
     }
-    const g = graph("a", [node("a", "A"), node("b", "B")], [["a", "default", "b"]])
+    const g = graph(
+      "a",
+      [node("a", "A"), node("b", "B")],
+      [["a", "default", "b"]]
+    )
     const out = await runGraph(g, reg, {} as StepContext)
     expect(out.decisionId).toBe("x")
   })
@@ -72,7 +129,13 @@ describe("runGraph", () => {
   it("ends at a terminal node (no outgoing edge)", async () => {
     const calls: string[] = []
     const reg: Record<string, NodeType> = {
-      A: { type: "A", run: async () => { calls.push("A"); return { outcome: "done" } } },
+      A: {
+        type: "A",
+        run: async () => {
+          calls.push("A")
+          return { outcome: "done" }
+        },
+      },
     }
     const g = graph("a", [node("a", "A")], [])
     await runGraph(g, reg, {} as StepContext)
@@ -87,12 +150,22 @@ describe("runGraph", () => {
   it("bounds traversal against cycles (maxHops)", async () => {
     let n = 0
     const reg: Record<string, NodeType> = {
-      A: { type: "A", run: async () => { n++; return { outcome: "default" } } },
+      A: {
+        type: "A",
+        run: async () => {
+          n++
+          return { outcome: "default" }
+        },
+      },
     }
-    const g = graph("a", [node("a", "A"), node("b", "A")], [
-      ["a", "default", "b"],
-      ["b", "default", "a"],
-    ])
+    const g = graph(
+      "a",
+      [node("a", "A"), node("b", "A")],
+      [
+        ["a", "default", "b"],
+        ["b", "default", "a"],
+      ]
+    )
     await runGraph(g, reg, {} as StepContext)
     expect(n).toBeLessThanOrEqual(3) // nodes.size + 1
   })
@@ -100,7 +173,14 @@ describe("runGraph", () => {
 
 describe("seeded default tree (equivalence)", () => {
   // Mirror the migration's seeded nodes/edges.
-  const SEED_NODES = ["spam_filter", "classify", "lookup_gate", "enrich", "decide", "draft"]
+  const SEED_NODES = [
+    "spam_filter",
+    "classify",
+    "lookup_gate",
+    "enrich",
+    "decide",
+    "draft",
+  ]
   const SEED_EDGES: [string, string, string][] = [
     ["spam_filter", "not_spam", "classify"],
     ["classify", "default", "lookup_gate"],
@@ -109,7 +189,11 @@ describe("seeded default tree (equivalence)", () => {
     ["decide", "default", "draft"],
   ]
   const buildGraph = () =>
-    graph("spam_filter", SEED_NODES.map((k) => node(k, k)), SEED_EDGES)
+    graph(
+      "spam_filter",
+      SEED_NODES.map((k) => node(k, k)),
+      SEED_EDGES
+    )
 
   it("non-spam ticket visits all six nodes in pipeline order", async () => {
     const seen: string[] = []
@@ -130,7 +214,14 @@ describe("seeded default tree (equivalence)", () => {
       ])
     )
     await runGraph(buildGraph(), reg, {} as StepContext)
-    expect(seen).toEqual(["spam_filter", "classify", "lookup_gate", "enrich", "decide", "draft"])
+    expect(seen).toEqual([
+      "spam_filter",
+      "classify",
+      "lookup_gate",
+      "enrich",
+      "decide",
+      "draft",
+    ])
   })
 
   it("spam ticket halts after spam_filter", async () => {

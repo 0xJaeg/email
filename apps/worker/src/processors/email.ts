@@ -4,9 +4,9 @@ import { getSupabase } from "../lib/supabase.js"
 import { getInstructions } from "../lib/instructions.js"
 import { renderProductFacts } from "../lib/product-facts.js"
 import { stripQuotedReply } from "../lib/strip-quotes.js"
-import { loadFlow } from "../lib/flow/load-flow.js"
-import { runFlow } from "../lib/flow/run-flow.js"
-import { STEP_REGISTRY } from "../lib/flow/registry.js"
+import { loadGraph } from "../lib/flow/load-graph.js"
+import { runGraph } from "../lib/flow/run-graph.js"
+import { NODE_REGISTRY } from "../lib/flow/node-registry.js"
 import type { StepContext } from "../lib/flow/types.js"
 
 export async function processEmail(job: Job) {
@@ -35,12 +35,14 @@ export async function processEmail(job: Job) {
   // Resolve routing (inbox + product) before the flow runs.
   const routing = await resolveRouting(supabase, email.thread_id)
   const productFacts = routing.product
-    ? (renderProductFacts(routing.product.name, routing.product.supportConfig) ??
-      undefined)
+    ? (renderProductFacts(
+        routing.product.name,
+        routing.product.supportConfig
+      ) ?? undefined)
     : undefined
 
-  // Run the per-inbox decision flow (default: classify → enrich → decide → draft).
-  const steps = await loadFlow(supabase, routing.inboxId)
+  // Run the per-inbox decision tree (node graph the worker walks).
+  const graph = await loadGraph(supabase, routing.inboxId)
   const ctx: StepContext = {
     email,
     inboxId: routing.inboxId,
@@ -50,7 +52,7 @@ export async function processEmail(job: Job) {
     anthropic,
     instructions,
   }
-  await runFlow(steps, STEP_REGISTRY, ctx)
+  await runGraph(graph, NODE_REGISTRY, ctx)
 
   return {
     decisionId: ctx.decisionId,

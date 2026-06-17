@@ -22,12 +22,66 @@ let mockAdapter: {
   issueRefund: () => Promise<unknown>
 }
 
-// The default flow loadFlow() returns in tests, so processEmail runs all 4 steps.
-const DEFAULT_FLOW = [
-  { step_key: "classify", position: 1, ai_prompt: null, condition: {} },
-  { step_key: "enrich", position: 2, ai_prompt: null, condition: {} },
-  { step_key: "decide", position: 3, ai_prompt: null, condition: {} },
-  { step_key: "draft", position: 4, ai_prompt: null, condition: {} },
+// The default node tree loadGraph() returns in tests: classify -> enrich ->
+// decide -> draft (the 4-step pipeline these tests exercise — no spam_filter /
+// lookup_gate, so enrich uses the inquiry_type fallback, as before).
+const NODES = [
+  {
+    id: "n_classify",
+    node_key: "classify",
+    node_type: "classify",
+    ai_prompt: null,
+    model: null,
+    config: {},
+    is_start: true,
+  },
+  {
+    id: "n_enrich",
+    node_key: "enrich",
+    node_type: "enrich",
+    ai_prompt: null,
+    model: null,
+    config: {},
+    is_start: false,
+  },
+  {
+    id: "n_decide",
+    node_key: "decide",
+    node_type: "decide",
+    ai_prompt: null,
+    model: null,
+    config: {},
+    is_start: false,
+  },
+  {
+    id: "n_draft",
+    node_key: "draft",
+    node_type: "draft",
+    ai_prompt: null,
+    model: null,
+    config: {},
+    is_start: false,
+  },
+]
+const EDGES = [
+  {
+    from_node_id: "n_classify",
+    to_node_id: "n_enrich",
+    outcome: "default",
+    position: 0,
+  },
+  {
+    from_node_id: "n_enrich",
+    to_node_id: "n_decide",
+    outcome: "default",
+    position: 0,
+  },
+  {
+    from_node_id: "n_decide",
+    to_node_id: "n_draft",
+    outcome: "default",
+    position: 0,
+  },
 ]
 
 // Minimal chainable Supabase stub that records decision updates + audit inserts.
@@ -49,9 +103,10 @@ function makeSupabase() {
     })
     b.eq = vi.fn(() => b)
     b.is = vi.fn(() => b)
+    b.in = vi.fn(() => b)
     b.order = vi.fn(async () =>
-      table === "flow_steps"
-        ? { data: DEFAULT_FLOW, error: null }
+      table === "flow_edges"
+        ? { data: EDGES, error: null }
         : { data: [], error: null }
     )
     b.single = vi.fn(async () => {
@@ -64,8 +119,13 @@ function makeSupabase() {
       if (table === "products") return { data: productMeta, error: null }
       return { data: null, error: null }
     })
-    // Terminal inserts/updates are awaited directly — make the builder thenable.
-    b.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: null })
+    // flow_nodes is awaited directly (no .order); terminal inserts/updates too.
+    b.then = (resolve: (v: unknown) => void) =>
+      resolve(
+        table === "flow_nodes"
+          ? { data: NODES, error: null }
+          : { data: null, error: null }
+      )
     return b
   }
   return {

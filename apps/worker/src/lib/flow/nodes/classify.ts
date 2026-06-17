@@ -8,6 +8,9 @@ export const ClassifyNode: NodeType = {
   type: "classify",
   async run(ctx, node) {
     const patch = await ClassifyStep.run(ctx, toStepConfig(node))
-    return { ...patch, outcome: patch.classification?.classification ?? "default" }
+    return {
+      ...patch,
+      outcome: patch.classification?.classification ?? "default",
+    }
   },
 }
