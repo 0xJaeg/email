@@ -15,7 +15,6 @@ export async function processEmail(job: Job) {
 
   const supabase = getSupabase()
   const anthropic = getAnthropic()
-  const instructions = await getInstructions(supabase)
 
   // Fetch the email.
   const { data: emailRow, error: emailErr } = await supabase
@@ -40,6 +39,13 @@ export async function processEmail(job: Job) {
         routing.product.supportConfig
       ) ?? undefined)
     : undefined
+
+  // Per-product prompts: the routed product's prompt_configs override the shared
+  // defaults; falls back to the defaults when it has none.
+  const instructions = await getInstructions(
+    supabase,
+    routing.product?.productId ?? null
+  )
 
   // Run the per-inbox decision tree (node graph the worker walks).
   const graph = await loadGraph(supabase, routing.inboxId)

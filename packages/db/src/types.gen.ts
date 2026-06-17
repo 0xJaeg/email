@@ -564,6 +564,7 @@ export type Database = {
           id: string
           is_active: boolean
           kind: string
+          product_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -574,6 +575,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           kind: string
+          product_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -584,11 +586,20 @@ export type Database = {
           id?: string
           is_active?: boolean
           kind?: string
+          product_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prompt_configs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppression_list: {
         Row: {
