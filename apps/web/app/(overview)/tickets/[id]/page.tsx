@@ -5,6 +5,7 @@ import { ThreadStatusBadge } from "@/components/shared/status-badges"
 import { EmailCard } from "@/components/tickets/email-card"
 import { ThreadSummary } from "@/components/tickets/thread-summary"
 import { ThreadFlow } from "@/components/tickets/thread-flow"
+import { ManualReply } from "@/components/tickets/manual-reply"
 import { buildFlowTrace } from "@/lib/flow-trace"
 import { VerdictBanner } from "@/components/tickets/verdict-banner"
 
@@ -44,8 +45,8 @@ export default async function TicketDetailPage({
           </h1>
           <ThreadStatusBadge value={thread.status} />
         </div>
-        <p className="text-muted-foreground text-sm">
-          <span className="text-foreground font-medium">{thread.sender}</span> ·
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{thread.sender}</span> ·
           opened {formatDate(thread.createdAt)}
         </p>
       </header>
@@ -55,9 +56,9 @@ export default async function TicketDetailPage({
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex flex-col gap-8">
           <section className="flex flex-col gap-3.5">
-            <h2 className="text-muted-foreground font-heading flex items-center gap-2 text-[11px] font-semibold tracking-wider uppercase">
+            <h2 className="flex items-center gap-2 font-heading text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               Conversation
-              <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[11px]">
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                 {thread.emails.length}
               </span>
             </h2>
@@ -71,6 +72,8 @@ export default async function TicketDetailPage({
               ))}
             </ol>
           </section>
+
+          <ManualReply threadId={thread.id} />
 
           <ThreadFlow steps={buildFlowTrace(latestDecision, auditEntries)} />
         </div>
