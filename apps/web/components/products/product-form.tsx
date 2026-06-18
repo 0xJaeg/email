@@ -50,7 +50,7 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 px-4">
+    <form onSubmit={onSubmit} className="space-y-4 px-4 pb-4">
       {!isCreate && <input type="hidden" name="id" value={product?.id} />}
       <div className="space-y-2">
         <Label htmlFor="name">Name</Label>
