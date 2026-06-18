@@ -33,7 +33,6 @@ export async function InboxesTable({
             <TableRow>
               <TableHead>Agent Mail inbox</TableHead>
               <TableHead>Product</TableHead>
-              <TableHead>Address</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -42,8 +41,8 @@ export async function InboxesTable({
             {data.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
-                  className="text-muted-foreground text-center"
+                  colSpan={4}
+                  className="text-center text-muted-foreground"
                 >
                   No inboxes found.
                 </TableCell>
@@ -55,9 +54,6 @@ export async function InboxesTable({
                     {i.agent_mail_inbox_id}
                   </TableCell>
                   <TableCell>{nameById.get(i.product_id) ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {i.address ?? "—"}
-                  </TableCell>
                   <TableCell>{i.is_active ? "Active" : "Inactive"}</TableCell>
                   <TableCell className="flex justify-end gap-2">
                     <EditInboxButton inbox={i} products={products} />

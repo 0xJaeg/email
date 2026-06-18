@@ -6,7 +6,6 @@ export type InboxRow = {
   id: string
   product_id: string
   agent_mail_inbox_id: string
-  address: string | null
   is_active: boolean
   created_at: string
 }
@@ -22,14 +21,13 @@ export async function getInboxes(
 
   let q = supabase
     .from("inboxes")
-    .select("id, product_id, agent_mail_inbox_id, address, is_active, created_at", {
+    .select("id, product_id, agent_mail_inbox_id, is_active, created_at", {
       count: "exact",
     })
     .order("created_at", { ascending: false })
 
   const esc = sanitizeSearch(query)
-  if (esc)
-    q = q.or(`agent_mail_inbox_id.ilike.%${esc}%,address.ilike.%${esc}%`)
+  if (esc) q = q.ilike("agent_mail_inbox_id", `%${esc}%`)
 
   const { data, error, count } = await q.range(
     (page - 1) * size,

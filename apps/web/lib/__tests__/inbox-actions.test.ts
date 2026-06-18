@@ -19,7 +19,8 @@ function makeAdmin() {
     })
     b.eq = vi.fn(() => b)
     b.single = vi.fn(async () => {
-      if (table === "profiles") return { data: { role: callerRole }, error: null }
+      if (table === "profiles")
+        return { data: { role: callerRole }, error: null }
       return { data: null, error: null }
     })
     b.then = (resolve: (v: unknown) => void) =>
@@ -36,7 +37,9 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }))
 let adminClient: ReturnType<typeof makeAdmin>
-vi.mock("@/lib/supabase/admin", () => ({ getServerSupabase: () => adminClient }))
+vi.mock("@/lib/supabase/admin", () => ({
+  getServerSupabase: () => adminClient,
+}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 
 import { createInbox, deleteInbox } from "../inbox-actions.js"
@@ -50,7 +53,6 @@ function form(obj: Record<string, string>) {
 const valid = {
   product_id: "prod-1",
   agent_mail_inbox_id: "support@agentmail.to",
-  address: "support@example.com",
   is_active: "active",
 }
 

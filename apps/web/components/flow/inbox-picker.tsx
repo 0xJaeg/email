@@ -27,7 +27,7 @@ export function InboxPicker({ inboxes }: { inboxes: InboxOption[] }) {
 
   return (
     <div className="flex items-center gap-2">
-      <Label htmlFor="inbox" className="text-muted-foreground text-sm">
+      <Label htmlFor="inbox" className="text-sm text-muted-foreground">
         Inbox
       </Label>
       <Select value={current} onValueChange={onChange}>
@@ -38,7 +38,7 @@ export function InboxPicker({ inboxes }: { inboxes: InboxOption[] }) {
           <SelectItem value="default">Default flow (all inboxes)</SelectItem>
           {inboxes.map((ib) => (
             <SelectItem key={ib.id} value={ib.id}>
-              {ib.address ?? ib.agent_mail_inbox_id}
+              {ib.agent_mail_inbox_id}
             </SelectItem>
           ))}
         </SelectContent>
