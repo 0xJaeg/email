@@ -46,3 +46,57 @@ export async function updateFlowNodePrompt(
   revalidatePath("/flows")
   return { error: false, message: "Node updated." }
 }
+
+export type CategoryInput = {
+  key: string
+  label: string
+  description: string
+  target_node_id: string
+}
+
+// Edit a classify node's categories + the branch each routes to. Atomic via the
+// set_classify_categories RPC (keeps the classifier enum and the routing edges
+// in sync). Validates before writing so a bad key can never reach the DB.
+export async function updateClassifyCategories(
+  nodeId: string,
+  categories: CategoryInput[]
+): Promise<Result> {
+  const auth = await requireAdmin()
+  if (!auth.ok) return { error: true, message: "Not authorized." }
+  if (!nodeId) return { error: true, message: "Missing node id." }
+  if (categories.length === 0)
+    return { error: true, message: "Add at least one category." }
+
+  const seen = new Set<string>()
+  for (const c of categories) {
+    const key = c.key.trim()
+    if (!/^[a-z0-9_]+$/.test(key))
+      return {
+        error: true,
+        message: `Invalid key "${c.key}" — lowercase letters, numbers and underscores only.`,
+      }
+    if (seen.has(key))
+      return { error: true, message: `Duplicate category key "${key}".` }
+    seen.add(key)
+    if (!c.label.trim())
+      return { error: true, message: `Category "${key}" needs a label.` }
+    if (!c.target_node_id)
+      return { error: true, message: `Category "${key}" needs a target step.` }
+  }
+
+  const payload = categories.map((c) => ({
+    key: c.key.trim(),
+    label: c.label.trim(),
+    description: c.description.trim(),
+    target_node_id: c.target_node_id,
+  }))
+
+  const { error } = await auth.admin.rpc("set_classify_categories", {
+    p_node_id: nodeId,
+    p_categories: payload,
+  })
+  if (error) return { error: true, message: error.message }
+
+  revalidatePath("/flows")
+  return { error: false, message: "Categories saved." }
+}
