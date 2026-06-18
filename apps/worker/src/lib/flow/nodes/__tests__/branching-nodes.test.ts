@@ -55,6 +55,14 @@ describe("order_lookup node", () => {
     expect(r.outcome).toBe("found")
   })
 
+  it("emits 'found' when access is active even with no orders (access-only adapter)", async () => {
+    enrichRun.mockResolvedValue({
+      enrichment: { context: { orders: [], access: { hasAccess: true } } },
+    })
+    const r = await OrderLookupNode.run(ctxWith(), node())
+    expect(r.outcome).toBe("found")
+  })
+
   it("emits 'not_found' for no orders or no enrichment", async () => {
     enrichRun.mockResolvedValue({ enrichment: { context: { orders: [] } } })
     expect((await OrderLookupNode.run(ctxWith(), node())).outcome).toBe(
