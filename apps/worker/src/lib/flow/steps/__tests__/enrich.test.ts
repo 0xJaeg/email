@@ -35,6 +35,7 @@ function makeCtx(opts: {
       adapterKey: "mock",
       name: "P",
       supportConfig: null,
+      refundThreshold: null,
     },
     classification: {
       classification: "faq",

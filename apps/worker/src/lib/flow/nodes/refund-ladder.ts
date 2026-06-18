@@ -13,7 +13,7 @@ export const RefundLadderNode: NodeType = {
       email: ctx.email,
       supabase: ctx.supabase,
       anthropic: ctx.anthropic,
-      productId: ctx.product?.productId ?? null,
+      refundThreshold: ctx.product?.refundThreshold ?? null,
     })
     const combinedReasoning = r.sonnet_reasoning
       ? `${cls?.reasoning ?? ""}\n\nSonnet chargeback check: ${r.sonnet_reasoning}`

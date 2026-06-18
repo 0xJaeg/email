@@ -17,12 +17,13 @@ export type ProductRow = {
   platform: string
   adapter_key: string | null
   support_config: SupportConfig
+  refund_threshold: number | null
   is_active: boolean
   created_at: string
 }
 
 const PRODUCT_COLS =
-  "id, name, slug, platform, adapter_key, support_config, is_active, created_at"
+  "id, name, slug, platform, adapter_key, support_config, refund_threshold, is_active, created_at"
 
 export async function getProduct(id: string): Promise<ProductRow | null> {
   const supabase = getServerSupabase()
@@ -49,7 +50,7 @@ export async function getProducts(
   let q = supabase
     .from("products")
     .select(
-      "id, name, slug, platform, adapter_key, support_config, is_active, created_at",
+      "id, name, slug, platform, adapter_key, support_config, refund_threshold, is_active, created_at",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })

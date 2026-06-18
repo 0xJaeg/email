@@ -75,7 +75,7 @@ async function resolveRouting(
   if (!thread?.product_id) return { inboxId, product: null }
   const { data: product } = await supabase
     .from("products")
-    .select("name, adapter_key, support_config")
+    .select("name, adapter_key, support_config, refund_threshold")
     .eq("id", thread.product_id)
     .maybeSingle()
   return {
@@ -85,6 +85,7 @@ async function resolveRouting(
       adapterKey: product?.adapter_key ?? null,
       name: product?.name ?? "the product",
       supportConfig: product?.support_config ?? null,
+      refundThreshold: product?.refund_threshold ?? null,
     },
   }
 }
