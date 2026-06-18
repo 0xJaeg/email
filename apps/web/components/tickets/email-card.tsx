@@ -5,6 +5,7 @@ import {
 import { Badge } from "@workspace/ui/components/badge"
 import { cn } from "@workspace/ui/lib/utils"
 import { IconArrowRight, IconMail, IconRobot } from "@tabler/icons-react"
+import { EmailBody } from "./email-body"
 import type { ThreadEmail } from "@/lib/tickets"
 
 function formatDateTime(iso: string): string {
@@ -74,9 +75,7 @@ export function EmailCard({
               Subject — {email.subject}
             </div>
           ) : null}
-          <p className="whitespace-pre-wrap">
-            {email.bodyText ?? "(no text body)"}
-          </p>
+          <EmailBody text={email.bodyText} />
         </div>
 
         {email.decisions.map((d) => (
@@ -94,7 +93,7 @@ export function EmailCard({
                   <IconRobot className="size-3" />
                   {replyLabel(d.status)}
                 </div>
-                <p className="whitespace-pre-wrap">{d.draftReplyText}</p>
+                <EmailBody text={d.draftReplyText} />
               </div>
             ) : null}
           </div>

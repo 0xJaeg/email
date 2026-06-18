@@ -4,10 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { approveDecision, rejectDecision } from "@/lib/approvals"
-import type {
-  EnrichmentContext,
-  ProposedActionRow,
-} from "@/lib/decisions"
+import type { EnrichmentContext, ProposedActionRow } from "@/lib/decisions"
 import {
   Sheet,
   SheetContent,
@@ -19,6 +16,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import { Textarea } from "@workspace/ui/components/textarea"
 import { Label } from "@workspace/ui/components/label"
+import { EmailBody } from "@/components/tickets/email-body"
 import {
   IconLoader2,
   IconEye,
@@ -47,10 +45,16 @@ function describeAction(a: ProposedActionRow): {
   icon: typeof IconReceiptRefund
 } {
   if (a.type === "issue_refund")
-    return { label: "Issue a refund to the customer", heavy: true, icon: IconReceiptRefund }
+    return {
+      label: "Issue a refund to the customer",
+      heavy: true,
+      icon: IconReceiptRefund,
+    }
   if (a.type === "suppress_contact")
     return {
-      label: "Stop marketing emails to this address" + (a.reason ? ` (${a.reason})` : ""),
+      label:
+        "Stop marketing emails to this address" +
+        (a.reason ? ` (${a.reason})` : ""),
       heavy: true,
       icon: IconBellOff,
     }
@@ -125,19 +129,19 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
           {/* What the customer wrote */}
           {row.body ? (
             <section className="flex flex-col gap-1.5">
-              <h3 className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+              <h3 className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Customer&apos;s message
               </h3>
-              <p className="bg-muted max-h-40 overflow-y-auto rounded-lg border p-3 text-sm whitespace-pre-wrap">
-                {row.body}
-              </p>
+              <div className="max-h-40 overflow-y-auto rounded-lg border bg-muted p-3 text-sm">
+                <EmailBody text={row.body} />
+              </div>
             </section>
           ) : null}
 
           {/* What the assistant verified */}
           {hasFindings ? (
             <section className="flex flex-col gap-1.5">
-              <h3 className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+              <h3 className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 What the assistant checked
               </h3>
               <div className="flex flex-col gap-1.5 rounded-lg border p-3 text-sm">
@@ -161,7 +165,7 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
                     {access.hasAccess ? (
                       <IconCircleCheck className="size-4 text-emerald-600" />
                     ) : (
-                      <IconCircleX className="text-destructive size-4" />
+                      <IconCircleX className="size-4 text-destructive" />
                     )}
                     <span>
                       {access.hasAccess
@@ -177,7 +181,7 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
           {/* What will happen on approve */}
           {row.proposedActions.length > 0 ? (
             <section className="flex flex-col gap-1.5">
-              <h3 className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+              <h3 className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 When you approve, this also happens
               </h3>
               <ul className="flex flex-col gap-1.5">
@@ -189,7 +193,7 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
                       key={i}
                       className={
                         d.heavy
-                          ? "border-destructive/30 bg-destructive/5 text-destructive flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
+                          ? "flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive"
                           : "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
                       }
                     >
@@ -212,9 +216,9 @@ export function ReviewApprovalSheet({ row }: { row: ReviewRow }) {
               disabled={isPending}
               className="max-h-[45vh] min-h-[30vh] flex-1 overflow-y-auto text-sm"
             />
-            <p className="text-muted-foreground text-xs">
-              Edit the reply before approving if needed — your edits are what get
-              sent. Approving sends the email immediately
+            <p className="text-xs text-muted-foreground">
+              Edit the reply before approving if needed — your edits are what
+              get sent. Approving sends the email immediately
               {row.proposedActions.length > 0
                 ? " and runs the actions above"
                 : ""}
