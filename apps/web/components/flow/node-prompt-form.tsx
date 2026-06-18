@@ -3,7 +3,7 @@
 import { type FormEvent, useState, useTransition } from "react"
 import { toast } from "sonner"
 import { updateFlowNodePrompt } from "@/lib/flow-actions"
-import type { FlowNodeRow } from "@/lib/flow-graph"
+import type { FlowNodeRow } from "@/lib/flow-graph-types"
 import { Button } from "@workspace/ui/components/button"
 import { Textarea } from "@workspace/ui/components/textarea"
 import { IconLoader2 } from "@tabler/icons-react"

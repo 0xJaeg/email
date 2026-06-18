@@ -1,38 +1,17 @@
 import "server-only"
 import { getServerSupabase } from "@/lib/supabase/admin"
+import type {
+  FlowNodeRow,
+  FlowEdgeRow,
+  FlowGraphData,
+} from "./flow-graph-types"
 
-// One node of the decision tree the worker walks (flow_nodes).
-export type FlowNodeRow = {
-  id: string
-  node_key: string
-  node_type: string
-  title: string
-  description: string | null
-  ai_prompt: string | null
-  is_active: boolean
-  is_start: boolean
-}
-
-// One branch: from a node's outcome to the next node (flow_edges).
-export type FlowEdgeRow = {
-  from_node_id: string
-  to_node_id: string
-  outcome: string
-  position: number
-}
-
-export type FlowGraphData = { nodes: FlowNodeRow[]; edges: FlowEdgeRow[] }
-
-// Node types whose ai_prompt the worker consumes (an editable LLM prompt) — the
-// only ones that get an edit affordance on /flows.
-export const PROMPT_DRIVEN_NODES: readonly string[] = [
-  "spam_filter",
-  "classify",
-  "send_reply",
-]
+// The row types + PROMPT_DRIVEN_NODES live in ./flow-graph-types (client-safe);
+// re-export them here so server consumers can keep importing from one place.
+export * from "./flow-graph-types"
 
 const NODE_SEL =
-  "id, node_key, node_type, title, description, ai_prompt, is_active, is_start"
+  "id, node_key, node_type, title, description, ai_prompt, model, config, is_active, is_start"
 
 // The node tree for an inbox. Falls back to the global default tree (inbox_id is
 // null) when the inbox has none of its own — mirrors the worker's loadGraph(),
