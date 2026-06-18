@@ -4,7 +4,7 @@ import { getServerSupabase } from "@/lib/supabase/admin"
 import { getInboxOptions } from "@/lib/flow-steps"
 import { getFlowGraph } from "@/lib/flow-graph"
 import { InboxPicker } from "@/components/flow/inbox-picker"
-import { FlowView } from "@/components/flow/flow-view"
+import { FlowCanvas } from "@/components/flow/flow-canvas"
 
 export const dynamic = "force-dynamic"
 
@@ -37,11 +37,16 @@ export default async function FlowsPage({
         <InboxPicker inboxes={inboxes} />
         <p className="text-sm text-muted-foreground">
           The decision tree the agent walks for this inbox — each card is a
-          step, and the labelled branch beneath it is the outcome that routes to
-          the next step. This is exactly what the worker runs.
+          step, and the labelled arrows are the outcomes that route to the next
+          step. Click any node to see its full config and edit its prompt. This
+          is exactly what the worker runs.
         </p>
       </div>
-      <FlowView nodes={graph.nodes} edges={graph.edges} />
+      <FlowCanvas
+        key={inboxId ?? "default"}
+        nodes={graph.nodes}
+        edges={graph.edges}
+      />
     </div>
   )
 }
