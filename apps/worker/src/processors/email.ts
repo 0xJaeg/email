@@ -1,7 +1,6 @@
 import type { Job } from "bullmq"
 import { getAnthropic } from "../lib/anthropic.js"
 import { getSupabase } from "../lib/supabase.js"
-import { getInstructions } from "../lib/instructions.js"
 import { renderProductFacts } from "../lib/product-facts.js"
 import { stripQuotedReply } from "../lib/strip-quotes.js"
 import { loadGraph } from "../lib/flow/load-graph.js"
@@ -40,13 +39,6 @@ export async function processEmail(job: Job) {
       ) ?? undefined)
     : undefined
 
-  // Per-product prompts: the routed product's prompt_configs override the shared
-  // defaults; falls back to the defaults when it has none.
-  const instructions = await getInstructions(
-    supabase,
-    routing.product?.productId ?? null
-  )
-
   // Run the per-inbox decision tree (node graph the worker walks).
   const graph = await loadGraph(supabase, routing.inboxId)
   const ctx: StepContext = {
@@ -56,7 +48,6 @@ export async function processEmail(job: Job) {
     productFacts,
     supabase,
     anthropic,
-    instructions,
   }
   await runGraph(graph, NODE_REGISTRY, ctx)
 

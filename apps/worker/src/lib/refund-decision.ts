@@ -39,12 +39,10 @@ export async function decideRefund(opts: {
   email: { id: string; from_email: string; body_text: string | null }
   supabase: ServerClient
   anthropic: Anthropic
-  /** Classifier instructions, reused as the cached system block for the Sonnet check. */
-  instructions: string
   /** Product whose action_triggers configure the refund threshold (null = global default). */
   productId: string | null
 }): Promise<RefundDecision> {
-  const { email, supabase, anthropic, instructions, productId } = opts
+  const { email, supabase, anthropic, productId } = opts
   const senderAddress = normalizeEmailAddress(email.from_email)
   const priorRefunds = await countPriorRefunds(supabase, senderAddress)
   const requestNumber = priorRefunds + 1
@@ -71,13 +69,11 @@ export async function decideRefund(opts: {
   // Between the first request and the threshold → chargeback path or offer 2.
   const body = email.body_text ?? ""
   if (CHARGEBACK_RE.test(body)) {
-    const sonnet = await confirmChargebackThreat(anthropic, body, instructions)
+    const sonnet = await confirmChargebackThreat(anthropic, body)
     return {
       decision: sonnet.confirmed ? "issue_refund_chargeback" : "send_offer_2",
       refund_request_count: requestNumber,
-      template_used: sonnet.confirmed
-        ? "REFUND_CHARGEBACK_APOLOGY"
-        : "OFFER_2",
+      template_used: sonnet.confirmed ? "REFUND_CHARGEBACK_APOLOGY" : "OFFER_2",
       sonnet_usage: sonnet.usage,
       sonnet_reasoning: sonnet.reasoning,
     }
@@ -129,10 +125,12 @@ async function countPriorRefunds(
   ).length
 }
 
+// The Sonnet judge's own system prompt (no longer the classifier instructions).
+const CHARGEBACK_JUDGE = `You judge whether a customer-support email is a genuine chargeback / bank-dispute threat. Decide whether the sender appears credibly committed to filing (or having already filed) a chargeback or payment dispute to reverse a charge — as opposed to merely venting with chargeback-adjacent words. Return your decision and a one-sentence reason.`
+
 async function confirmChargebackThreat(
   anthropic: Anthropic,
-  emailBody: string,
-  instructions: string
+  emailBody: string
 ): Promise<{ confirmed: boolean; reasoning: string; usage: Usage }> {
   const response = await anthropic.messages.parse({
     model: "claude-sonnet-4-6",
@@ -140,7 +138,7 @@ async function confirmChargebackThreat(
     system: [
       {
         type: "text",
-        text: instructions,
+        text: CHARGEBACK_JUDGE,
         cache_control: { type: "ephemeral", ttl: "1h" },
       },
     ],

@@ -36,7 +36,6 @@ function makeCtx(parseImpl: () => Promise<unknown>) {
     anthropic: {
       messages: { parse },
     } as unknown as StepContext["anthropic"],
-    instructions: { classifier: "C", reply: "R" },
   }
   return { ctx, decisionInserts, audits }
 }

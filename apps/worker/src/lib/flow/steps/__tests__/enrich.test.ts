@@ -50,7 +50,6 @@ function makeCtx(opts: {
     needsLookup: opts.needsLookup,
     supabase: { from: () => b } as never,
     anthropic: {} as never,
-    instructions: { classifier: "C", reply: "R" },
   }
 }
 

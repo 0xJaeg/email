@@ -1,5 +1,6 @@
 import { generateReply, type Template } from "../../generate-reply.js"
 import { loadTemplateBlock } from "../../templates.js"
+import { REPLY_HEADER } from "../../instructions.js"
 import type { ProposedAction } from "@workspace/actions"
 import type { Step, StepContext } from "../types.js"
 
@@ -29,12 +30,9 @@ export const DraftStep: Step = {
     } = ctx
     if (!cls || !dec) throw new Error("draft: classification/decision missing")
 
-    // Per-flow override: this step's ai_prompt overrides the global reply
-    // instructions (editable at /prompts). Blank = fall back.
-    const replyInstructions =
-      config.ai_prompt && config.ai_prompt.trim()
-        ? config.ai_prompt
-        : ctx.instructions.reply
+    // The reply system prompt = hard-coded safety framing + this node's editable
+    // prompt (flow_nodes.ai_prompt, edited on /flows). No shared prompt layer.
+    const replyInstructions = `${REPLY_HEADER}\n\n---\n\n${config.ai_prompt ?? ""}`
 
     const isRefund =
       dec.decision === "issue_refund" ||
@@ -77,7 +75,8 @@ export const DraftStep: Step = {
       })
       .select("id")
       .single()
-    if (decErr || !row) throw new Error(`decision_insert_failed: ${decErr?.message}`)
+    if (decErr || !row)
+      throw new Error(`decision_insert_failed: ${decErr?.message}`)
 
     await supabase.from("audit_log").insert({
       action: "classify_email",

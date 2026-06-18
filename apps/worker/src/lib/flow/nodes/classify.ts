@@ -1,24 +1,28 @@
 import { z } from "zod/v4"
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod"
-import { ClassifyStep } from "../steps/classify.js"
-import { toStepConfig } from "./adapt.js"
+import { HEADER } from "../../instructions.js"
 import type { FlowNode, NodeType, StepContext } from "../types.js"
 
 type Category = { key: string; label?: string; description?: string }
 
-// Classifies the inbound email and emits the chosen label as the branch outcome.
-// When the node carries config.categories, it classifies into THOSE categories
-// (so the tree can branch per category); otherwise it falls back to the existing
-// 3-label classifier (refund_request/faq/other), keeping the default tree's
-// behavior byte-identical.
+// Fallback categories for a classify node that carries none in its config.
+const DEFAULT_CATEGORIES: Category[] = [
+  { key: "refund_request" },
+  { key: "faq" },
+  { key: "other" },
+]
+
+// Classifies the inbound email into the node's configured categories and emits
+// the chosen label as the branch outcome. The system prompt is the hard-coded
+// HEADER framing + this node's editable prompt (flow_nodes.ai_prompt, edited on
+// /flows) — there is no shared prompt layer.
 export const ClassifyNode: NodeType = {
   type: "classify",
   async run(ctx, node) {
-    const cats = node.config.categories as Category[] | undefined
-    const patch =
-      cats && cats.length
-        ? await classifyWithCategories(ctx, node, cats)
-        : await ClassifyStep.run(ctx, toStepConfig(node))
+    const configured = node.config.categories as Category[] | undefined
+    const cats =
+      configured && configured.length ? configured : DEFAULT_CATEGORIES
+    const patch = await classify(ctx, node, cats)
     return {
       ...patch,
       outcome: patch.classification?.classification ?? "default",
@@ -26,16 +30,13 @@ export const ClassifyNode: NodeType = {
   },
 }
 
-async function classifyWithCategories(
+async function classify(
   ctx: StepContext,
   node: FlowNode,
   cats: Category[]
 ): Promise<Partial<StepContext>> {
-  const { email, anthropic, instructions } = ctx
-  const prompt =
-    node.ai_prompt && node.ai_prompt.trim()
-      ? node.ai_prompt
-      : instructions.classifier
+  const { email, anthropic } = ctx
+  const prompt = `${HEADER}\n\n---\n\n${node.ai_prompt ?? ""}`
   const keys = cats.map((c) => c.key) as [string, ...string[]]
   const guide = cats
     .map((c) => `- ${c.key}: ${c.description ?? c.label ?? c.key}`)
