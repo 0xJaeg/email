@@ -72,21 +72,45 @@ export function InboxForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="agent_mail_inbox_id">Agent Mail inbox id</Label>
-        <Input
-          id="agent_mail_inbox_id"
-          name="agent_mail_inbox_id"
-          defaultValue={inbox?.agent_mail_inbox_id}
-          placeholder="name@agentmail.to"
-          required
-          disabled={isPending}
-        />
-        <p className="text-xs text-muted-foreground">
-          The inbox&apos;s email address — must match the <code>inbox_id</code>{" "}
-          Agent Mail sends in its webhook.
-        </p>
-      </div>
+      {isCreate ? (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              name="username"
+              placeholder="support"
+              required
+              disabled={isPending}
+            />
+            <p className="text-xs text-muted-foreground">
+              Creates a new Agent Mail inbox at{" "}
+              <code>username@agentmail.to</code>.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="display_name">Display name</Label>
+            <Input
+              id="display_name"
+              name="display_name"
+              placeholder="Support"
+              required
+              disabled={isPending}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="space-y-2">
+          <Label>Agent Mail inbox</Label>
+          <p className="font-mono text-sm text-muted-foreground">
+            {inbox?.agent_mail_inbox_id}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The address is fixed once created — edit the product mapping or
+            status below.
+          </p>
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="is_active">Status</Label>
         <Select
