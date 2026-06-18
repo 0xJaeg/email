@@ -11,6 +11,11 @@ import {
 import { Badge } from "@workspace/ui/components/badge"
 import { IconArrowRight } from "@tabler/icons-react"
 import { NodePromptForm } from "./node-prompt-form"
+import {
+  ClassifyConfigForm,
+  type CategoryRow,
+  type TargetOption,
+} from "./classify-config-form"
 import { PROMPT_DRIVEN_NODES, type FlowNodeRow } from "@/lib/flow-graph-types"
 
 type Branch = { outcome: string; to: string }
@@ -81,13 +86,21 @@ function ConfigBlock({ config }: { config: Record<string, unknown> }) {
 // The wide sheet shown when a node on /flows is clicked: identity + config +
 // outgoing branches, and the editable AI prompt for prompt-driven nodes (other
 // nodes show their prompt read-only, or nothing if they have none).
+export type ClassifyEditor = {
+  nodeId: string
+  categories: CategoryRow[]
+  targets: TargetOption[]
+}
+
 export function NodeDetailSheet({
   node,
   branches,
+  classifyEditor,
   onClose,
 }: {
   node: FlowNodeRow | null
   branches: Branch[]
+  classifyEditor?: ClassifyEditor | null
   onClose: () => void
 }) {
   const editable = node ? PROMPT_DRIVEN_NODES.includes(node.node_type) : false
@@ -125,35 +138,51 @@ export function NodeDetailSheet({
               </Section>
             ) : null}
 
-            <Section title="Configuration">
-              <ConfigBlock config={node.config} />
-            </Section>
+            {classifyEditor ? (
+              <div className="flex flex-col gap-2">
+                <h3 className="px-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Categories &amp; branches
+                </h3>
+                <ClassifyConfigForm
+                  nodeId={classifyEditor.nodeId}
+                  initial={classifyEditor.categories}
+                  targets={classifyEditor.targets}
+                  closeSheet={onClose}
+                />
+              </div>
+            ) : (
+              <>
+                <Section title="Configuration">
+                  <ConfigBlock config={node.config} />
+                </Section>
 
-            <Section title="Branches">
-              {branches.length ? (
-                <ul className="flex flex-col gap-1.5">
-                  {branches.map((b) => (
-                    <li
-                      key={`${b.outcome}->${b.to}`}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <Badge
-                        variant="secondary"
-                        className="font-mono text-[10px]"
-                      >
-                        {b.outcome}
-                      </Badge>
-                      <IconArrowRight className="size-3.5 text-muted-foreground" />
-                      <span>{b.to}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  Terminal node — no outgoing branches.
-                </p>
-              )}
-            </Section>
+                <Section title="Branches">
+                  {branches.length ? (
+                    <ul className="flex flex-col gap-1.5">
+                      {branches.map((b) => (
+                        <li
+                          key={`${b.outcome}->${b.to}`}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <Badge
+                            variant="secondary"
+                            className="font-mono text-[10px]"
+                          >
+                            {b.outcome}
+                          </Badge>
+                          <IconArrowRight className="size-3.5 text-muted-foreground" />
+                          <span>{b.to}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      Terminal node — no outgoing branches.
+                    </p>
+                  )}
+                </Section>
+              </>
+            )}
 
             {editable ? (
               // NodePromptForm carries its own px-4 padding + save button.

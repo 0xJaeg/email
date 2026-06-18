@@ -151,6 +151,29 @@ export function FlowCanvas({
         }))
     : []
 
+  // For a classify node, build the editable category list (config categories
+  // joined with the edge each routes through) + the steps they can route to.
+  const classifyEditor =
+    selected && selected.node_type === "classify"
+      ? {
+          nodeId: selected.id,
+          categories: (
+            (selected.config.categories as
+              | { key: string; label?: string; description?: string }[]
+              | undefined) ?? []
+          ).map((c) => ({
+            key: c.key,
+            label: c.label ?? "",
+            description: c.description ?? "",
+            targetNodeId:
+              edges.find(
+                (e) => e.from_node_id === selected.id && e.outcome === c.key
+              )?.to_node_id ?? null,
+          })),
+          targets: nodes.map((n) => ({ id: n.id, title: n.title })),
+        }
+      : null
+
   return (
     <>
       <N8nWorkflowBlock
@@ -161,6 +184,7 @@ export function FlowCanvas({
       <NodeDetailSheet
         node={selected}
         branches={branches}
+        classifyEditor={classifyEditor}
         onClose={() => setSelectedId(null)}
       />
     </>

@@ -4,7 +4,7 @@
 // no internal/template leakage, never invent URLs, write as a human). The
 // editable, per-node prompt body lives in flow_nodes.ai_prompt, edited on /flows.
 
-export const HEADER = `You are an email-support classifier for a ClickBank-listed digital-product business. Read the instructions below carefully. They contain the classification rubric, the refund policy your customers know about, an FAQ skeleton, and a tone-of-voice guide. Your job is to classify exactly one inbound email into one of three labels and return your reasoning. Follow the output format described in the classifier rubric exactly.`
+export const HEADER = `You are an intent classifier for inbound customer-support email at a ClickBank-listed digital-product business. Read one inbound email and assign exactly one of the categories provided in the message below — pick the single best fit based on the sender's underlying intent, not their tone. Return the chosen category and a short reasoning in the structured output format exactly.`
 
 // The reply generator is a DIFFERENT job from the classifier: it writes the
 // customer-facing email. It must NOT inherit the classifier identity or the

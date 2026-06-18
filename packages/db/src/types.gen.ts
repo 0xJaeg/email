@@ -717,7 +717,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      set_classify_categories: {
+        Args: { p_categories: Json; p_node_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
