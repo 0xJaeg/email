@@ -18,9 +18,15 @@ export const EnrichStep: Step = {
       return { enrichment: null }
     }
     try {
+      // The provider product key this product expects (set on the product's
+      // support_config) — gates access for multi-product lookup adapters.
+      const expectedProductKey =
+        (product.supportConfig as { access_product_key?: string } | null)
+          ?.access_product_key ?? null
       const enrichment = await gatherCustomerContext(
         getAdapter(product.adapterKey),
-        email
+        email,
+        expectedProductKey
       )
       await supabase.from("audit_log").insert({
         action: "gather_context",

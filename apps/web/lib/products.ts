@@ -8,6 +8,9 @@ export type SupportConfig = {
   reset_url?: string
   dashboard_url?: string
   notes?: string
+  /** Provider product key for multi-product access-lookup adapters (e.g.
+   * profitdashboard): a customer must hold THIS key to count as a member. */
+  access_product_key?: string
 }
 
 export type ProductRow = {

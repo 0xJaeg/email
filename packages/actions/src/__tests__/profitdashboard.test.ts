@@ -60,6 +60,27 @@ describe("profitdashboard adapter", () => {
     expect(init.headers["x-api-key"]).toBe("test-key")
   })
 
+  it("grants access when the member's product matches expectedProductKey", async () => {
+    vi.stubGlobal("fetch", mockFetch(SAMPLE)) // SAMPLE.product.key = mobile_profit
+    const r = await getAdapter("profitdashboard").checkAccess({
+      email: "x@y.com",
+      order: null,
+      expectedProductKey: "mobile_profit",
+    })
+    expect(r.hasAccess).toBe(true)
+  })
+
+  it("denies access when the member belongs to a DIFFERENT product", async () => {
+    vi.stubGlobal("fetch", mockFetch(SAMPLE)) // member of mobile_profit...
+    const r = await getAdapter("profitdashboard").checkAccess({
+      email: "x@y.com",
+      order: null,
+      expectedProductKey: "morning_method", // ...but this product expects another
+    })
+    expect(r.hasAccess).toBe(false)
+    expect(r.details).toBeNull()
+  })
+
   it("checkAccess returns no-access when the user is not found", async () => {
     vi.stubGlobal("fetch", mockFetch({ status: true, data: { exists: false } }))
     const r = await getAdapter("profitdashboard").checkAccess({

@@ -71,7 +71,14 @@ export type AccessResult = {
 export interface ProductAdapter {
   readonly key: string
   lookupOrder(args: { email: string }): Promise<OrderLookupResult>
-  checkAccess(args: { email: string; order: Order | null }): Promise<AccessResult>
+  checkAccess(args: {
+    email: string
+    order: Order | null
+    /** The provider's product key this product expects (e.g. "mobile_profit").
+     * Adapters whose API spans multiple products gate access on a match, so a
+     * member of a *different* product isn't treated as having access here. */
+    expectedProductKey?: string | null
+  }): Promise<AccessResult>
   issueRefund(args: RefundArgs): Promise<RefundCustomerResult>
 }
 

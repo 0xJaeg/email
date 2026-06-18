@@ -180,6 +180,11 @@ export default async function ProductDetailPage({
         <p className="text-sm text-muted-foreground">
           {agentChecksSummary(product)}
         </p>
+        <p className="text-sm text-muted-foreground">
+          {cfg.access_product_key
+            ? `Access lookups only count membership of product key "${cfg.access_product_key}".`
+            : "Access lookups accept any membership returned (no product key set)."}
+        </p>
       </section>
     </div>
   )
