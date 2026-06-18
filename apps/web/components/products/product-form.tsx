@@ -181,6 +181,20 @@ export function ProductForm({
           disabled={isPending}
         />
       </div>
+      <div className="space-y-2 border-t pt-4">
+        <Label htmlFor="signature">Reply signature</Label>
+        <Textarea
+          id="signature"
+          name="signature"
+          defaultValue={product?.support_config?.signature ?? ""}
+          placeholder={"Best,\nThe Mobile Profits Team"}
+          disabled={isPending}
+        />
+        <p className="text-xs text-muted-foreground">
+          Appended to every outbound reply (agent + manual). Leave blank for
+          none.
+        </p>
+      </div>
       <div className="space-y-1 border-t pt-4">
         <p className="text-sm font-medium">Refund policy</p>
       </div>

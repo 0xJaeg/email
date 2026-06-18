@@ -7,6 +7,7 @@ import type { ProposedAction } from "@workspace/actions/types"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import { getActionSupabase } from "@/lib/supabase/server"
 import { resolveSenderInbox } from "@/lib/sender-inbox"
+import { getReplySignature, withSignature } from "@/lib/reply-signature"
 
 export async function approveDecision(
   decisionId: string,
@@ -139,10 +140,11 @@ export async function approveDecision(
       const error = err instanceof Error ? err.message : String(err)
       return { ok: false as const, error }
     }
+    const signature = await getReplySignature(supabase, emailRow.thread_id)
     return sendReply({
       inboxId,
       inReplyToMessageId: emailRow.agent_mail_message_id ?? "",
-      replyText,
+      replyText: withSignature(replyText, signature),
       decisionId,
       emailId: emailRow.id,
       to: emailRow.from_email,
