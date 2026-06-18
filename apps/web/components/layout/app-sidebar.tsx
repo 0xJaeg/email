@@ -21,7 +21,6 @@ import {
   IconBox,
   IconInbox,
   IconKey,
-  IconBolt,
   IconSitemap,
 } from "@tabler/icons-react"
 import { NavMain } from "@/components/layout/nav-main"
@@ -54,7 +53,6 @@ const configuration = {
     { title: "Products", url: "/products", icon: <IconBox /> },
     { title: "Inboxes", url: "/inboxes", icon: <IconInbox /> },
     { title: "API keys", url: "/credentials", icon: <IconKey /> },
-    { title: "Triggers", url: "/triggers", icon: <IconBolt /> },
     { title: "Decision flow", url: "/flows", icon: <IconSitemap /> },
   ],
 }

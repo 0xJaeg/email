@@ -494,6 +494,7 @@ export type Database = {
           is_active: boolean
           name: string
           platform: string
+          refund_threshold: number | null
           slug: string
           support_config: Json
           updated_at: string
@@ -505,6 +506,7 @@ export type Database = {
           is_active?: boolean
           name: string
           platform: string
+          refund_threshold?: number | null
           slug: string
           support_config?: Json
           updated_at?: string
@@ -516,6 +518,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           platform?: string
+          refund_threshold?: number | null
           slug?: string
           support_config?: Json
           updated_at?: string

@@ -46,6 +46,12 @@ function buildSupportConfig(formData: FormData): Record<string, string> {
   return out
 }
 
+// Blank → null (use the built-in default); otherwise the parsed number.
+function parseThreshold(raw: FormDataEntryValue | null): number | null {
+  const s = String(raw ?? "").trim()
+  return s === "" ? null : Number(s)
+}
+
 function parse(formData: FormData) {
   return {
     name: String(formData.get("name") ?? "").trim(),
@@ -56,6 +62,7 @@ function parse(formData: FormData) {
     adapter_key: String(formData.get("adapter_key") ?? ""),
     is_active: String(formData.get("is_active") ?? "active") === "active",
     support_config: buildSupportConfig(formData),
+    refund_threshold: parseThreshold(formData.get("refund_threshold")),
   }
 }
 
@@ -71,6 +78,11 @@ function validate(p: ReturnType<typeof parse>): string | null {
     if (v && !/^https?:\/\/\S+$/i.test(v))
       return `${k.replace("_", " ")} must be a full URL (http/https).`
   }
+  if (
+    p.refund_threshold !== null &&
+    (!Number.isInteger(p.refund_threshold) || p.refund_threshold < 1)
+  )
+    return "Refund threshold must be a whole number ≥ 1, or blank for the default (3)."
   return null
 }
 

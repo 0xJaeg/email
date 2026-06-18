@@ -30,6 +30,8 @@ export type StepContext = {
     adapterKey: string | null
     name: string
     supportConfig: unknown
+    /** Refund-after-N-requests threshold (null = built-in default of 3). */
+    refundThreshold: number | null
   } | null
   productFacts?: string
   classification?: {

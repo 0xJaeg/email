@@ -39,14 +39,17 @@ export async function decideRefund(opts: {
   email: { id: string; from_email: string; body_text: string | null }
   supabase: ServerClient
   anthropic: Anthropic
-  /** Product whose action_triggers configure the refund threshold (null = global default). */
-  productId: string | null
+  /** Refund-after-N-requests threshold from the product (null = built-in default of 3). */
+  refundThreshold: number | null
 }): Promise<RefundDecision> {
-  const { email, supabase, anthropic, productId } = opts
+  const { email, supabase, anthropic, refundThreshold } = opts
   const senderAddress = normalizeEmailAddress(email.from_email)
   const priorRefunds = await countPriorRefunds(supabase, senderAddress)
   const requestNumber = priorRefunds + 1
-  const threshold = await resolveRefundThreshold(supabase, productId)
+  const threshold =
+    refundThreshold && refundThreshold >= 1
+      ? refundThreshold
+      : DEFAULT_REFUND_THRESHOLD
 
   // At or over the configured threshold → issue the refund (no more offers, no Sonnet).
   if (requestNumber >= threshold) {
@@ -85,26 +88,9 @@ export async function decideRefund(opts: {
   }
 }
 
+// Default request number at which we issue a refund (offer twice, then refund)
+// when the product has no configured threshold.
 const DEFAULT_REFUND_THRESHOLD = 3
-
-// The request number at which we issue a refund, from the product's active
-// issue_refund trigger. Defaults to 3 (offer twice, then refund).
-async function resolveRefundThreshold(
-  supabase: ServerClient,
-  productId: string | null
-): Promise<number> {
-  if (!productId) return DEFAULT_REFUND_THRESHOLD
-  const { data } = await supabase
-    .from("action_triggers")
-    .select("condition")
-    .eq("product_id", productId)
-    .eq("action", "issue_refund")
-    .eq("is_active", true)
-    .maybeSingle()
-  const n = (data?.condition as { after_n_requests?: number } | null)
-    ?.after_n_requests
-  return typeof n === "number" && n >= 1 ? n : DEFAULT_REFUND_THRESHOLD
-}
 
 async function countPriorRefunds(
   supabase: ServerClient,

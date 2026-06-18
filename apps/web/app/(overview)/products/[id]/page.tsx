@@ -165,6 +165,17 @@ export default async function ProductDetailPage({
       </section>
 
       <section className="flex flex-col gap-2">
+        <h2 className="font-medium">Refund policy</h2>
+        <p className="text-sm text-muted-foreground">
+          {product.refund_threshold == null
+            ? "After 3 refund requests from the same customer (the default), the agent drafts a refund instead of another retention offer."
+            : `After ${product.refund_threshold} refund request${
+                product.refund_threshold === 1 ? "" : "s"
+              } from the same customer, the agent drafts a refund instead of another retention offer.`}
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-2">
         <h2 className="font-medium">What the agent checks</h2>
         <p className="text-sm text-muted-foreground">
           {agentChecksSummary(product)}

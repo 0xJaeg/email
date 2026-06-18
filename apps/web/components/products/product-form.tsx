@@ -105,7 +105,7 @@ export function ProductForm({
             <SelectItem value="jvzoo">jvzoo</SelectItem>
           </SelectContent>
         </Select>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           Keep on “mock” until real API credentials are configured.
         </p>
       </div>
@@ -113,7 +113,7 @@ export function ProductForm({
         <p className="text-sm font-medium">
           Support facts (used in customer replies)
         </p>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           The agent uses ONLY these links in replies and never invents URLs.
           Leave a field blank if you don’t have it.
         </p>
@@ -171,6 +171,27 @@ export function ProductForm({
           disabled={isPending}
         />
       </div>
+      <div className="space-y-1 border-t pt-4">
+        <p className="text-sm font-medium">Refund policy</p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="refund_threshold">Refund after N requests</Label>
+        <Input
+          id="refund_threshold"
+          name="refund_threshold"
+          type="number"
+          min="1"
+          step="1"
+          defaultValue={product?.refund_threshold ?? ""}
+          placeholder="3 (default)"
+          disabled={isPending}
+        />
+        <p className="text-xs text-muted-foreground">
+          After this many refund requests from the same customer, the agent
+          drafts a refund instead of another retention offer. Blank uses the
+          default of 3 (offer twice, then refund).
+        </p>
+      </div>
       <div className="space-y-2">
         <Label htmlFor="is_active">Status</Label>
         <Select
@@ -187,7 +208,7 @@ export function ProductForm({
           </SelectContent>
         </Select>
       </div>
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? (
           <IconLoader2 className="animate-spin" />
