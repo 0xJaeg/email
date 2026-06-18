@@ -10,6 +10,7 @@ import {
 } from "@workspace/ui/components/table"
 import { TablePagination } from "@/components/shared/table-pagination"
 import { ReviewApprovalSheet } from "./review-approval-sheet"
+import { EscalationReplySheet } from "./escalation-reply-sheet"
 
 // The queue mixes reply drafts and refunds; surface which is which so an
 // operator never approves a money-moving refund thinking it's a plain reply.
@@ -19,6 +20,7 @@ const DECISION_LABELS: Record<string, string> = {
   send_offer_2: "Offer (2nd)",
   issue_refund: "Refund",
   issue_refund_chargeback: "Refund (chargeback)",
+  escalate: "Escalation",
 }
 
 export async function ApprovalsTable({
@@ -55,9 +57,9 @@ export async function ApprovalsTable({
               <TableRow>
                 <TableCell
                   colSpan={5}
-                  className="text-muted-foreground py-10 text-center"
+                  className="py-10 text-center text-muted-foreground"
                 >
-                  Nothing awaiting approval.
+                  Nothing needs a human right now.
                 </TableCell>
               </TableRow>
             ) : (
@@ -66,28 +68,43 @@ export async function ApprovalsTable({
                   <TableCell className="max-w-50 truncate font-medium">
                     {r.sender}
                   </TableCell>
-                  <TableCell className="text-muted-foreground max-w-60 truncate">
+                  <TableCell className="max-w-60 truncate text-muted-foreground">
                     {r.subject}
                   </TableCell>
                   <TableCell className="text-xs">
                     {DECISION_LABELS[r.decision] ?? r.decision}
                   </TableCell>
-                  <TableCell className="text-muted-foreground max-w-96 truncate">
-                    {r.draftReplyText ?? "(no draft)"}
+                  <TableCell className="max-w-96 truncate text-muted-foreground">
+                    {r.status === "needs_human"
+                      ? "Needs a manual reply"
+                      : (r.draftReplyText ?? "(no draft)")}
                   </TableCell>
                   <TableCell className="flex justify-end gap-2 text-right">
-                    <ReviewApprovalSheet
-                      row={{
-                        id: r.id,
-                        sender: r.sender,
-                        subject: r.subject,
-                        decisionLabel: DECISION_LABELS[r.decision] ?? r.decision,
-                        body: r.body,
-                        draftReplyText: r.draftReplyText,
-                        context: r.context,
-                        proposedActions: r.proposedActions,
-                      }}
-                    />
+                    {r.status === "needs_human" ? (
+                      <EscalationReplySheet
+                        row={{
+                          threadId: r.threadId,
+                          sender: r.sender,
+                          subject: r.subject,
+                          body: r.body,
+                          reasoning: r.llmReasoning,
+                        }}
+                      />
+                    ) : (
+                      <ReviewApprovalSheet
+                        row={{
+                          id: r.id,
+                          sender: r.sender,
+                          subject: r.subject,
+                          decisionLabel:
+                            DECISION_LABELS[r.decision] ?? r.decision,
+                          body: r.body,
+                          draftReplyText: r.draftReplyText,
+                          context: r.context,
+                          proposedActions: r.proposedActions,
+                        }}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ))

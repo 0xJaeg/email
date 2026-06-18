@@ -19,6 +19,10 @@ export type ProposedActionRow = { type: string; reason?: string }
 
 export type PendingApprovalRow = {
   id: string
+  // "pending_approval" (an agent draft to approve/reject) or "needs_human"
+  // (an escalation for a human to reply to manually).
+  status: string
+  threadId: string | null
   receivedAt: string
   sender: string
   subject: string
@@ -32,6 +36,8 @@ export type PendingApprovalRow = {
   proposedActions: ProposedActionRow[]
 }
 
+// The operator action queue: agent drafts awaiting approval AND escalations
+// awaiting a manual reply, so nothing needing a human is hidden.
 export async function fetchPendingApprovals(
   client: DbClient,
   query: string,
@@ -42,10 +48,10 @@ export async function fetchPendingApprovals(
   let q = client
     .from("decisions")
     .select(
-      "id, created_at, classification, decision, template_used, llm_reasoning, draft_reply_text, context, proposed_actions, emails!inner(from_email, subject, body_text)",
+      "id, status, created_at, classification, decision, template_used, llm_reasoning, draft_reply_text, context, proposed_actions, emails!inner(from_email, subject, body_text, thread_id)",
       { count: "exact" }
     )
-    .eq("status", "pending_approval")
+    .in("status", ["pending_approval", "needs_human"])
     .order("created_at", { ascending: false })
 
   const esc = sanitizeSearch(query)
@@ -63,6 +69,8 @@ export async function fetchPendingApprovals(
   return {
     data: (data ?? []).map((row) => ({
       id: row.id,
+      status: row.status ?? "",
+      threadId: row.emails?.thread_id ?? null,
       receivedAt: row.created_at,
       sender: row.emails?.from_email ?? "(unknown)",
       subject: row.emails?.subject ?? "(no subject)",
@@ -73,7 +81,8 @@ export async function fetchPendingApprovals(
       llmReasoning: row.llm_reasoning,
       draftReplyText: row.draft_reply_text,
       context: (row.context as EnrichmentContext | null) ?? null,
-      proposedActions: (row.proposed_actions as ProposedActionRow[] | null) ?? [],
+      proposedActions:
+        (row.proposed_actions as ProposedActionRow[] | null) ?? [],
     })),
     count: count ?? 0,
   }

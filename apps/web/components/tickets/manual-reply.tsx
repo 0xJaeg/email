@@ -11,7 +11,13 @@ import { IconLoader2, IconSend } from "@tabler/icons-react"
 // A human takes over and replies in their own words — primarily for escalated
 // (needs_human) tickets the agent didn't draft. Sends immediately from the
 // thread's registered inbox.
-export function ManualReply({ threadId }: { threadId: string }) {
+export function ManualReply({
+  threadId,
+  onSent,
+}: {
+  threadId: string
+  onSent?: () => void
+}) {
   const router = useRouter()
   const [text, setText] = useState("")
   const [isPending, startTransition] = useTransition()
@@ -30,6 +36,7 @@ export function ManualReply({ threadId }: { threadId: string }) {
         toast.success(r.message)
         setText("")
         router.refresh()
+        onSent?.()
       }
     })
   }
