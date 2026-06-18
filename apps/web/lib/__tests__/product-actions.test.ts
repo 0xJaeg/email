@@ -19,9 +19,12 @@ function makeAdmin() {
       return b
     })
     b.eq = vi.fn(() => b)
+    b.like = vi.fn(() => b)
     b.single = vi.fn(async () => {
-      if (table === "profiles") return { data: { role: callerRole }, error: null }
-      if (table === "products") return { data: { slug: targetSlug }, error: null }
+      if (table === "profiles")
+        return { data: { role: callerRole }, error: null }
+      if (table === "products")
+        return { data: { slug: targetSlug }, error: null }
       return { data: null, error: null }
     })
     b.then = (resolve: (v: unknown) => void) =>
@@ -38,7 +41,9 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }))
 let adminClient: ReturnType<typeof makeAdmin>
-vi.mock("@/lib/supabase/admin", () => ({ getServerSupabase: () => adminClient }))
+vi.mock("@/lib/supabase/admin", () => ({
+  getServerSupabase: () => adminClient,
+}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 
 import { createProduct, deleteProduct } from "../product-actions.js"
@@ -51,7 +56,6 @@ function form(obj: Record<string, string>) {
 
 const valid = {
   name: "Mobile Profits",
-  slug: "mobile-profits",
   platform: "clickbank",
   adapter_key: "mock",
   is_active: "active",
@@ -84,6 +88,14 @@ describe("product-actions", () => {
         adapter_key: "mock",
         is_active: true,
       })
+    )
+  })
+
+  it("auto-derives the slug from the name", async () => {
+    const r = await createProduct(form({ ...valid, name: "My New Product!" }))
+    expect(r.error).toBe(false)
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: "my-new-product" })
     )
   })
 
