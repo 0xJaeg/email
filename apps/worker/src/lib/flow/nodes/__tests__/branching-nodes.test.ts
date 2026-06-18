@@ -37,7 +37,6 @@ const ctxWith = (over: Partial<StepContext> = {}): StepContext =>
       reasoning: "r",
       usage: {},
     },
-    instructions: { classifier: "C", reply: "R" },
     ...over,
   }) as unknown as StepContext
 

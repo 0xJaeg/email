@@ -14,6 +14,7 @@ vi.mock("../../../generate-reply.js", () => ({
 }))
 
 import { DraftStep } from "../draft.js"
+import { REPLY_HEADER } from "../../../instructions.js"
 import type { StepContext, FlowStepConfig } from "../../types.js"
 
 function makeCtx(): StepContext {
@@ -58,7 +59,6 @@ function makeCtx(): StepContext {
     },
     supabase: { from: () => b } as never,
     anthropic: {} as never,
-    instructions: { classifier: "GLOBAL_CLASSIFIER", reply: "GLOBAL_REPLY" },
   }
 }
 
@@ -69,20 +69,20 @@ const cfg = (ai_prompt: string | null): FlowStepConfig => ({
   condition: {},
 })
 
-describe("DraftStep ai_prompt override", () => {
-  it("passes config.ai_prompt as replyInstructions when set", async () => {
+describe("DraftStep reply instructions", () => {
+  it("prepends the REPLY_HEADER guardrails to the node's prompt", async () => {
     generateReply.mockClear()
     await DraftStep.run(makeCtx(), cfg("CUSTOM_REPLY"))
     expect(generateReply.mock.calls[0]?.[0].replyInstructions).toBe(
-      "CUSTOM_REPLY"
+      `${REPLY_HEADER}\n\n---\n\nCUSTOM_REPLY`
     )
   })
 
-  it("falls back to instructions.reply when ai_prompt is null/blank", async () => {
+  it("still includes the guardrails when the node prompt is blank", async () => {
     generateReply.mockClear()
     await DraftStep.run(makeCtx(), cfg(null))
     expect(generateReply.mock.calls[0]?.[0].replyInstructions).toBe(
-      "GLOBAL_REPLY"
+      `${REPLY_HEADER}\n\n---\n\n`
     )
   })
 })

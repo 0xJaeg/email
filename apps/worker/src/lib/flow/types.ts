@@ -58,7 +58,6 @@ export type StepContext = {
   decisionId?: string
   supabase: ServerClient
   anthropic: Anthropic
-  instructions: { classifier: string; reply: string }
 }
 
 export type Step = {

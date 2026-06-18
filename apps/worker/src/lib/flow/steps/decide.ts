@@ -21,7 +21,6 @@ async function decideOutcome(
       email: ctx.email,
       supabase: ctx.supabase,
       anthropic: ctx.anthropic,
-      instructions: ctx.instructions.classifier,
       productId: ctx.product?.productId ?? null,
     })
     const combinedReasoning = r.sonnet_reasoning

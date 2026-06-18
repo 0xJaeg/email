@@ -39,8 +39,8 @@ export function NodePromptForm({
     <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-4 px-4 pb-4">
       <input type="hidden" name="id" value={node.id} />
       <p className="text-sm text-muted-foreground">
-        The AI prompt for this node, on this flow. Leave empty to fall back to
-        the shared prompt at <span className="font-mono">/prompts</span>. Edits
+        The full AI prompt for this node. The worker prepends fixed safety
+        framing (brand voice + guardrails); this is the editable body. Edits
         take effect on the next email (the worker reloads within ~60s — no
         restart).
       </p>
@@ -48,7 +48,7 @@ export function NodePromptForm({
         name="ai_prompt"
         defaultValue={node.ai_prompt ?? ""}
         disabled={isPending}
-        placeholder="(empty — using the shared prompt)"
+        placeholder="(this node has no prompt set)"
         className="max-h-[70vh] min-h-[40vh] flex-1 overflow-y-auto font-mono text-xs"
         spellCheck={false}
       />

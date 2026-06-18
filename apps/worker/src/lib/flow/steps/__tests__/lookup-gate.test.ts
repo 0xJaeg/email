@@ -42,7 +42,6 @@ function makeCtx(opts: { needs?: boolean; throws?: boolean }): StepContext {
     anthropic: {
       messages: { parse },
     } as unknown as StepContext["anthropic"],
-    instructions: { classifier: "C", reply: "R" },
   }
 }
 

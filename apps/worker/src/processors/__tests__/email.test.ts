@@ -145,9 +145,6 @@ vi.mock("../../lib/anthropic.js", () => ({
   }),
 }))
 vi.mock("../../lib/supabase.js", () => ({ getSupabase: () => store.supabase }))
-vi.mock("../../lib/instructions.js", () => ({
-  getInstructions: async () => ({ classifier: "CLASSIFIER", reply: "REPLY" }),
-}))
 
 const mockGenerateReply = vi.fn()
 vi.mock("../../lib/generate-reply.js", () => ({

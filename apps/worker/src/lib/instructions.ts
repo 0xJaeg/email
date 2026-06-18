@@ -1,13 +1,17 @@
-import type { ServerClient } from "@workspace/db/client"
+// The two hard-coded system-prompt framings the worker prepends to a node's
+// editable prompt. These are NOT editable content (there is no shared /prompts
+// layer) — they are the classifier framing and the reply safety rails (no JSON,
+// no internal/template leakage, never invent URLs, write as a human). The
+// editable, per-node prompt body lives in flow_nodes.ai_prompt, edited on /flows.
 
-const HEADER = `You are an email-support classifier for a ClickBank-listed digital-product business. Read the instructions below carefully. They contain the classification rubric, the refund policy your customers know about, an FAQ skeleton, and a tone-of-voice guide. Your job is to classify exactly one inbound email into one of three labels and return your reasoning. Follow the output format described in the classifier rubric exactly.`
+export const HEADER = `You are an email-support classifier for a ClickBank-listed digital-product business. Read the instructions below carefully. They contain the classification rubric, the refund policy your customers know about, an FAQ skeleton, and a tone-of-voice guide. Your job is to classify exactly one inbound email into one of three labels and return your reasoning. Follow the output format described in the classifier rubric exactly.`
 
 // The reply generator is a DIFFERENT job from the classifier: it writes the
 // customer-facing email. It must NOT inherit the classifier identity or the
 // JSON output format, or it replies with classification JSON and internal
 // architecture talk. This header establishes the agent persona and hard
 // guardrails against leaking anything internal.
-const REPLY_HEADER = `You are a human customer-support agent for a ClickBank-listed digital-product business, writing a reply that will be sent directly to the customer by email.
+export const REPLY_HEADER = `You are a human customer-support agent for a ClickBank-listed digital-product business, writing a reply that will be sent directly to the customer by email.
 
 Write ONLY the body of that reply — natural, plain-text prose in the brand voice described below. The material below (refund policy, retention templates, FAQ answers, voice guide) is your internal knowledge for deciding what to say and do. Use it, but never expose it:
 
@@ -17,93 +21,3 @@ Write ONLY the body of that reply — natural, plain-text prose in the brand voi
 - NEVER invent, guess, or output a URL. Use only links that appear in the "Product support facts" or verified customer context provided with the message. If you don't have the exact link the customer needs, give the steps in words and offer to follow up with it — never use placeholder or example URLs (e.g. example.com).
 
 Output the reply body only: no preamble, no JSON, no meta-commentary.`
-
-// Kinds that feed the customer-facing reply prompt. Everything else (e.g. the
-// classifier rubric) is firewalled out so it can't bleed into a reply.
-const REPLY_KINDS = ["tone", "policy_refund", "policy_faq"] as const
-
-export type PromptConfig = { kind: string; content: string }
-export type Instructions = { classifier: string; reply: string }
-
-// Drop the trailing "What the classifier should remember…" section: it's
-// classifier-only meta and has no place in a customer-reply prompt.
-function customerFacing(body: string): string {
-  const head = body.split(/\n#+\s*What the classifier should remember/i)[0]
-  return (head ?? body).trim()
-}
-
-// Pure assembly: prompt_configs rows → the two cached system strings. Sorted by
-// kind so the prompt-cache key stays stable across unchanged edits.
-export function assembleInstructions(configs: PromptConfig[]): Instructions {
-  const sorted = [...configs].sort((a, b) => a.kind.localeCompare(b.kind))
-
-  const classifierBlocks = sorted.map((c) => `# ${c.kind}\n\n${c.content}`)
-  const classifier = `${HEADER}\n\n---\n\n${classifierBlocks.join("\n\n---\n\n")}`
-
-  const replyBlocks = REPLY_KINDS.map((kind) =>
-    sorted.find((c) => c.kind === kind)
-  )
-    .filter((c): c is PromptConfig => Boolean(c))
-    .map((c) => `# ${c.kind}\n\n${customerFacing(c.content)}`)
-  const reply = `${REPLY_HEADER}\n\n---\n\n${replyBlocks.join("\n\n---\n\n")}`
-
-  return { classifier, reply }
-}
-
-// In-process cache, keyed per product, so we don't refetch per email; edits
-// reflect within TTL_MS without a worker restart.
-const TTL_MS = 60_000
-const cache = new Map<string, { value: Instructions; fetchedAt: number }>()
-
-// Resolve the system prompts for a product: its own prompt_configs (product_id
-// set) override the shared defaults (product_id null) per kind. Pass null for
-// the defaults only.
-export async function getInstructions(
-  supabase: ServerClient,
-  productId?: string | null
-): Promise<Instructions> {
-  const key = productId ?? "__default__"
-  const now = Date.now()
-  const hit = cache.get(key)
-  if (hit && now - hit.fetchedAt < TTL_MS) return hit.value
-
-  const { data, error } = await supabase
-    .from("prompt_configs")
-    .select("kind, content, product_id")
-    .eq("is_active", true)
-    .or(
-      productId
-        ? `product_id.eq.${productId},product_id.is.null`
-        : "product_id.is.null"
-    )
-  if (error) throw new Error(`load_prompt_configs: ${error.message}`)
-
-  // Per kind, the product-specific row wins over the shared default.
-  const byKind = new Map<string, PromptConfig>()
-  for (const row of data ?? []) {
-    const existing = byKind.get(row.kind)
-    if (!existing || row.product_id != null) {
-      byKind.set(row.kind, { kind: row.kind, content: row.content })
-    }
-  }
-  const resolved = [...byKind.values()]
-  if (resolved.length === 0) {
-    throw new Error(
-      "no active prompt_configs — seed them with scripts/seed-prompts.mjs"
-    )
-  }
-
-  const value = assembleInstructions(resolved)
-  cache.set(key, { value, fetchedAt: now })
-
-  const estTokens = Math.round(value.classifier.length / 4)
-  console.log(
-    `[worker] instructions loaded for ${key}: ${value.classifier.length} chars, ~${estTokens} tokens (classifier); ${value.reply.length} chars (reply)`
-  )
-  if (estTokens < 4096) {
-    console.warn(
-      `[worker] WARNING: instructions are below Haiku 4.5's 4096-token cache floor; prompt caching will not activate.`
-    )
-  }
-  return value
-}

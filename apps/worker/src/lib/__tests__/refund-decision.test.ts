@@ -11,7 +11,10 @@ const email = {
 
 // Supabase stub: `decisions` count (awaited) returns `priorRefunds` matching
 // rows; `action_triggers` (maybeSingle) returns the configured threshold.
-function makeSupabase(opts: { priorRefunds: number; threshold: number | null }) {
+function makeSupabase(opts: {
+  priorRefunds: number
+  threshold: number | null
+}) {
   const make = () => {
     const b: Record<string, unknown> = {}
     b.select = vi.fn(() => b)
@@ -44,7 +47,6 @@ function run(priorRefunds: number, threshold: number | null) {
     email,
     supabase: makeSupabase({ priorRefunds, threshold }),
     anthropic,
-    instructions: "INSTRUCTIONS",
     productId: "prod-1",
   })
 }
