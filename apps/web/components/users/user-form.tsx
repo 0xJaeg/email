@@ -49,7 +49,7 @@ export function UserForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 px-4">
+    <form onSubmit={onSubmit} className="space-y-4 px-4 pb-4">
       {!isCreate && <input type="hidden" name="id" value={user?.id} />}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
@@ -104,7 +104,7 @@ export function UserForm({
           placeholder={isCreate ? "" : "Leave blank to keep current"}
         />
       </div>
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? (
           <IconLoader2 className="animate-spin" />

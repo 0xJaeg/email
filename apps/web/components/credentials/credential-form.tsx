@@ -46,7 +46,7 @@ export function CredentialForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 px-4">
+    <form onSubmit={onSubmit} className="space-y-4 px-4 pb-4">
       {lockedProductId ? (
         <input type="hidden" name="product_id" value={lockedProductId} />
       ) : (
