@@ -126,10 +126,10 @@ export function N8nWorkflowBlock({
   }
 
   return (
-    <div className="rounded-2xl border bg-background/60 p-2">
+    <div className="flex min-h-0 flex-1 flex-col rounded-2xl border bg-background/60 p-2">
       <div
         ref={canvasRef}
-        className="relative h-[600px] w-full overflow-auto rounded-xl border bg-muted/20"
+        className="relative min-h-0 w-full flex-1 overflow-auto rounded-xl border bg-muted/20"
         role="region"
         aria-label="Decision flow canvas"
         tabIndex={0}
