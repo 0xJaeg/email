@@ -22,11 +22,11 @@ async function requireAdmin(): Promise<
 }
 
 function parse(formData: FormData) {
-  const address = String(formData.get("address") ?? "").trim()
   return {
     product_id: String(formData.get("product_id") ?? ""),
-    agent_mail_inbox_id: String(formData.get("agent_mail_inbox_id") ?? "").trim(),
-    address: address || null,
+    agent_mail_inbox_id: String(
+      formData.get("agent_mail_inbox_id") ?? ""
+    ).trim(),
     is_active: String(formData.get("is_active") ?? "active") === "active",
   }
 }

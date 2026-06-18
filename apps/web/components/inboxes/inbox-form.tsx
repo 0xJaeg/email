@@ -82,19 +82,10 @@ export function InboxForm({
           required
           disabled={isPending}
         />
-        <p className="text-muted-foreground text-xs">
-          Must match the <code>inbox_id</code> Agent Mail sends in its webhook.
+        <p className="text-xs text-muted-foreground">
+          The inbox&apos;s email address — must match the <code>inbox_id</code>{" "}
+          Agent Mail sends in its webhook.
         </p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="address">Address (display)</Label>
-        <Input
-          id="address"
-          name="address"
-          defaultValue={inbox?.address ?? ""}
-          placeholder="support@yourdomain.com"
-          disabled={isPending}
-        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="is_active">Status</Label>
@@ -112,7 +103,7 @@ export function InboxForm({
           </SelectContent>
         </Select>
       </div>
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? (
           <IconLoader2 className="animate-spin" />
