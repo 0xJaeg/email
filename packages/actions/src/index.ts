@@ -3,7 +3,6 @@ export { refundCustomer } from "./refundCustomer.js"
 export { suppressContact } from "./suppressContact.js"
 export { getAdapter } from "./get-adapter.js"
 export { encryptSecret, decryptSecret } from "./crypto.js"
-export { getAgentMailInboxId } from "./agent-mail.js"
 export type {
   SendReplyArgs,
   SendReplyResult,

@@ -40,8 +40,8 @@ describe("humanizeAction", () => {
 
 describe("humanizeError", () => {
   it("replaces known internal errors with operator-friendly text", () => {
-    expect(humanizeError("AGENT_MAIL_INBOX_ID is not set")).toBe(
-      "Email sending isn't set up yet"
+    expect(humanizeError("no_sender_inbox: add it in Inboxes")).toBe(
+      "No Agent Mail inbox is registered for this conversation"
     )
     expect(humanizeError("signature_verification_failed: bad sig")).toBe(
       "Couldn't verify the incoming email's signature"

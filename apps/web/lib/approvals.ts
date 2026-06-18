@@ -3,7 +3,6 @@
 import { sendReply } from "@workspace/actions/send-reply"
 import { refundCustomer } from "@workspace/actions/refund-customer"
 import { suppressContact } from "@workspace/actions/suppress-contact"
-import { getAgentMailInboxId } from "@workspace/actions/agent-mail"
 import type { ProposedAction } from "@workspace/actions/types"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import { getActionSupabase } from "@/lib/supabase/server"
@@ -128,9 +127,9 @@ export async function approveDecision(
     }
   }
 
-  // Notify. getAgentMailInboxId() throws if env is unset — catch it here so a
-  // partial state (refund succeeded, notify failed) is recorded rather than
-  // leaving the decision in limbo.
+  // Notify. resolveSenderInbox() throws if the thread has no registered inbox —
+  // catch it here so a partial state (refund succeeded, notify failed) is
+  // recorded rather than leaving the decision in limbo.
   const sent = await (async () => {
     let inboxId: string
     try {
@@ -209,8 +208,10 @@ function extractOrderId(body: string | null): string | null {
   return m ? (m[1] ?? null) : null
 }
 
-// Reply from the inbox the thread belongs to (multi-inbox). Falls back to the
-// single-inbox env for threads with no routed inbox (backfilled / pre-routing).
+// Reply from the inbox the thread belongs to (multi-inbox). Every inbox the
+// agent answers is registered in /inboxes; if a thread has no registered inbox
+// we fail loudly rather than guess a global sender (which could reply from the
+// wrong address/domain). The caller records the failure for a human to fix.
 async function resolveSenderInbox(
   supabase: ReturnType<typeof getServerSupabase>,
   threadId: string | null
@@ -230,7 +231,9 @@ async function resolveSenderInbox(
       if (inbox?.agent_mail_inbox_id) return inbox.agent_mail_inbox_id
     }
   }
-  return getAgentMailInboxId()
+  throw new Error(
+    "no_sender_inbox: this thread has no registered Agent Mail inbox — add it in Inboxes"
+  )
 }
 
 // The product adapter that executes a refund for this thread's product.

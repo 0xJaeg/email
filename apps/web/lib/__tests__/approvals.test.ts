@@ -17,10 +17,15 @@ function makeServerSupabase(
     b.select = vi.fn(() => b)
     b.eq = vi.fn(() => b)
     b.maybeSingle = vi.fn(async () => {
+      // Default to a registered inbox so the happy path resolves a sender;
+      // tests override (e.g. thread.inbox_id: null) to hit the fail-loud path.
       if (table === "threads")
-        return { data: routing?.thread ?? null, error: null }
+        return { data: { inbox_id: "ibx-1", ...routing?.thread }, error: null }
       if (table === "inboxes")
-        return { data: routing?.inbox ?? null, error: null }
+        return {
+          data: routing?.inbox ?? { agent_mail_inbox_id: "inbox_default" },
+          error: null,
+        }
       if (table === "products")
         return { data: routing?.product ?? null, error: null }
       return { data: claimed, error: null }
@@ -55,10 +60,6 @@ const mockSuppressContact = vi.fn()
 vi.mock("@workspace/actions/suppress-contact", () => ({
   suppressContact: (...a: unknown[]) => mockSuppressContact(...a),
 }))
-vi.mock("@workspace/actions/agent-mail", () => ({
-  getAgentMailInboxId: () => "inbox_test",
-}))
-
 import { approveDecision, rejectDecision } from "../approvals.js"
 
 const emails = {
@@ -189,6 +190,20 @@ describe("approveDecision", () => {
     expect(mockSendReply).toHaveBeenCalledWith(
       expect.objectContaining({ inboxId: "inbox_routed" })
     )
+  })
+
+  it("fails the send (no global fallback) when the thread has no registered inbox", async () => {
+    serverSupabase = makeServerSupabase(
+      {
+        id: "dec-8",
+        decision: "send_faq_reply",
+        draft_reply_text: "Hi…",
+        emails,
+      },
+      { thread: { inbox_id: null } }
+    )
+    await approveDecision("dec-8")
+    expect(mockSendReply).not.toHaveBeenCalled()
   })
 
   it("is a no-op when the decision was already handled (claim returns nothing)", async () => {

@@ -21,7 +21,6 @@ vi.mock("../agent-mail.js", () => ({
       },
     },
   }),
-  getAgentMailInboxId: () => "inbox_test",
 }))
 
 const base = {

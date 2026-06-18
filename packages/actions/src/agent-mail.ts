@@ -11,11 +11,3 @@ export function getAgentMailClient(): AgentMailClient {
   cached = new AgentMailClient({ apiKey })
   return cached
 }
-
-export function getAgentMailInboxId(): string {
-  const inboxId = process.env.AGENT_MAIL_INBOX_ID
-  if (!inboxId) {
-    throw new Error("AGENT_MAIL_INBOX_ID is not set")
-  }
-  return inboxId
-}

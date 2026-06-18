@@ -159,7 +159,6 @@ vi.mock("../../lib/refund-decision.js", () => ({
 const mockSendReply = vi.fn()
 vi.mock("@workspace/actions", () => ({
   sendReply: (...a: unknown[]) => mockSendReply(...a),
-  getAgentMailInboxId: () => "inbox_test",
   getAdapter: () => mockAdapter,
 }))
 

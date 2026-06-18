@@ -59,8 +59,8 @@ export function humanizeDecisionStatus(status: string): string {
 // never hide a genuinely unexpected failure.
 const ERROR_LABELS: { match: RegExp; friendly: string }[] = [
   {
-    match: /AGENT_MAIL_INBOX_ID is not set/i,
-    friendly: "Email sending isn't set up yet",
+    match: /no_sender_inbox/i,
+    friendly: "No Agent Mail inbox is registered for this conversation",
   },
   {
     match: /signature_verification_failed/i,
