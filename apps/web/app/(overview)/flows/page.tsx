@@ -32,7 +32,7 @@ export default async function FlowsPage({
   ])
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-col gap-2">
         <InboxPicker inboxes={inboxes} />
         <p className="text-sm text-muted-foreground">
