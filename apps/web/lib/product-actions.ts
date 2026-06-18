@@ -6,7 +6,13 @@ import { getServerSupabase } from "@/lib/supabase/admin"
 import type { ServerClient } from "@workspace/db/client"
 
 const PLATFORMS = ["clickbank", "jvzoo"] as const
-const ADAPTER_KEYS = ["mock", "clickbank", "jvzoo"] as const
+const ADAPTER_KEYS = [
+  "mock",
+  "clickbank",
+  "jvzoo",
+  "digistore",
+  "profitdashboard",
+] as const
 type Platform = (typeof PLATFORMS)[number]
 type AdapterKey = (typeof ADAPTER_KEYS)[number]
 
@@ -56,9 +62,6 @@ function parseThreshold(raw: FormDataEntryValue | null): number | null {
 function parse(formData: FormData) {
   return {
     name: String(formData.get("name") ?? "").trim(),
-    slug: String(formData.get("slug") ?? "")
-      .trim()
-      .toLowerCase(),
     platform: String(formData.get("platform") ?? ""),
     adapter_key: String(formData.get("adapter_key") ?? ""),
     is_active: String(formData.get("is_active") ?? "active") === "active",
@@ -69,8 +72,6 @@ function parse(formData: FormData) {
 
 function validate(p: ReturnType<typeof parse>): string | null {
   if (!p.name) return "Name is required."
-  if (!/^[a-z0-9-]+$/.test(p.slug))
-    return "Slug must be lowercase letters, numbers, and hyphens."
   if (!PLATFORMS.includes(p.platform as Platform)) return "Invalid platform."
   if (!ADAPTER_KEYS.includes(p.adapter_key as AdapterKey))
     return "Invalid adapter."
@@ -87,6 +88,31 @@ function validate(p: ReturnType<typeof parse>): string | null {
   return null
 }
 
+// Auto-derive a stable slug from the name (it's no longer user-edited; its only
+// real job is the `default` fallback product, which is seeded — never created
+// here). Deduped against existing slugs so the unique constraint never trips.
+function slugify(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "product"
+  )
+}
+
+async function uniqueSlug(admin: ServerClient, name: string): Promise<string> {
+  const base = slugify(name)
+  const { data } = await admin
+    .from("products")
+    .select("slug")
+    .like("slug", `${base}%`)
+  const taken = new Set((data ?? []).map((r) => r.slug))
+  if (!taken.has(base)) return base
+  for (let i = 2; ; i++) {
+    if (!taken.has(`${base}-${i}`)) return `${base}-${i}`
+  }
+}
+
 export async function createProduct(formData: FormData): Promise<Result> {
   const auth = await requireAdmin()
   if (!auth.ok) return { error: true, message: "Not authorized." }
@@ -94,12 +120,13 @@ export async function createProduct(formData: FormData): Promise<Result> {
   const invalid = validate(p)
   if (invalid) return { error: true, message: invalid }
 
-  const { error } = await auth.admin.from("products").insert(p)
+  const slug = await uniqueSlug(auth.admin, p.name)
+  const { error } = await auth.admin.from("products").insert({ ...p, slug })
   if (error) {
     if (error.code === "23505")
       return {
         error: true,
-        message: "A product with that slug already exists.",
+        message: "A product with that name already exists.",
       }
     return { error: true, message: error.message }
   }
@@ -117,14 +144,7 @@ export async function updateProduct(formData: FormData): Promise<Result> {
   if (invalid) return { error: true, message: invalid }
 
   const { error } = await auth.admin.from("products").update(p).eq("id", id)
-  if (error) {
-    if (error.code === "23505")
-      return {
-        error: true,
-        message: "A product with that slug already exists.",
-      }
-    return { error: true, message: error.message }
-  }
+  if (error) return { error: true, message: error.message }
   revalidatePath("/products")
   revalidatePath("/products/[id]", "page")
   return { error: false, message: "Product updated." }

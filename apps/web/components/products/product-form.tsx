@@ -63,17 +63,6 @@ export function ProductForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="slug">Slug</Label>
-        <Input
-          id="slug"
-          name="slug"
-          defaultValue={product?.slug}
-          placeholder="mobile-profits"
-          required
-          disabled={isPending}
-        />
-      </div>
-      <div className="space-y-2">
         <Label htmlFor="platform">Platform</Label>
         <Select
           name="platform"
@@ -93,20 +82,26 @@ export function ProductForm({
         <Label htmlFor="adapter_key">Adapter</Label>
         <Select
           name="adapter_key"
-          defaultValue={product?.adapter_key ?? "mock"}
+          defaultValue={product?.adapter_key ?? "profitdashboard"}
           disabled={isPending}
         >
           <SelectTrigger id="adapter_key" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="mock">mock (no real API)</SelectItem>
+            <SelectItem value="profitdashboard">
+              profitdashboard (access lookup)
+            </SelectItem>
             <SelectItem value="clickbank">clickbank</SelectItem>
             <SelectItem value="jvzoo">jvzoo</SelectItem>
+            <SelectItem value="digistore">digistore</SelectItem>
+            <SelectItem value="mock">mock (no real API)</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">
-          Keep on “mock” until real API credentials are configured.
+          profitdashboard does access / membership lookups (live). clickbank,
+          jvzoo and digistore do orders + refunds once their API keys are set.
+          mock returns safe canned data.
         </p>
       </div>
       <div className="space-y-2 border-t pt-4">
