@@ -1,18 +1,7 @@
-import { generateReply, type Template } from "../../generate-reply.js"
-import { loadTemplateBlock } from "../../templates.js"
+import { generateReply } from "../../generate-reply.js"
 import { REPLY_HEADER } from "../../instructions.js"
 import type { ProposedAction } from "@workspace/actions"
 import type { Step, StepContext } from "../types.js"
-
-const REPLY_TEMPLATES = {
-  send_faq_reply: "FAQ_REPLY",
-  send_offer_1: "OFFER_1",
-  send_offer_2: "OFFER_2",
-} as const
-const REFUND_TEMPLATES = {
-  issue_refund: "REFUND_CONFIRMATION",
-  issue_refund_chargeback: "REFUND_CHARGEBACK_APOLOGY",
-} as const
 
 // Step: persist the decision row, then act on it — escalate to a human, or
 // draft a reply (FAQ / offer / refund) and queue it for approval. Nothing is
@@ -111,7 +100,6 @@ export const DraftStep: Step = {
       await draftAndQueue(
         ctx,
         row.id,
-        REPLY_TEMPLATES[dec.decision as keyof typeof REPLY_TEMPLATES],
         "reply_pending_approval",
         replyInstructions
       )
@@ -119,7 +107,6 @@ export const DraftStep: Step = {
       await draftAndQueue(
         ctx,
         row.id,
-        REFUND_TEMPLATES[dec.decision as keyof typeof REFUND_TEMPLATES],
         "refund_pending_approval",
         replyInstructions
       )
@@ -135,20 +122,16 @@ export const DraftStep: Step = {
 async function draftAndQueue(
   ctx: StepContext,
   decisionId: string,
-  template: Template,
   auditAction: "reply_pending_approval" | "refund_pending_approval",
   replyInstructions: string
 ): Promise<void> {
   const { email, supabase, anthropic, productFacts, enrichment } = ctx
   try {
-    const templates = await loadTemplateBlock(supabase)
     const reply = await generateReply({
-      template,
       email,
       customerContext: enrichment?.customerContext,
       productFacts,
       replyInstructions,
-      templates: templates || undefined,
       anthropic,
     })
     await supabase
@@ -161,7 +144,6 @@ async function draftAndQueue(
       status: "success",
       payload: {
         decision_id: decisionId,
-        template,
         draft_reply_text: reply.text,
         usage: reply.usage,
       },
@@ -177,7 +159,7 @@ async function draftAndQueue(
       email_id: email.id,
       status: "failure",
       error,
-      payload: { decision_id: decisionId, template },
+      payload: { decision_id: decisionId },
     })
   }
 }

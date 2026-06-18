@@ -19,7 +19,6 @@ describe("generateReply", () => {
   it("calls Haiku with cached instructions + per-email user prompt; returns text + usage", async () => {
     const anthropic = mockAnthropic("Hi Alice — refund issued. — Sam")
     const result = await generateReply({
-      template: "REFUND_CONFIRMATION",
       email: {
         from_email: "Alice <alice@x.com>",
         subject: "refund pls",
@@ -38,14 +37,12 @@ describe("generateReply", () => {
       type: "ephemeral",
       ttl: "1h",
     })
-    expect(callArgs?.messages[0].content).toContain("REFUND_CONFIRMATION")
     expect(callArgs?.messages[0].content).toContain("alice@x.com")
   })
 
   it("includes verified customer context in the prompt when provided", async () => {
     const anthropic = mockAnthropic("ok")
     await generateReply({
-      template: "FAQ_REPLY",
       email: { from_email: "a@x.com", subject: "s", body_text: "b" },
       customerContext: "- Purchase: Pro Course, order O-1",
       replyInstructions: "guide",
@@ -59,7 +56,6 @@ describe("generateReply", () => {
   it("includes product support facts and a never-invent-URLs instruction when provided", async () => {
     const anthropic = mockAnthropic("ok")
     await generateReply({
-      template: "FAQ_REPLY",
       email: { from_email: "a@x.com", subject: "s", body_text: "b" },
       productFacts:
         "Product: Mobile Profits (access delivered via Digistore24)\n- Login / sign-in URL: https://acme.test/login",
@@ -80,7 +76,6 @@ describe("generateReply", () => {
     } as unknown as Anthropic
     await expect(
       generateReply({
-        template: "FAQ_REPLY",
         email: { from_email: "x@x.com", subject: "s", body_text: "b" },
         replyInstructions: "guide",
         anthropic,
@@ -91,26 +86,11 @@ describe("generateReply", () => {
   it("strips em and en dashes from the reply text", async () => {
     const anthropic = mockAnthropic("Hello — world – and 10–20 items")
     const result = await generateReply({
-      template: "FAQ_REPLY",
       email: { from_email: "a@x.com", subject: "s", body_text: "b" },
       replyInstructions: "guide",
       anthropic,
     })
     expect(result.text).not.toMatch(/[—–]/)
     expect(result.text).toBe("Hello - world - and 10-20 items")
-  })
-
-  it("includes active templates in the prompt when provided", async () => {
-    const anthropic = mockAnthropic("ok")
-    await generateReply({
-      template: "FAQ_REPLY",
-      email: { from_email: "a@x.com", subject: "s", body_text: "b" },
-      replyInstructions: "guide",
-      templates: "### Login help\nGo to the login page.",
-      anthropic,
-    })
-    const create = anthropic.messages.create as ReturnType<typeof vi.fn>
-    const userContent = create.mock.calls[0]?.[0]?.messages[0].content
-    expect(userContent).toContain("Go to the login page.")
   })
 })
