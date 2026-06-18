@@ -42,6 +42,7 @@ const SUPPORT_FIELDS: [string, string][] = [
   ["dashboard_url", "dashboard_url"],
   ["notes", "support_notes"],
   ["access_product_key", "access_product_key"],
+  ["signature", "signature"],
 ]
 
 function buildSupportConfig(formData: FormData): Record<string, string> {

@@ -49,7 +49,10 @@ describe("sendReply", () => {
     expect(mockReply).toHaveBeenCalledWith(
       "inbox_test",
       "msg_in_99",
-      expect.objectContaining({ text: expect.any(String) })
+      expect.objectContaining({
+        text: expect.any(String),
+        html: expect.any(String),
+      })
     )
     expect(mockSend).not.toHaveBeenCalled()
     expect(result).toEqual({ ok: true, sentMessageId: "msg_sent_42" })
@@ -97,6 +100,7 @@ describe("sendReply", () => {
         to: ["rachel@example.com"],
         subject: "Re: Can't log in",
         text: expect.any(String),
+        html: expect.any(String),
       })
     )
     expect(mockReply).not.toHaveBeenCalled()

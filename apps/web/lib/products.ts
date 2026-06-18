@@ -11,6 +11,8 @@ export type SupportConfig = {
   /** Provider product key for multi-product access-lookup adapters (e.g.
    * profitdashboard): a customer must hold THIS key to count as a member. */
   access_product_key?: string
+  /** Signature appended to every outbound reply for this product. */
+  signature?: string
 }
 
 export type ProductRow = {

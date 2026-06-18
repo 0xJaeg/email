@@ -5,6 +5,7 @@ import { sendReply } from "@workspace/actions/send-reply"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import { getActionSupabase } from "@/lib/supabase/server"
 import { resolveSenderInbox } from "@/lib/sender-inbox"
+import { getReplySignature, withSignature } from "@/lib/reply-signature"
 
 type Result = { error: boolean; message: string }
 
@@ -61,10 +62,11 @@ export async function sendManualReply(
     ? email.subject
     : `Re: ${email.subject ?? ""}`.trim()
 
+  const signature = await getReplySignature(supabase, threadId)
   const sent = await sendReply({
     inboxId,
     inReplyToMessageId: email.agent_mail_message_id ?? "",
-    replyText: text,
+    replyText: withSignature(text, signature),
     decisionId: decision?.id ?? "",
     emailId: email.id,
     to: email.from_email,

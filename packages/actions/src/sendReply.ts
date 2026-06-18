@@ -1,4 +1,5 @@
 import { getAgentMailClient } from "./agent-mail.js"
+import { renderReplyHtml } from "./render-reply-html.js"
 import type { SendReplyArgs, SendReplyResult } from "./types.js"
 
 export async function sendReply(args: SendReplyArgs): Promise<SendReplyResult> {
@@ -8,17 +9,22 @@ export async function sendReply(args: SendReplyArgs): Promise<SendReplyResult> {
   // send a fresh message to the customer — reply() would 404 on a message that
   // doesn't exist in the inbox.
   const threaded = args.inReplyToMessageId.startsWith("msg_")
+  // Send multipart: the plain text we generated + an HTML rendering of it, so
+  // the customer's client shows a properly-formatted email (paragraphs + links)
+  // and text-only clients still get the original.
+  const html = renderReplyHtml(args.replyText)
   try {
     const sent = threaded
       ? await client.inboxes.messages.reply(
           args.inboxId,
           args.inReplyToMessageId,
-          { text: args.replyText }
+          { text: args.replyText, html }
         )
       : await client.inboxes.messages.send(args.inboxId, {
           to: [args.to],
           subject: args.subject,
           text: args.replyText,
+          html,
         })
     await args.supabase.from("audit_log").insert({
       action: "send_reply",
