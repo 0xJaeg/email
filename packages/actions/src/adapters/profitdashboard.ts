@@ -34,7 +34,7 @@ export const ProfitDashboardAdapter: ProductAdapter = {
     return { found: false, orders: [] }
   },
 
-  async checkAccess({ email }) {
+  async checkAccess({ email, expectedProductKey }) {
     const apiKey = process.env.PROFITDASHBOARD_API_KEY
     if (!apiKey) throw new Error("Missing PROFITDASHBOARD_API_KEY in env")
 
@@ -51,6 +51,16 @@ export const ProfitDashboardAdapter: ProductAdapter = {
     const body = (await res.json()) as LookupResponse
     const d = body.data
     if (!body.status || !d?.exists) {
+      return { hasAccess: false, details: null }
+    }
+    // The API spans multiple products. If this product expects a specific key,
+    // a member of a DIFFERENT product is not a member of THIS one — don't grant
+    // access (e.g. a Morning Method member emailing the Profit Dashboard inbox).
+    if (
+      expectedProductKey &&
+      d.product?.key &&
+      d.product.key !== expectedProductKey
+    ) {
       return { hasAccess: false, details: null }
     }
 

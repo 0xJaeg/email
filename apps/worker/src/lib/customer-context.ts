@@ -12,11 +12,16 @@ export type GatheredContext = {
 // invents details — the reply model is told to use only what's here.
 export async function gatherCustomerContext(
   adapter: ProductAdapter,
-  email: { from_email: string }
+  email: { from_email: string },
+  expectedProductKey?: string | null
 ): Promise<GatheredContext> {
   const lookup = await adapter.lookupOrder({ email: email.from_email })
   const order = lookup.orders[0] ?? null
-  const access = await adapter.checkAccess({ email: email.from_email, order })
+  const access = await adapter.checkAccess({
+    email: email.from_email,
+    order,
+    expectedProductKey,
+  })
 
   const lines: string[] = []
   if (lookup.found && order) {

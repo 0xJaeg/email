@@ -109,6 +109,21 @@ export function ProductForm({
           Keep on “mock” until real API credentials are configured.
         </p>
       </div>
+      <div className="space-y-2 border-t pt-4">
+        <Label htmlFor="access_product_key">Access lookup product key</Label>
+        <Input
+          id="access_product_key"
+          name="access_product_key"
+          defaultValue={product?.support_config?.access_product_key ?? ""}
+          placeholder="e.g. mobile_profit"
+          disabled={isPending}
+        />
+        <p className="text-xs text-muted-foreground">
+          For a multi-product access API (e.g. Profit Dashboard): the
+          provider&apos;s product key a customer must hold to count as a member
+          of this product. Leave blank to accept any membership.
+        </p>
+      </div>
       <div className="space-y-1 border-t pt-4">
         <p className="text-sm font-medium">
           Support facts (used in customer replies)
