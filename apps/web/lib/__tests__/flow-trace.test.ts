@@ -87,6 +87,7 @@ describe("buildFlowTrace", () => {
         },
       ],
       access: { hasAccess: true, details: "Your account is active." },
+      lookups: [],
     })
   })
 
@@ -102,11 +103,18 @@ describe("buildFlowTrace", () => {
 
   it("halts after the spam step when quarantined", () => {
     const steps = buildFlowTrace(
-      decision({ decision: "quarantine_spam", classification: "spam", context: null }),
+      decision({
+        decision: "quarantine_spam",
+        classification: "spam",
+        context: null,
+      }),
       [audit("webhook_received")]
     )
     expect(steps.map((s) => s.key)).toEqual(["received", "spam"])
-    expect(steps[1]?.detail).toEqual({ kind: "text", text: "Quarantined as spam" })
+    expect(steps[1]?.detail).toEqual({
+      kind: "text",
+      text: "Quarantined as spam",
+    })
   })
 
   it("lists proposed actions on a refund decision", () => {
@@ -115,14 +123,25 @@ describe("buildFlowTrace", () => {
         decision: "issue_refund",
         classification: "refund_request",
         status: "pending_approval",
-        proposedActions: [{ type: "issue_refund" }, { type: "suppress_contact", reason: "refund" }],
+        proposedActions: [
+          { type: "issue_refund" },
+          { type: "suppress_contact", reason: "refund" },
+        ],
       }),
-      [audit("webhook_received"), audit("gather_context"), audit("classify_email"), audit("refund_pending_approval")]
+      [
+        audit("webhook_received"),
+        audit("gather_context"),
+        audit("classify_email"),
+        audit("refund_pending_approval"),
+      ]
     )
     const actions = steps.find((s) => s.key === "actions")
     expect(actions?.detail).toEqual({
       kind: "actions",
-      actions: [{ type: "issue_refund" }, { type: "suppress_contact", reason: "refund" }],
+      actions: [
+        { type: "issue_refund" },
+        { type: "suppress_contact", reason: "refund" },
+      ],
     })
     expect(steps[steps.length - 1]?.key).toBe("pending")
   })
@@ -134,7 +153,10 @@ describe("buildFlowTrace", () => {
     )
     expect(steps.find((s) => s.key === "lookup")).toBeUndefined()
     const gate = steps.find((s) => s.key === "gate")
-    expect(gate?.detail).toEqual({ kind: "text", text: "Skipped — no lookup needed" })
+    expect(gate?.detail).toEqual({
+      kind: "text",
+      text: "Skipped — no lookup needed",
+    })
   })
 
   it("treats an empty orders array as no lookup", () => {
