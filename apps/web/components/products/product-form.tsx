@@ -3,6 +3,7 @@
 import { type FormEvent, useState, useTransition } from "react"
 import { toast } from "sonner"
 import { createProduct, updateProduct } from "@/lib/product-actions"
+import { setProductKeys } from "@/lib/credential-actions"
 import type { ProductRow } from "@/lib/products"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
@@ -36,16 +37,32 @@ export function ProductForm({
     const formData = new FormData(e.currentTarget)
     startTransition(async () => {
       setError(null)
-      const result = isCreate
-        ? await createProduct(formData)
-        : await updateProduct(formData)
+      if (isCreate) {
+        const result = await createProduct(formData)
+        if (result.error) {
+          setError(result.message)
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        closeSheet()
+        return
+      }
+      const result = await updateProduct(formData)
       if (result.error) {
         setError(result.message)
         toast.error(result.message)
-      } else {
-        toast.success(result.message)
-        closeSheet()
+        return
       }
+      // Save any API keys entered (blank fields keep the current key).
+      const keys = await setProductKeys(formData)
+      if (keys.error) {
+        setError(keys.message)
+        toast.error(keys.message)
+        return
+      }
+      toast.success(result.message)
+      closeSheet()
     })
   }
 
@@ -119,6 +136,49 @@ export function ProductForm({
           of this product. Leave blank to accept any membership.
         </p>
       </div>
+      {!isCreate && (
+        <div className="space-y-3 border-t pt-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Platform API keys</p>
+            <p className="text-xs text-muted-foreground">
+              Per platform: a <span className="font-medium">view</span> key
+              (order lookups) and an <span className="font-medium">edit</span>{" "}
+              key (refunds). Leave a field blank to keep the current key; keys in
+              use are listed on the product page.
+            </p>
+          </div>
+          {(["clickbank", "jvzoo", "digistore"] as const).map((p) => (
+            <div key={p} className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor={`key_${p}_view`} className="text-xs">
+                  <span className="capitalize">{p}</span> · view
+                </Label>
+                <Input
+                  id={`key_${p}_view`}
+                  name={`key_${p}_view`}
+                  type="password"
+                  autoComplete="off"
+                  placeholder="••••••"
+                  disabled={isPending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`key_${p}_refund`} className="text-xs">
+                  <span className="capitalize">{p}</span> · refund
+                </Label>
+                <Input
+                  id={`key_${p}_refund`}
+                  name={`key_${p}_refund`}
+                  type="password"
+                  autoComplete="off"
+                  placeholder="••••••"
+                  disabled={isPending}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="space-y-1 border-t pt-4">
         <p className="text-sm font-medium">
           Support facts (used in customer replies)
