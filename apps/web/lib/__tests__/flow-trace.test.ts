@@ -316,4 +316,29 @@ describe("buildFlowTrace — from the recorded path", () => {
       text: "Hi — sorry to hear that. Before a refund, let's…",
     })
   })
+
+  it("refund lookup not-found: the reply shows its own decision, not a ladder draft", () => {
+    // The reshaped refund branch: classify[refund] → order_lookup_refund →
+    // (not_found) → reply_refund_no_order. With no upstream refund ladder, this
+    // reply IS the deciding step, so it shows its own decision + reasoning —
+    // distinct from the refund-ladder reply, which inherits the ladder's decision.
+    const steps = buildFlowTrace(
+      decision({
+        classification: "refund",
+        decision: "send_faq_reply",
+        draftReplyText: "We couldn't find a purchase under this email…",
+        context: { orders: [], access: { hasAccess: false } },
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "refund"),
+          step(2, "order_lookup", "not_found", "order_lookup_refund"),
+          step(3, "send_reply", "done", "reply_refund_no_order"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(
+      steps.find((s) => s.title === "Drafted reply")?.detail
+    ).toMatchObject({ kind: "decision", value: "send_faq_reply" })
+  })
 })
