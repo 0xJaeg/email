@@ -348,6 +348,99 @@ export type Database = {
           },
         ]
       }
+      flow_run_steps: {
+        Row: {
+          created_at: string
+          detail: Json
+          id: string
+          node_id: string | null
+          node_key: string
+          node_type: string
+          outcome: string | null
+          run_id: string
+          seq: number
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          node_id?: string | null
+          node_key: string
+          node_type: string
+          outcome?: string | null
+          run_id: string
+          seq: number
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          node_id?: string | null
+          node_key?: string
+          node_type?: string
+          outcome?: string | null
+          run_id?: string
+          seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "flow_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_runs: {
+        Row: {
+          created_at: string
+          decision_id: string | null
+          email_id: string
+          halted: boolean
+          id: string
+          inbox_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          decision_id?: string | null
+          email_id: string
+          halted?: boolean
+          id?: string
+          inbox_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string | null
+          email_id?: string
+          halted?: boolean
+          id?: string
+          inbox_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_runs_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_runs_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_runs_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flow_steps: {
         Row: {
           ai_prompt: string | null

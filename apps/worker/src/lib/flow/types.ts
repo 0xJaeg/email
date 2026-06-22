@@ -58,6 +58,9 @@ export type StepContext = {
     sonnetUsage?: RefundDecision["sonnet_usage"]
   }
   decisionId?: string
+  // The exact path the graph walk took (one entry per node visited), recorded by
+  // runGraph and persisted to flow_runs/flow_run_steps for the per-ticket trace.
+  path?: FlowRunStep[]
   supabase: ServerClient
   anthropic: Anthropic
 }
@@ -99,4 +102,15 @@ export type FlowGraph = {
   startId: string | null
   nodes: Map<string, FlowNode>
   edges: Map<string, Map<string, string>>
+}
+
+// One recorded step of a graph walk → persisted as a flow_run_steps row for the
+// per-ticket trace. node_key/node_type are snapshotted so the trace survives
+// later graph edits; `halted` marks the node that stopped the flow (e.g. spam).
+export type FlowRunStep = {
+  node_id: string
+  node_key: string
+  node_type: string
+  outcome: string | null
+  halted: boolean
 }

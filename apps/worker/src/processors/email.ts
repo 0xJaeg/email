@@ -51,10 +51,60 @@ export async function processEmail(job: Job) {
   }
   await runGraph(graph, NODE_REGISTRY, ctx)
 
+  // Persist the exact executed path (best-effort — the decision is already saved).
+  await persistFlowRun(supabase, ctx)
+
   return {
     decisionId: ctx.decisionId,
     classification: ctx.classification?.classification,
     decision: ctx.decision?.decision,
+  }
+}
+
+// Record the path the graph walked (one flow_runs row + one flow_run_steps row
+// per node visited, in order) so the ticket page can show the real steps + the
+// branch taken at each. The decision is already persisted by this point, so a
+// failure here only loses the trace, never the decision — log and move on.
+async function persistFlowRun(
+  supabase: ReturnType<typeof getSupabase>,
+  ctx: StepContext
+): Promise<void> {
+  const path = ctx.path ?? []
+  if (path.length === 0) return
+  try {
+    const { data: run, error } = await supabase
+      .from("flow_runs")
+      .insert({
+        email_id: ctx.email.id,
+        decision_id: ctx.decisionId ?? null,
+        inbox_id: ctx.inboxId,
+        halted: path.some((s) => s.halted),
+      })
+      .select("id")
+      .single()
+    if (error || !run) {
+      console.warn(
+        `[flow] flow_run persist failed: ${error?.message ?? "no row"}`
+      )
+      return
+    }
+    const steps = path.map((s, i) => ({
+      run_id: run.id,
+      seq: i,
+      node_id: s.node_id,
+      node_key: s.node_key,
+      node_type: s.node_type,
+      outcome: s.outcome,
+    }))
+    const { error: stepsErr } = await supabase
+      .from("flow_run_steps")
+      .insert(steps)
+    if (stepsErr) {
+      console.warn(`[flow] flow_run_steps persist failed: ${stepsErr.message}`)
+    }
+  } catch (err) {
+    // Observability only — never let trace persistence break email processing.
+    console.warn(`[flow] flow_run persist threw: ${(err as Error).message}`)
   }
 }
 
