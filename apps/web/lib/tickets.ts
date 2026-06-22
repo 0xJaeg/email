@@ -150,6 +150,14 @@ export type ProposedAction = {
   reason?: string
 }
 
+// One node the worker walked, from flow_run_steps (the exact executed path).
+export type FlowTraceStep = {
+  seq: number
+  nodeKey: string
+  nodeType: string
+  outcome: string | null
+}
+
 export type ThreadDecision = {
   id: string
   classification: string | null
@@ -165,6 +173,9 @@ export type ThreadDecision = {
   createdAt: string
   context: DecisionContext | null
   proposedActions: ProposedAction[]
+  // The exact flow path the worker walked for this decision's email. Empty for
+  // decisions made before flow_runs existed — the trace falls back to inference.
+  path: FlowTraceStep[]
 }
 
 export type ThreadAudit = {
@@ -199,6 +210,36 @@ export type ThreadDetail = {
 const byCreatedAt = (a: { created_at: string }, b: { created_at: string }) =>
   (a.created_at ?? "").localeCompare(b.created_at ?? "")
 
+// Pick the latest flow_run embedded under a decision and return its steps in
+// execution order. Empty when the decision predates flow_runs (the ticket trace
+// falls back to inference then).
+function flowPathFromRuns(
+  runs:
+    | {
+        created_at: string
+        flow_run_steps:
+          | {
+              seq: number
+              node_key: string
+              node_type: string
+              outcome: string | null
+            }[]
+          | null
+      }[]
+    | null
+): FlowTraceStep[] {
+  const run = [...(runs ?? [])].sort(byCreatedAt).at(-1)
+  if (!run) return []
+  return [...(run.flow_run_steps ?? [])]
+    .sort((a, b) => a.seq - b.seq)
+    .map((s) => ({
+      seq: s.seq,
+      nodeKey: s.node_key,
+      nodeType: s.node_type,
+      outcome: s.outcome,
+    }))
+}
+
 // Full thread drill-down: the conversation's emails, each with its decisions
 // and audit entries. One nested query (threads → emails → {decisions, audit_log}).
 export async function getThreadDetail(
@@ -208,7 +249,7 @@ export async function getThreadDetail(
   const { data, error } = await client
     .from("threads")
     .select(
-      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, draft_reply_text, approved_at, approved_by, created_at, context, proposed_actions), audit_log(id, action, status, error, created_at))"
+      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, draft_reply_text, approved_at, approved_by, created_at, context, proposed_actions, flow_runs(created_at, flow_run_steps(seq, node_key, node_type, outcome))), audit_log(id, action, status, error, created_at))"
     )
     .eq("id", threadId)
     .maybeSingle()
@@ -240,6 +281,7 @@ export async function getThreadDetail(
         createdAt: d.created_at,
         context: (d.context ?? null) as DecisionContext | null,
         proposedActions: (d.proposed_actions ?? []) as ProposedAction[],
+        path: flowPathFromRuns(d.flow_runs),
       })),
       audit: [...(e.audit_log ?? [])].sort(byCreatedAt).map((a) => ({
         id: a.id,
