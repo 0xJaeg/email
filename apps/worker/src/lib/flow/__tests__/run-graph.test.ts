@@ -147,6 +147,19 @@ describe("runGraph", () => {
     await expect(runGraph(g, {}, {} as StepContext)).resolves.toBeDefined()
   })
 
+  it("records the executed path (node + outcome + halted) into ctx.path", async () => {
+    const reg: Record<string, NodeType> = {
+      A: { type: "A", run: async () => ({ outcome: "go" }) },
+      B: { type: "B", run: async () => ({ outcome: "spam", halt: true }) },
+    }
+    const g = graph("a", [node("a", "A"), node("b", "B")], [["a", "go", "b"]])
+    const out = await runGraph(g, reg, {} as StepContext)
+    expect(out.path).toEqual([
+      { node_id: "a", node_key: "a", node_type: "A", outcome: "go", halted: false },
+      { node_id: "b", node_key: "b", node_type: "B", outcome: "spam", halted: true },
+    ])
+  })
+
   it("bounds traversal against cycles (maxHops)", async () => {
     let n = 0
     const reg: Record<string, NodeType> = {
