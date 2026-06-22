@@ -30,6 +30,7 @@ function decision(overrides: Partial<ThreadDecision> = {}): ThreadDecision {
       inquiry_type: "existing_member",
     },
     proposedActions: [],
+    path: [],
     ...overrides,
   }
 }
@@ -183,5 +184,88 @@ describe("buildFlowTrace", () => {
       audit("send_reply", "failure"),
     ])
     expect(steps.find((s) => s.key === "sent")?.status).toBe("failed")
+  })
+})
+
+describe("buildFlowTrace — from the recorded path", () => {
+  const step = (
+    seq: number,
+    nodeType: string,
+    outcome: string | null,
+    nodeKey = nodeType
+  ) => ({ seq, nodeKey, nodeType, outcome })
+
+  it("renders the exact walked path (login → lookup not found → reply)", () => {
+    const steps = buildFlowTrace(
+      decision({
+        classification: "login_access",
+        decision: "send_faq_reply",
+        context: { orders: [], access: null },
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "login_access"),
+          step(2, "order_lookup", "not_found"),
+          step(3, "send_reply", "done", "reply_no_order"),
+        ],
+      }),
+      sentAudit
+    )
+    expect(steps.map((s) => s.title)).toEqual([
+      "Email received",
+      "Spam check",
+      "Email classified",
+      "Checked purchase & access",
+      "Drafted reply",
+      "Actions",
+      "Reply waiting for approval",
+      "Reply sent",
+    ])
+  })
+
+  it("uses the classify node's own outcome as the classification", () => {
+    const steps = buildFlowTrace(
+      decision({
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "refund"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(steps.find((s) => s.title === "Email classified")?.detail).toEqual({
+      kind: "classification",
+      value: "refund",
+    })
+  })
+
+  it("treats a spam-halted path as terminal (no actions/lifecycle)", () => {
+    const steps = buildFlowTrace(
+      decision({
+        decision: "quarantine_spam",
+        path: [step(0, "spam_filter", "spam")],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(steps.map((s) => s.title)).toEqual(["Email received", "Spam check"])
+    expect(steps[1]?.detail).toEqual({
+      kind: "text",
+      text: "Quarantined as spam",
+    })
+  })
+
+  it("renders an unknown/future node type generically (key + outcome)", () => {
+    const steps = buildFlowTrace(
+      decision({
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "api_action", "refunded", "refund_action"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(steps.find((s) => s.title === "Refund action")?.detail).toEqual({
+      kind: "text",
+      text: "→ refunded",
+    })
   })
 })
