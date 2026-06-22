@@ -45,13 +45,16 @@ export const ProfitDashboardAdapter: ProductAdapter = {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     if (!res.ok) {
-      throw new Error(`profitdashboard_lookup_failed: HTTP ${res.status}`)
+      throw new Error(
+        `profitdashboard access check: POST ${ENDPOINT} → HTTP ${res.status}`
+      )
     }
+    const http = { endpoint: ENDPOINT, method: "POST", status: res.status }
 
     const body = (await res.json()) as LookupResponse
     const d = body.data
     if (!body.status || !d?.exists) {
-      return { hasAccess: false, details: null }
+      return { hasAccess: false, details: null, http }
     }
     // The API spans multiple products. If this product expects a specific key,
     // a member of a DIFFERENT product is not a member of THIS one — don't grant
@@ -61,7 +64,7 @@ export const ProfitDashboardAdapter: ProductAdapter = {
       d.product?.key &&
       d.product.key !== expectedProductKey
     ) {
-      return { hasAccess: false, details: null }
+      return { hasAccess: false, details: null, http }
     }
 
     // PII-light: only what a support reply needs. Deliberately omit the
@@ -72,7 +75,7 @@ export const ProfitDashboardAdapter: ProductAdapter = {
     if (d.role) parts.push(`Role: ${d.role}.`)
     if (typeof d.loginCount === "number") parts.push(`${d.loginCount} logins.`)
     if (d.lastLoginAt) parts.push(`Last login ${d.lastLoginAt}.`)
-    return { hasAccess: true, details: parts.join(" ") }
+    return { hasAccess: true, details: parts.join(" "), http }
   },
 
   // A membership API can't move money — refunds go through the payment platform.

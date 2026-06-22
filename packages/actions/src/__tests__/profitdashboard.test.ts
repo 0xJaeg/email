@@ -108,13 +108,15 @@ describe("profitdashboard adapter", () => {
     if (!r.ok) expect(r.error).toMatch(/refund/i)
   })
 
-  it("throws on a non-OK response so enrichment degrades to no-context", async () => {
+  it("throws on a non-OK response (with the endpoint + status) so enrichment degrades to no-context", async () => {
     vi.stubGlobal("fetch", mockFetch({}, false, 500))
     await expect(
       getAdapter("profitdashboard").checkAccess({
         email: "x@y.com",
         order: null,
       })
-    ).rejects.toThrow(/profitdashboard_lookup_failed/)
+      // The error names the endpoint + HTTP status so the trace can surface a
+      // down/erroring endpoint, not a silent "not found".
+    ).rejects.toThrow(/POST .*email-lookup → HTTP 500/)
   })
 })
