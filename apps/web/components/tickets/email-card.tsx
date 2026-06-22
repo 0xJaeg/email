@@ -2,7 +2,6 @@ import {
   ClassificationBadge,
   DecisionBadge,
 } from "@/components/shared/status-badges"
-import { Badge } from "@workspace/ui/components/badge"
 import { cn } from "@workspace/ui/lib/utils"
 import { IconArrowRight, IconMail, IconRobot } from "@tabler/icons-react"
 import { EmailBody } from "./email-body"
@@ -48,10 +47,10 @@ export function EmailCard({
     <li className="relative flex gap-3.5">
       <div className={cn("min-w-0 flex-1", !isLast && "pb-6")}>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate text-sm font-semibold">{email.from}</span>
-          <Badge variant={inbound ? "secondary" : "outline"}>
-            {inbound ? "Received" : "Sent"}
-          </Badge>
+          <span className="min-w-0 truncate text-sm">
+            <span className="text-muted-foreground">From: </span>
+            <span className="font-semibold">{email.from}</span>
+          </span>
           <span
             suppressHydrationWarning
             className="ml-auto text-xs text-muted-foreground tabular-nums"
@@ -60,7 +59,7 @@ export function EmailCard({
           </span>
         </div>
         <p className="mt-1 truncate text-xs text-muted-foreground">
-          to <span className="font-heading">{email.to}</span>
+          To: <span className="font-heading">{email.to}</span>
         </p>
 
         <div
