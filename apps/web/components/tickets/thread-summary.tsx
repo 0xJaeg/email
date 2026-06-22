@@ -34,12 +34,14 @@ function Fact({
   children: ReactNode
 }) {
   return (
-    <div className="border-border flex items-center justify-between gap-3 border-b py-2.5 text-sm last:border-b-0">
-      <span className="text-muted-foreground flex items-center gap-2.5">
+    <div className="flex items-center justify-between gap-3 border-b border-border py-2.5 text-sm last:border-b-0">
+      <span className="flex items-center gap-2.5 text-muted-foreground">
         {icon}
         {label}
       </span>
-      <span className="min-w-0 truncate text-right font-medium">{children}</span>
+      <span className="min-w-0 text-right font-medium break-all">
+        {children}
+      </span>
     </div>
   )
 }
@@ -66,7 +68,7 @@ export function ThreadSummary({
   return (
     <Card className="gap-0 p-0 lg:sticky lg:top-4">
       <CardHeader className="border-b px-4 py-3">
-        <CardTitle className="text-muted-foreground font-heading text-[11px] font-semibold tracking-wider uppercase">
+        <CardTitle className="font-heading text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
           Summary
         </CardTitle>
       </CardHeader>
@@ -97,7 +99,7 @@ export function ThreadSummary({
           {approvedBy ? (
             approvedBy
           ) : (
-            <span className="text-muted-foreground font-normal">—</span>
+            <span className="font-normal text-muted-foreground">—</span>
           )}
         </Fact>
       </CardContent>
