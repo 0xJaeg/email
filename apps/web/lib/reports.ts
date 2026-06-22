@@ -1,4 +1,5 @@
 import type { ServerClient } from "@workspace/db/client"
+import { getAppSettings, countRefundsToday } from "@/lib/settings"
 
 type DbClient = ServerClient
 
@@ -46,6 +47,9 @@ export type ReportStats = {
   volumeByDay: VolumePoint[]
   estCostUsd: number
   costWindowDays: number
+  refundsToday: number
+  refundDailyLimit: number | null // null = no cap
+  refundLimitReached: boolean
 }
 
 const COST_WINDOW_DAYS = 30
@@ -130,6 +134,8 @@ export async function fetchReportStats(client: DbClient): Promise<ReportStats> {
     clsOther,
     usageRows,
     volRows,
+    appSettings,
+    refundsToday,
   ] = await Promise.all([
     client.from("emails").select("*", head).eq("direction", "inbound"),
     client.from("decisions").select("*", head),
@@ -161,6 +167,8 @@ export async function fetchReportStats(client: DbClient): Promise<ReportStats> {
       .eq("direction", "inbound")
       .gte("received_at", volSince)
       .limit(10000),
+    getAppSettings(client),
+    countRefundsToday(client),
   ])
 
   const decisions = totalDecisions.count ?? 0
@@ -211,5 +219,10 @@ export async function fetchReportStats(client: DbClient): Promise<ReportStats> {
     ),
     estCostUsd: estimateCostUsd(usages),
     costWindowDays: COST_WINDOW_DAYS,
+    refundsToday,
+    refundDailyLimit: appSettings.refundDailyLimit,
+    refundLimitReached:
+      appSettings.refundDailyLimit != null &&
+      refundsToday >= appSettings.refundDailyLimit,
   }
 }
