@@ -8,6 +8,7 @@ import { DraftNode } from "./nodes/draft.js"
 import { OrderLookupNode } from "./nodes/order-lookup.js"
 import { RefundLadderNode } from "./nodes/refund-ladder.js"
 import { SendReplyNode } from "./nodes/send-reply.js"
+import { ApiActionNode } from "./nodes/api-action.js"
 
 // Maps flow_nodes.node_type to its NodeType implementation.
 export const NODE_REGISTRY: Record<string, NodeType> = {
@@ -20,4 +21,5 @@ export const NODE_REGISTRY: Record<string, NodeType> = {
   [OrderLookupNode.type]: OrderLookupNode,
   [RefundLadderNode.type]: RefundLadderNode,
   [SendReplyNode.type]: SendReplyNode,
+  [ApiActionNode.type]: ApiActionNode,
 }
