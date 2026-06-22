@@ -1,7 +1,10 @@
 import { cn } from "@workspace/ui/lib/utils"
 import { IconCheck, IconClock, IconX, IconMinus } from "@tabler/icons-react"
 import { humanizeAction } from "@/lib/activity-format"
-import { ClassificationBadge, DecisionBadge } from "@/components/shared/status-badges"
+import {
+  ClassificationBadge,
+  DecisionBadge,
+} from "@/components/shared/status-badges"
 import type { FlowStep, FlowStepStatus } from "@/lib/flow-trace"
 
 function formatDateTime(iso: string): string {
@@ -16,19 +19,19 @@ function formatDateTime(iso: string): string {
 function StepDot({ status }: { status: FlowStepStatus }) {
   if (status === "failed")
     return (
-      <span className="bg-destructive text-background dark:text-background grid size-6 place-items-center rounded-full">
+      <span className="grid size-6 place-items-center rounded-full bg-destructive text-background dark:text-background">
         <IconX className="size-3.5" stroke={2.5} />
       </span>
     )
   if (status === "pending")
     return (
-      <span className="bg-background text-muted-foreground grid size-6 place-items-center rounded-full border">
+      <span className="grid size-6 place-items-center rounded-full border bg-background text-muted-foreground">
         <IconClock className="size-3.5" />
       </span>
     )
   if (status === "info")
     return (
-      <span className="bg-background text-muted-foreground grid size-6 place-items-center rounded-full border">
+      <span className="grid size-6 place-items-center rounded-full border bg-background text-muted-foreground">
         <IconMinus className="size-3.5" />
       </span>
     )
@@ -42,7 +45,7 @@ function StepDot({ status }: { status: FlowStepStatus }) {
 function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
   if (!detail) return null
   if (detail.kind === "text")
-    return <p className="text-muted-foreground text-sm">{detail.text}</p>
+    return <p className="text-sm text-muted-foreground">{detail.text}</p>
   if (detail.kind === "classification")
     return (
       <div className="flex items-center gap-2 text-sm">
@@ -55,7 +58,7 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
       <div className="flex flex-col gap-2">
         <DecisionBadge value={detail.value} />
         {detail.reasoning ? (
-          <p className="text-muted-foreground border-border max-w-[60ch] border-l-2 pl-3 text-sm italic">
+          <p className="max-w-[60ch] border-l-2 border-border pl-3 text-sm text-muted-foreground italic">
             “{detail.reasoning}”
           </p>
         ) : null}
@@ -64,15 +67,38 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
   if (detail.kind === "order-access")
     return (
       <div className="flex flex-col gap-2">
+        {detail.lookups.length > 0 ? (
+          <ul className="flex flex-col gap-1">
+            {detail.lookups.map((l, i) => (
+              <li
+                key={i}
+                className={cn(
+                  "flex flex-wrap items-center gap-1.5 font-heading text-xs",
+                  l.ok ? "text-muted-foreground" : "text-destructive"
+                )}
+              >
+                <span className="font-medium">{l.adapter}</span>·
+                <span>
+                  {l.operation === "order_lookup"
+                    ? "order lookup"
+                    : "access check"}
+                </span>
+                <span>→ {l.ok ? l.summary : `⚠ ${l.summary}`}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {detail.orders.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No matching order found.</p>
+          <p className="text-sm text-muted-foreground">
+            No matching order found.
+          </p>
         ) : (
           detail.orders.map((o) => (
             <div
               key={o.orderId}
-              className="bg-muted/40 text-muted-foreground flex w-fit flex-wrap gap-x-3.5 gap-y-1 rounded-lg border px-3 py-2 text-sm"
+              className="flex w-fit flex-wrap gap-x-3.5 gap-y-1 rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
             >
-              <span className="text-foreground font-medium">{o.orderId}</span>
+              <span className="font-medium text-foreground">{o.orderId}</span>
               <span>
                 {o.currency} {o.amount}
               </span>
@@ -98,13 +124,13 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
     )
   if (detail.kind === "actions") {
     if (detail.actions.length === 0)
-      return <p className="text-muted-foreground text-sm">None — reply only.</p>
+      return <p className="text-sm text-muted-foreground">None — reply only.</p>
     return (
       <div className="flex flex-wrap gap-2">
         {detail.actions.map((a, i) => (
           <span
             key={`${a.type}-${i}`}
-            className="bg-muted text-foreground w-fit rounded-md px-2 py-1 text-xs"
+            className="w-fit rounded-md bg-muted px-2 py-1 text-xs text-foreground"
           >
             {humanizeAction(a.type)}
           </span>
@@ -121,10 +147,10 @@ export function ThreadFlow({ steps }: { steps: FlowStep[] }) {
 
   return (
     <section className="flex flex-col gap-3.5">
-      <h2 className="text-muted-foreground font-heading text-[11px] font-semibold tracking-wider uppercase">
+      <h2 className="font-heading text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
         What the assistant did
       </h2>
-      <ol className="bg-card divide-border divide-y rounded-xl border">
+      <ol className="divide-y divide-border rounded-xl border bg-card">
         {steps.map((s, i) => (
           <li
             key={s.key}
@@ -136,16 +162,18 @@ export function ThreadFlow({ steps }: { steps: FlowStep[] }) {
             <div className="flex flex-col items-center">
               <StepDot status={s.status} />
               {i < steps.length - 1 && (
-                <span className="bg-border mt-1 w-px flex-1" />
+                <span className="mt-1 w-px flex-1 bg-border" />
               )}
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="font-heading text-sm font-medium">{s.title}</span>
+                <span className="font-heading text-sm font-medium">
+                  {s.title}
+                </span>
                 {s.timestamp ? (
                   <span
                     suppressHydrationWarning
-                    className="text-muted-foreground ml-auto text-xs tabular-nums"
+                    className="ml-auto text-xs text-muted-foreground tabular-nums"
                   >
                     {formatDateTime(s.timestamp)}
                   </span>

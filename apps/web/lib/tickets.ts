@@ -18,7 +18,6 @@ export type ActivityRow = {
   createdAt: string
 }
 
-
 export async function fetchActivity(
   client: DbClient,
   query: string,
@@ -139,10 +138,20 @@ export type DecisionAccess = {
   details?: string
 }
 
+// One external API call the lookup made (captured by the worker), so the trace
+// can show which APIs ran + how they answered — including errors.
+export type DecisionLookup = {
+  adapter: string
+  operation: string
+  ok: boolean
+  summary: string
+}
+
 export type DecisionContext = {
   orders?: DecisionOrder[]
   access?: DecisionAccess | null
   inquiry_type?: string
+  lookups?: DecisionLookup[]
 }
 
 export type ProposedAction = {

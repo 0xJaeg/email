@@ -3,6 +3,7 @@ import type {
   ThreadAudit,
   DecisionOrder,
   DecisionAccess,
+  DecisionLookup,
   ProposedAction,
   FlowTraceStep,
 } from "./tickets.js"
@@ -12,7 +13,12 @@ export type FlowStepStatus = "done" | "info" | "failed" | "pending"
 export type FlowDetail =
   | { kind: "text"; text: string }
   | { kind: "classification"; value: string | null }
-  | { kind: "order-access"; orders: DecisionOrder[]; access: DecisionAccess | null }
+  | {
+      kind: "order-access"
+      orders: DecisionOrder[]
+      access: DecisionAccess | null
+      lookups: DecisionLookup[]
+    }
   | { kind: "decision"; value: string | null; reasoning: string | null }
   | { kind: "actions"; actions: ProposedAction[] }
 
@@ -157,6 +163,7 @@ function nodeToStep(
           kind: "order-access",
           orders: decision.context?.orders ?? [],
           access: decision.context?.access ?? null,
+          lookups: decision.context?.lookups ?? [],
         },
       }
     case "refund_ladder":
@@ -197,7 +204,9 @@ function nodeToStep(
         key,
         title: humanizeKey(s.nodeKey),
         status: "done",
-        detail: s.outcome ? { kind: "text", text: `→ ${s.outcome}` } : undefined,
+        detail: s.outcome
+          ? { kind: "text", text: `→ ${s.outcome}` }
+          : undefined,
       }
   }
 }
@@ -265,6 +274,7 @@ function buildInferredTrace(
         kind: "order-access",
         orders: ctx.orders ?? [],
         access: ctx.access ?? null,
+        lookups: ctx.lookups ?? [],
       },
     })
   }
