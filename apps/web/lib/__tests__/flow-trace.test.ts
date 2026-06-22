@@ -290,4 +290,30 @@ describe("buildFlowTrace — from the recorded path", () => {
       text: "→ refunded",
     })
   })
+
+  it("de-dupes refund ladder vs drafted reply: ladder shows the decision, reply shows the draft", () => {
+    const steps = buildFlowTrace(
+      decision({
+        classification: "refund",
+        decision: "send_offer_1",
+        draftReplyText: "Hi — sorry to hear that. Before a refund, let's…",
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "refund"),
+          step(2, "refund_ladder", "send_offer_1"),
+          step(3, "send_reply", "done", "reply_refund"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    // The ladder step carries the decision + reasoning…
+    expect(
+      steps.find((s) => s.title === "Refund ladder")?.detail
+    ).toMatchObject({ kind: "decision", value: "send_offer_1" })
+    // …and the drafted-reply step shows the draft text, not the same decision.
+    expect(steps.find((s) => s.title === "Drafted reply")?.detail).toEqual({
+      kind: "text",
+      text: "Hi — sorry to hear that. Before a refund, let's…",
+    })
+  })
 })
