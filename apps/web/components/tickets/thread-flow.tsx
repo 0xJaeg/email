@@ -83,7 +83,14 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
                     ? "order lookup"
                     : "access check"}
                 </span>
-                <span>→ {l.ok ? l.summary : `⚠ ${l.summary}`}</span>
+                {l.endpoint ? (
+                  <span className="font-mono opacity-80">
+                    {l.method ? `${l.method} ` : ""}
+                    {l.endpoint}
+                    {l.status != null ? ` → ${l.status}` : ""}
+                  </span>
+                ) : null}
+                <span>· {l.ok ? l.summary : `⚠ ${l.summary}`}</span>
               </li>
             ))}
           </ul>

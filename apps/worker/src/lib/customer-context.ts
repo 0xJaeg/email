@@ -1,4 +1,9 @@
-import type { ProductAdapter, Order, AccessResult } from "@workspace/actions"
+import type {
+  ProductAdapter,
+  Order,
+  AccessResult,
+  OrderLookupResult,
+} from "@workspace/actions"
 
 // One external API call the lookup made, captured for the per-ticket trace so an
 // operator can SEE what happened behind the scenes — including a down/erroring
@@ -8,6 +13,9 @@ export type LookupRecord = {
   operation: "order_lookup" | "access_check"
   ok: boolean // false = the call threw (endpoint down / auth failed / timeout)
   summary: string // outcome on success; the error message on failure
+  endpoint?: string // the HTTP endpoint hit, when the adapter made a real call
+  method?: string
+  status?: number | null // HTTP status code
 }
 
 export type GatheredContext = {
@@ -29,7 +37,7 @@ export async function gatherCustomerContext(
 ): Promise<GatheredContext> {
   const lookups: LookupRecord[] = []
 
-  let lookup: OrderLookupShape = { found: false, orders: [] }
+  let lookup: OrderLookupResult = { found: false, orders: [] }
   try {
     lookup = await adapter.lookupOrder({ email: email.from_email })
     lookups.push({
@@ -39,6 +47,7 @@ export async function gatherCustomerContext(
       summary: lookup.found
         ? `${lookup.orders.length} order(s) found`
         : "no matching order",
+      ...(lookup.http ?? {}),
     })
   } catch (err) {
     lookups.push({
@@ -62,6 +71,7 @@ export async function gatherCustomerContext(
       operation: "access_check",
       ok: true,
       summary: access.hasAccess ? "access active" : "no access",
+      ...(access.http ?? {}),
     })
   } catch (err) {
     lookups.push({
@@ -93,5 +103,3 @@ export async function gatherCustomerContext(
     customerContext: lines.join("\n"),
   }
 }
-
-type OrderLookupShape = { found: boolean; orders: Order[] }

@@ -145,6 +145,9 @@ export type DecisionLookup = {
   operation: string
   ok: boolean
   summary: string
+  endpoint?: string
+  method?: string
+  status?: number | null
 }
 
 export type DecisionContext = {

@@ -54,15 +54,25 @@ export type Order = {
   purchasedAt: string
 }
 
+// The HTTP call an adapter made, surfaced in the ticket trace so an operator can
+// see the real endpoint + status — and verify a down/erroring endpoint.
+export type HttpCallInfo = {
+  endpoint: string
+  method: string
+  status: number | null
+}
+
 export type OrderLookupResult = {
   found: boolean
   orders: Order[]
+  http?: HttpCallInfo
 }
 
 export type AccessResult = {
   hasAccess: boolean
   /** When access exists, the actual login/download details to send the customer. */
   details: string | null
+  http?: HttpCallInfo
 }
 
 // A per-product integration (ClickBank, JVZoo, …). Read-only enrichment
