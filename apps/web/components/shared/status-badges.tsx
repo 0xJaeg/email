@@ -20,10 +20,31 @@ export function ClassificationBadge({ value }: { value: string | null }) {
       </Badge>
     )
   }
-  if (value === "refund_request") return <Badge className={amber}>Refund</Badge>
-  if (value === "faq") return <Badge className={blue}>FAQ</Badge>
-  if (value === "spam") return <Badge className={zinc}>Spam</Badge>
-  return <Badge variant="secondary">Other</Badge>
+  // Live classifier categories (+ legacy refund_request/faq for pre-2026-06-18
+  // tickets). Unknown values fall back to a title-cased secondary badge.
+  switch (value) {
+    case "refund":
+    case "refund_request":
+      return <Badge className={amber}>Refund</Badge>
+    case "chargeback":
+      return <Badge variant="destructive">Chargeback</Badge>
+    case "login_access":
+      return <Badge className={blue}>Login / access</Badge>
+    case "sales":
+      return <Badge className={blue}>Sales</Badge>
+    case "general":
+      return <Badge className={blue}>General</Badge>
+    case "faq":
+      return <Badge className={blue}>FAQ</Badge>
+    case "unsubscribe":
+      return <Badge className={zinc}>Unsubscribe</Badge>
+    case "spam":
+      return <Badge className={zinc}>Spam</Badge>
+    case "other":
+      return <Badge variant="secondary">Other</Badge>
+    default:
+      return <Badge variant="secondary">{titleCase(value)}</Badge>
+  }
 }
 
 const DECISION_LABEL: Record<string, string> = {
