@@ -12,6 +12,7 @@ import {
   IconSparkles,
   IconSend,
   IconCoin,
+  IconReceiptRefund,
   type Icon,
 } from "@tabler/icons-react"
 import type { ReportStats } from "@/lib/reports"
@@ -89,6 +90,23 @@ export function ReportCards({ stats }: { stats: ReportStats }) {
         hint="Decided without a person"
       />
       <StatCard label="Replies sent" value={String(stats.sent)} icon={IconSend} />
+      <StatCard
+        label="Refunds today"
+        value={String(stats.refundsToday)}
+        icon={IconReceiptRefund}
+        tone={
+          stats.refundLimitReached
+            ? "alert"
+            : stats.refundsToday > 0
+              ? "warn"
+              : "neutral"
+        }
+        hint={
+          stats.refundDailyLimit != null
+            ? `Cap ${stats.refundDailyLimit}/day${stats.refundLimitReached ? " — reached" : ""}`
+            : "No daily cap set"
+        }
+      />
       <StatCard
         label={`Est. AI cost (${stats.costWindowDays}d)`}
         value={`$${stats.estCostUsd.toFixed(2)}`}

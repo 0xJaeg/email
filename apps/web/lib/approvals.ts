@@ -8,6 +8,7 @@ import { getServerSupabase } from "@/lib/supabase/admin"
 import { getActionSupabase } from "@/lib/supabase/server"
 import { resolveSenderInbox } from "@/lib/sender-inbox"
 import { getReplySignature, withSignature } from "@/lib/reply-signature"
+import { getAppSettings, countRefundsToday } from "@/lib/settings"
 
 export async function approveDecision(
   decisionId: string,
@@ -98,6 +99,31 @@ export async function approveDecision(
   let refundId: string | null = null
   for (const action of actions) {
     if (action.type === "issue_refund") {
+      // Daily refund cap — a safety brake. Refunds execute here (at approval),
+      // so this is the enforcement point: once today's executed refunds hit the
+      // configured limit, stop and leave the decision pending for a human to
+      // revisit when the window resets (or the limit is raised).
+      const refundLimit = (await getAppSettings(supabase)).refundDailyLimit
+      if (
+        refundLimit != null &&
+        (await countRefundsToday(supabase)) >= refundLimit
+      ) {
+        await supabase
+          .from("decisions")
+          .update({
+            status: "pending_approval",
+            approved_at: null,
+            approved_by: null,
+          })
+          .eq("id", decisionId)
+        await supabase.from("audit_log").insert({
+          action: "refund_blocked_daily_limit",
+          email_id: emailRow.id,
+          status: "blocked",
+          payload: { decision_id: decisionId, limit: refundLimit },
+        })
+        return
+      }
       const orderId = extractOrderId(emailRow.body_text)
       const adapterKey = await resolveAdapterKey(supabase, emailRow.thread_id)
       const refund = await refundCustomer({

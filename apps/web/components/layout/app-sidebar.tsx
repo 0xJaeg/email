@@ -22,6 +22,7 @@ import {
   IconInbox,
   IconKey,
   IconSitemap,
+  IconSettings,
 } from "@tabler/icons-react"
 import { NavMain } from "@/components/layout/nav-main"
 import { NavUser } from "@/components/layout/nav-user"
@@ -59,7 +60,10 @@ const configuration = {
 
 const admin = {
   label: "Admin",
-  items: [{ title: "Users", url: "/users", icon: <IconUsers /> }],
+  items: [
+    { title: "Users", url: "/users", icon: <IconUsers /> },
+    { title: "Settings", url: "/settings", icon: <IconSettings /> },
+  ],
 }
 
 export function AppSidebar({
