@@ -106,7 +106,7 @@ function buildPathTrace(
   const at: AuditLookup = (action) => audit.find((a) => a.action === action)
   const steps: FlowStep[] = [receivedStep(at)]
   const path = decision.path ?? []
-  path.forEach((s, i) => steps.push(nodeToStep(s, decision, i)))
+  path.forEach((s, i) => steps.push(nodeToStep(s, decision, i, path)))
 
   // A spam quarantine halts the flow — it's terminal, no action/approval tail.
   const quarantined = path.some(
@@ -121,13 +121,24 @@ function humanizeKey(key: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// First line of the drafted reply (truncated) — a compact "what was written",
+// distinct from the decision/reasoning shown on the deciding step.
+function draftSnippet(text: string | null): string | undefined {
+  if (!text) return undefined
+  const firstLine = text.trim().split("\n")[0] ?? ""
+  return firstLine.length > 120
+    ? firstLine.slice(0, 120).trimEnd() + "…"
+    : firstLine
+}
+
 // Map one recorded node to a trace step, pulling the relevant detail from the
 // decision. Unknown / future node types (e.g. api_action) render generically
 // from the node key + outcome, so the trace never goes blank as the flow grows.
 function nodeToStep(
   s: FlowTraceStep,
   decision: ThreadDecision,
-  i: number
+  i: number,
+  path: FlowTraceStep[]
 ): FlowStep {
   const key = `${s.nodeKey}-${i}`
   switch (s.nodeType) {
@@ -177,7 +188,7 @@ function nodeToStep(
           reasoning: decision.llmReasoning,
         },
       }
-    case "send_reply":
+    case "send_reply": {
       if (decision.decision === "escalate") {
         return {
           key,
@@ -187,6 +198,23 @@ function nodeToStep(
             kind: "text",
             text: "Routed to a person for a manual reply",
           },
+        }
+      }
+      // If an upstream node already showed the decision + reasoning (the refund
+      // ladder or an api_action), this step just shows the reply that was
+      // drafted; otherwise (e.g. a plain FAQ) this IS the deciding step.
+      const decidedUpstream = path
+        .slice(0, i)
+        .some(
+          (p) => p.nodeType === "refund_ladder" || p.nodeType === "api_action"
+        )
+      if (decidedUpstream) {
+        const snippet = draftSnippet(decision.draftReplyText)
+        return {
+          key,
+          title: "Drafted reply",
+          status: "done",
+          detail: snippet ? { kind: "text", text: snippet } : undefined,
         }
       }
       return {
@@ -199,6 +227,7 @@ function nodeToStep(
           reasoning: decision.llmReasoning,
         },
       }
+    }
     default:
       return {
         key,
