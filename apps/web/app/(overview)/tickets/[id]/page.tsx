@@ -74,11 +74,14 @@ export default async function TicketDetailPage({
             </ol>
           </section>
 
+          {/* One response box per ticket: edit + approve/reject the agent's draft
+              when one's pending; otherwise (escalation, after a reject, follow-up
+              on a sent ticket) the manual composer. */}
           {latestDecision?.status === "pending_approval" ? (
             <TicketDraftReview decision={latestDecision} />
-          ) : null}
-
-          <ManualReply threadId={thread.id} />
+          ) : (
+            <ManualReply threadId={thread.id} />
+          )}
 
           <ThreadFlow steps={buildFlowTrace(latestDecision, auditEntries)} />
         </div>
