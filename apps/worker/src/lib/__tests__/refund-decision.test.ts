@@ -10,11 +10,16 @@ const email = {
 }
 
 // Supabase stub: the `decisions` count (awaited) returns `priorRefunds` rows.
-function makeSupabase(priorRefunds: number) {
+// `filters` (optional) captures each .eq(column, value) so a test can assert the
+// classification filter matches what the live classifier actually writes.
+function makeSupabase(priorRefunds: number, filters: Array<[string, unknown]> = []) {
   const make = () => {
     const b: Record<string, unknown> = {}
     b.select = vi.fn(() => b)
-    b.eq = vi.fn(() => b)
+    b.eq = vi.fn((col: string, val: unknown) => {
+      filters.push([col, val])
+      return b
+    })
     b.gte = vi.fn(() => b)
     b.then = (resolve: (v: unknown) => void) =>
       resolve({
@@ -55,5 +60,20 @@ describe("decideRefund — configurable refund threshold", () => {
   it("holds off longer when the threshold is higher (4)", async () => {
     expect((await run(2, 4)).decision).toBe("send_offer_2")
     expect((await run(3, 4)).decision).toBe("issue_refund")
+  })
+
+  // Regression guard: the prior-request count must filter on the classification value
+  // the live classifier actually writes ("refund"). It was "refund_request", which silently
+  // matched 0 rows after the 2026-06-18 category rename, freezing the ladder on offer 1.
+  it("counts prior refunds by the live 'refund' classification", async () => {
+    const filters: Array<[string, unknown]> = []
+    await decideRefund({
+      email,
+      supabase: makeSupabase(0, filters),
+      anthropic,
+      refundThreshold: null,
+    })
+    const classification = filters.find(([col]) => col === "classification")
+    expect(classification?.[1]).toBe("refund")
   })
 })
