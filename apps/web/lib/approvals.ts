@@ -9,6 +9,7 @@ import { getActionSupabase } from "@/lib/supabase/server"
 import { resolveSenderInbox } from "@/lib/sender-inbox"
 import { getReplySignature, withSignature } from "@/lib/reply-signature"
 import { getAppSettings, countRefundsToday } from "@/lib/settings"
+import { sendInternalAlert } from "@workspace/actions/send-internal-alert"
 
 export async function approveDecision(
   decisionId: string,
@@ -104,10 +105,9 @@ export async function approveDecision(
       // configured limit, stop and leave the decision pending for a human to
       // revisit when the window resets (or the limit is raised).
       const refundLimit = (await getAppSettings(supabase)).refundDailyLimit
-      if (
-        refundLimit != null &&
-        (await countRefundsToday(supabase)) >= refundLimit
-      ) {
+      const refundsToday =
+        refundLimit != null ? await countRefundsToday(supabase) : 0
+      if (refundLimit != null && refundsToday >= refundLimit) {
         await supabase
           .from("decisions")
           .update({
@@ -120,8 +120,13 @@ export async function approveDecision(
           action: "refund_blocked_daily_limit",
           email_id: emailRow.id,
           status: "blocked",
-          payload: { decision_id: decisionId, limit: refundLimit },
+          payload: {
+            decision_id: decisionId,
+            limit: refundLimit,
+            count: refundsToday,
+          },
         })
+        await alertRefundLimitReached(supabase, refundLimit, refundsToday)
         return
       }
       const orderId = extractOrderId(emailRow.body_text)
@@ -259,4 +264,38 @@ async function resolveAdapterKey(
     }
   }
   return "mock"
+}
+
+// Email the configured recipients when the daily refund cap is hit — once per
+// UTC day (deduped via the audit log), so a run of capped approvals doesn't spam.
+async function alertRefundLimitReached(
+  supabase: ReturnType<typeof getServerSupabase>,
+  limit: number,
+  count: number
+): Promise<void> {
+  const now = new Date()
+  const since = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  ).toISOString()
+  const { data: prior } = await supabase
+    .from("audit_log")
+    .select("id")
+    .eq("action", "send_internal_alert")
+    .gte("created_at", since)
+    .contains("payload", { kind: "refund_daily_limit" })
+    .limit(1)
+    .maybeSingle()
+  if (prior) return
+  const recipients = (await getAppSettings(supabase)).refundAlertRecipients
+  await sendInternalAlert({
+    subject: `Refund daily cap reached (${count}/${limit})`,
+    body:
+      `The daily refund cap of ${limit} has been reached ` +
+      `(${count} refunds executed today, UTC).\n\n` +
+      `Further refund approvals are paused until tomorrow or until the cap is ` +
+      `raised in Settings. Pending refund decisions stay in the approvals queue.`,
+    recipients,
+    kind: "refund_daily_limit",
+    supabase,
+  })
 }

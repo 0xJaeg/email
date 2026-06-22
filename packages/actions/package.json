@@ -35,6 +35,10 @@
       "types": "./src/agent-mail.ts",
       "default": "./dist/agent-mail.js"
     },
+    "./send-internal-alert": {
+      "types": "./src/sendInternalAlert.ts",
+      "default": "./dist/sendInternalAlert.js"
+    },
     "./types": {
       "types": "./src/types.ts",
       "default": "./dist/types.js"
