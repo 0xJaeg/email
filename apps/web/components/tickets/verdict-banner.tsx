@@ -19,11 +19,24 @@ const DECISION_HEADLINE: Record<string, string> = {
   escalate: "Escalate to a human",
 }
 
+// Live classifier categories → human phrasing (+ legacy refund_request/faq for
+// pre-2026-06-18 tickets). Unknown values render de-underscored.
+const CLASSIFICATION_LABEL: Record<string, string> = {
+  refund: "refund request",
+  chargeback: "chargeback threat",
+  login_access: "login / access issue",
+  sales: "pre-sale question",
+  general: "general question",
+  unsubscribe: "unsubscribe request",
+  spam: "spam",
+  other: "other inquiry",
+  refund_request: "refund request",
+  faq: "FAQ",
+}
+
 function classificationLabel(value: string | null): string {
-  if (value === "refund_request") return "refund request"
-  if (value === "faq") return "FAQ"
   if (!value) return "unclassified"
-  return value
+  return CLASSIFICATION_LABEL[value] ?? value.replace(/_/g, " ")
 }
 
 // Restrained semantic accent — same palette the shared status badges use.
