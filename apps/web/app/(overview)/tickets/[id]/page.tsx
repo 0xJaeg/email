@@ -6,6 +6,7 @@ import { EmailCard } from "@/components/tickets/email-card"
 import { ThreadSummary } from "@/components/tickets/thread-summary"
 import { ThreadFlow } from "@/components/tickets/thread-flow"
 import { ManualReply } from "@/components/tickets/manual-reply"
+import { TicketDraftReview } from "@/components/tickets/ticket-draft-review"
 import { buildFlowTrace } from "@/lib/flow-trace"
 import { VerdictBanner } from "@/components/tickets/verdict-banner"
 
@@ -72,6 +73,10 @@ export default async function TicketDetailPage({
               ))}
             </ol>
           </section>
+
+          {latestDecision?.status === "pending_approval" ? (
+            <TicketDraftReview decision={latestDecision} />
+          ) : null}
 
           <ManualReply threadId={thread.id} />
 

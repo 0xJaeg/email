@@ -87,7 +87,10 @@ export function EmailCard({
               <IconArrowRight className="size-3 text-muted-foreground" />
               <DecisionBadge value={d.decision} />
             </div>
-            {d.draftReplyText ? (
+            {/* A pending draft is shown editable in the reply area (TicketDraftReview),
+                not read-only here, to avoid two copies. Sent/rejected/failed drafts
+                stay as conversation history. */}
+            {d.draftReplyText && d.status !== "pending_approval" ? (
               <div className="rounded-xl border bg-background p-3.5 text-sm leading-relaxed">
                 <div className="mb-2 flex items-center gap-1.5 font-heading text-[11px] tracking-wide text-muted-foreground uppercase">
                   <IconRobot className="size-3" />

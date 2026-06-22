@@ -44,7 +44,7 @@ export function ManualReply({
   return (
     <section className="flex flex-col gap-2.5">
       <h2 className="flex items-center gap-2 font-heading text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-        Reply to customer
+        Reply manually
       </h2>
       <Textarea
         value={text}
@@ -55,8 +55,8 @@ export function ManualReply({
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Sends immediately from the thread&apos;s inbox — use this to handle
-          escalated tickets the agent didn&apos;t draft.
+          Sends immediately from the thread&apos;s inbox, bypassing the drafted
+          reply and approval — for escalated tickets or to handle one yourself.
         </p>
         <Button onClick={onSend} disabled={isPending} className="shrink-0">
           {isPending ? (
