@@ -8,8 +8,8 @@ export const EnrichStep: Step = {
   key: "enrich",
   async run(ctx) {
     const { classification, product, email, supabase } = ctx
-    // Prefer the lookup_gate's decision (ctx.needsLookup); fall back to the
-    // inquiry_type gate when the gate step isn't in the flow.
+    // Prefer an explicit ctx.needsLookup (set by the order_lookup node); fall
+    // back to the inquiry_type gate when nothing set it.
     const wantLookup =
       ctx.needsLookup !== undefined
         ? ctx.needsLookup
