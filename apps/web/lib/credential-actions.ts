@@ -6,10 +6,8 @@ import { getActionSupabase } from "@/lib/supabase/server"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import type { ServerClient } from "@workspace/db/client"
 
-const PLATFORMS = ["clickbank", "jvzoo", "digistore"] as const
-type Platform = (typeof PLATFORMS)[number]
-const SCOPES = ["view", "refund"] as const
-type Scope = (typeof SCOPES)[number]
+type Platform = "clickbank" | "jvzoo" | "digistore"
+type Scope = "view" | "refund"
 
 type Result = { error: boolean; message: string }
 
@@ -25,50 +23,6 @@ async function requireAdmin(): Promise<
     .single()
   if (caller?.role !== "admin") return { ok: false }
   return { ok: true, admin, callerEmail: user.email ?? user.id }
-}
-
-export async function createCredential(formData: FormData): Promise<Result> {
-  const auth = await requireAdmin()
-  if (!auth.ok) return { error: true, message: "Not authorized." }
-
-  const product_id = String(formData.get("product_id") ?? "")
-  const platform = String(formData.get("platform") ?? "")
-  const scope = String(formData.get("scope") ?? "view")
-  const platform_order = Number(formData.get("platform_order") ?? 0)
-  const label = String(formData.get("label") ?? "").trim()
-  const secret = String(formData.get("secret") ?? "")
-  if (!product_id) return { error: true, message: "Product is required." }
-  if (!PLATFORMS.includes(platform as Platform))
-    return { error: true, message: "Invalid platform." }
-  if (!SCOPES.includes(scope as Scope))
-    return { error: true, message: "Invalid scope." }
-  if (!label) return { error: true, message: "Label is required." }
-  if (!secret) return { error: true, message: "Secret is required." }
-
-  let ciphertext: string
-  try {
-    ciphertext = encryptSecret(secret)
-  } catch {
-    return {
-      error: true,
-      message: "Encryption isn't configured — set CREDENTIALS_ENC_KEY.",
-    }
-  }
-
-  const { error } = await auth.admin.from("integration_credentials").insert({
-    product_id,
-    platform,
-    scope,
-    platform_order: Number.isFinite(platform_order) ? platform_order : 0,
-    label,
-    ciphertext,
-    last4: secret.slice(-4),
-    created_by: auth.callerEmail,
-  })
-  if (error) return { error: true, message: error.message }
-  revalidatePath("/credentials")
-  revalidatePath("/products/[id]", "page")
-  return { error: false, message: "Credential saved." }
 }
 
 // The product form posts one optional secret per (platform, scope) slot.
@@ -130,17 +84,4 @@ export async function setProductKeys(formData: FormData): Promise<Result> {
   if (error) return { error: true, message: error.message }
   revalidatePath("/products/[id]", "page")
   return { error: false, message: "API keys saved." }
-}
-
-export async function deleteCredential(id: string): Promise<Result> {
-  const auth = await requireAdmin()
-  if (!auth.ok) return { error: true, message: "Not authorized." }
-  const { error } = await auth.admin
-    .from("integration_credentials")
-    .delete()
-    .eq("id", id)
-  if (error) return { error: true, message: error.message }
-  revalidatePath("/credentials")
-  revalidatePath("/products/[id]", "page")
-  return { error: false, message: "Credential deleted." }
 }

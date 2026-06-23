@@ -160,8 +160,7 @@ export function ProductForm({
               <p className="text-xs text-muted-foreground">
                 Per platform: a <span className="font-medium">view</span> key
                 (order lookups) and an <span className="font-medium">edit</span>{" "}
-                key (refunds). Leave a field blank to keep the current key; keys
-                in use are listed on the product page.
+                key (refunds). Leave a field blank to keep the current key.
               </p>
             </div>
             {(["clickbank", "jvzoo", "digistore"] as const).map((p) => (

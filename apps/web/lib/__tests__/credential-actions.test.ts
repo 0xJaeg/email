@@ -1,24 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 let callerRole = "admin"
-const insertSpy = vi.fn()
-const deleteSpy = vi.fn()
+const upsertSpy = vi.fn()
 
 function makeAdmin() {
   const make = (table: string) => {
     const b: Record<string, unknown> = {}
     b.select = vi.fn(() => b)
-    b.insert = vi.fn((p: unknown) => {
-      insertSpy(p)
-      return b
-    })
-    b.delete = vi.fn(() => {
-      deleteSpy()
+    b.upsert = vi.fn((rows: unknown) => {
+      upsertSpy(rows)
       return b
     })
     b.eq = vi.fn(() => b)
     b.single = vi.fn(async () => {
-      if (table === "profiles") return { data: { role: callerRole }, error: null }
+      if (table === "profiles")
+        return { data: { role: callerRole }, error: null }
       return { data: null, error: null }
     })
     b.then = (resolve: (v: unknown) => void) =>
@@ -35,7 +31,9 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }))
 let adminClient: ReturnType<typeof makeAdmin>
-vi.mock("@/lib/supabase/admin", () => ({ getServerSupabase: () => adminClient }))
+vi.mock("@/lib/supabase/admin", () => ({
+  getServerSupabase: () => adminClient,
+}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 // Stand-in encryption: returns a marker WITHOUT the plaintext, so we can assert
 // the secret was encrypted (real crypto round-trip is covered in crypto.test).
@@ -43,7 +41,7 @@ vi.mock("@workspace/actions/crypto", () => ({
   encryptSecret: (s: string) => `CIPHER(${s.length})`,
 }))
 
-import { createCredential, deleteCredential } from "../credential-actions.js"
+import { setProductKeys } from "../credential-actions.js"
 
 function form(obj: Record<string, string>) {
   const f = new FormData()
@@ -51,48 +49,45 @@ function form(obj: Record<string, string>) {
   return f
 }
 
-const valid = {
-  product_id: "prod-1",
-  platform: "clickbank",
-  label: "ClickBank API key",
-  secret: "supersecret9999",
-}
-
-describe("credential-actions", () => {
+describe("setProductKeys", () => {
   beforeEach(() => {
     callerRole = "admin"
-    insertSpy.mockReset()
-    deleteSpy.mockReset()
+    upsertSpy.mockReset()
     adminClient = makeAdmin()
   })
 
-  it("createCredential rejects non-admins", async () => {
+  it("rejects non-admins", async () => {
     callerRole = "operator"
-    const r = await createCredential(form(valid))
+    const r = await setProductKeys(
+      form({ id: "prod-1", key_clickbank_view: "supersecret9999" })
+    )
     expect(r.error).toBe(true)
-    expect(insertSpy).not.toHaveBeenCalled()
+    expect(upsertSpy).not.toHaveBeenCalled()
   })
 
-  it("createCredential stores ciphertext (never the plaintext) + last4", async () => {
-    const r = await createCredential(form(valid))
+  it("encrypts each set key (never stores the plaintext) + keeps last4", async () => {
+    const r = await setProductKeys(
+      form({ id: "prod-1", key_clickbank_view: "supersecret9999" })
+    )
     expect(r.error).toBe(false)
-    const payload = insertSpy.mock.calls[0]?.[0] as Record<string, unknown>
-    expect(payload.ciphertext).toBe("CIPHER(15)")
-    expect(JSON.stringify(payload)).not.toContain("supersecret9999")
-    expect(payload.last4).toBe("9999")
-    expect(payload.platform).toBe("clickbank")
-    expect(payload.product_id).toBe("prod-1")
+    const rows = (upsertSpy.mock.calls[0]?.[0] ?? []) as Record<
+      string,
+      unknown
+    >[]
+    expect(rows).toHaveLength(1)
+    const row = rows[0]!
+    expect(row.platform).toBe("clickbank")
+    expect(row.scope).toBe("view")
+    expect(row.ciphertext).toBe("CIPHER(15)")
+    expect(row.last4).toBe("9999")
+    expect(row.product_id).toBe("prod-1")
+    expect(JSON.stringify(rows)).not.toContain("supersecret9999")
   })
 
-  it("createCredential rejects a missing secret", async () => {
-    const r = await createCredential(form({ ...valid, secret: "" }))
-    expect(r.error).toBe(true)
-    expect(insertSpy).not.toHaveBeenCalled()
-  })
-
-  it("deleteCredential deletes for an admin", async () => {
-    const r = await deleteCredential("cred-1")
+  it("skips blank slots — no keys means no write", async () => {
+    const r = await setProductKeys(form({ id: "prod-1" }))
     expect(r.error).toBe(false)
-    expect(deleteSpy).toHaveBeenCalled()
+    expect(r.message).toBe("No key changes.")
+    expect(upsertSpy).not.toHaveBeenCalled()
   })
 })
