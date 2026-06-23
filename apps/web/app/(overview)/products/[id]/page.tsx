@@ -1,13 +1,11 @@
 import { notFound, redirect } from "next/navigation"
-import Link from "next/link"
-import { IconArrowLeft } from "@tabler/icons-react"
 import { getActionSupabase } from "@/lib/supabase/server"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import { getProduct, type ProductRow } from "@/lib/products"
 import { getCredentialsForProduct } from "@/lib/credentials"
 import { AddCredentialButton } from "@/components/credentials/add-credential-button"
 import { DeleteCredentialButton } from "@/components/credentials/delete-credential-button"
-import { EditProductButton } from "@/components/products/edit-product-button"
+import { ProductForm } from "@/components/products/product-form"
 import { Badge } from "@workspace/ui/components/badge"
 import {
   Table,
@@ -30,18 +28,7 @@ function agentChecksSummary(product: ProductRow): string {
   return `When a lookup is needed, the agent checks orders and access via the ${product.platform} integration (currently a stub — pending real API credentials).`
 }
 
-function SupportRow({ label, value }: { label: string; value?: string }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className={value ? "break-all" : "text-muted-foreground italic"}>
-        {value || "not set"}
-      </dd>
-    </>
-  )
-}
-
-export default async function ProductDetailPage({
+export default async function ProductPage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -63,22 +50,13 @@ export default async function ProductDetailPage({
   const cfg = product.support_config
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Link
-          href="/products"
-          className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <IconArrowLeft size={14} /> Products
-        </Link>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold">{product.name}</h1>
-            <Badge variant={product.is_active ? "default" : "secondary"}>
-              {product.is_active ? "Active" : "Inactive"}
-            </Badge>
-          </div>
-          <EditProductButton product={product} />
+    <div className="flex max-w-2xl flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold">{product.name}</h1>
+          <Badge variant={product.is_active ? "default" : "secondary"}>
+            {product.is_active ? "Active" : "Inactive"}
+          </Badge>
         </div>
         <p className="font-mono text-xs text-muted-foreground">
           {product.slug} · {product.platform} · adapter:{" "}
@@ -86,10 +64,16 @@ export default async function ProductDetailPage({
         </p>
       </div>
 
+      <ProductForm
+        mode="update"
+        product={product}
+        redirectTo={`/products/${id}`}
+      />
+
       <section className="flex flex-col gap-3">
         <div className="flex items-end justify-between gap-2">
           <div>
-            <h2 className="font-medium">API keys</h2>
+            <h2 className="font-medium">Stored API keys</h2>
             <p className="text-sm text-muted-foreground">
               Encrypted at rest — shown only as the last 4 characters.
             </p>
@@ -145,34 +129,6 @@ export default async function ProductDetailPage({
             </TableBody>
           </Table>
         </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div>
-          <h2 className="font-medium">Support facts</h2>
-          <p className="text-sm text-muted-foreground">
-            The real links the agent may use in replies (it never invents URLs).
-            Edit via the pencil above.
-          </p>
-        </div>
-        <dl className="grid grid-cols-[9rem_1fr] gap-x-4 gap-y-2 rounded-lg border p-4 text-sm">
-          <SupportRow label="Platform" value={cfg.platform} />
-          <SupportRow label="Login URL" value={cfg.login_url} />
-          <SupportRow label="Reset URL" value={cfg.reset_url} />
-          <SupportRow label="Dashboard URL" value={cfg.dashboard_url} />
-          <SupportRow label="Notes" value={cfg.notes} />
-        </dl>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="font-medium">Refund policy</h2>
-        <p className="text-sm text-muted-foreground">
-          {product.refund_threshold == null
-            ? "After 3 refund requests from the same customer (the default), the agent drafts a refund instead of another retention offer."
-            : `After ${product.refund_threshold} refund request${
-                product.refund_threshold === 1 ? "" : "s"
-              } from the same customer, the agent drafts a refund instead of another retention offer.`}
-        </p>
       </section>
 
       <section className="flex flex-col gap-2">

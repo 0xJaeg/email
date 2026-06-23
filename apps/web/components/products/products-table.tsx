@@ -9,7 +9,6 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { TablePagination } from "@/components/shared/table-pagination"
-import { EditProductButton } from "./edit-product-button"
 import { DeleteProductButton } from "./delete-product-button"
 
 export async function ProductsTable({
@@ -67,7 +66,6 @@ export async function ProductsTable({
                   </TableCell>
                   <TableCell>{p.is_active ? "Active" : "Inactive"}</TableCell>
                   <TableCell className="flex justify-end gap-2">
-                    <EditProductButton product={p} />
                     {p.slug !== "default" && (
                       <DeleteProductButton id={p.id} name={p.name} />
                     )}
