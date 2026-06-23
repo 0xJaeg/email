@@ -15,19 +15,9 @@ export type CredentialRow = {
 const CRED_COLS =
   "id, product_id, platform, scope, platform_order, label, last4, updated_at"
 
-// Deliberately never selects `ciphertext` — the secret value never leaves the
-// server, and the dashboard only ever shows the label + last4.
-export async function getCredentials(): Promise<CredentialRow[]> {
-  const supabase = getServerSupabase()
-  const { data, error } = await supabase
-    .from("integration_credentials")
-    .select(CRED_COLS)
-    .order("created_at", { ascending: false })
-  if (error) throw error
-  return data ?? []
-}
-
-// The keys for one product (per-product detail page).
+// The keys for one product (shown on the product page). Deliberately never
+// selects `ciphertext` — the secret value never leaves the server; the dashboard
+// only ever shows the label + last4.
 export async function getCredentialsForProduct(
   productId: string
 ): Promise<CredentialRow[]> {
