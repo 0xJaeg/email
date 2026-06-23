@@ -32,7 +32,11 @@ export function AddProductButton() {
           </SheetTitle>
           <SheetDescription />
         </SheetHeader>
-        <ProductForm mode="create" closeSheet={() => setOpen(false)} />
+        <ProductForm
+          mode="create"
+          closeSheet={() => setOpen(false)}
+          className="px-4 pb-4"
+        />
       </SheetContent>
     </Sheet>
   )
