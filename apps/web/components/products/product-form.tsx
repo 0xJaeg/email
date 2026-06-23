@@ -83,230 +83,232 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 px-4 pb-4">
+    <form onSubmit={onSubmit} className="@container space-y-4 px-4 pb-4">
       {!isCreate && <input type="hidden" name="id" value={product?.id} />}
-      <div className="space-y-2">
-        <Label htmlFor="name">Name</Label>
-        <Input
-          id="name"
-          name="name"
-          defaultValue={product?.name}
-          required
-          disabled={isPending}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="platform">Platform</Label>
-        <Select
-          name="platform"
-          defaultValue={product?.platform ?? "clickbank"}
-          disabled={isPending}
-        >
-          <SelectTrigger id="platform" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="clickbank">clickbank</SelectItem>
-            <SelectItem value="jvzoo">jvzoo</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="adapter_key">Adapter</Label>
-        <Select
-          name="adapter_key"
-          defaultValue={product?.adapter_key ?? "profitdashboard"}
-          disabled={isPending}
-        >
-          <SelectTrigger id="adapter_key" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="profitdashboard">
-              profitdashboard (access lookup)
-            </SelectItem>
-            <SelectItem value="clickbank">clickbank</SelectItem>
-            <SelectItem value="jvzoo">jvzoo</SelectItem>
-            <SelectItem value="digistore">digistore</SelectItem>
-            <SelectItem value="mock">mock (no real API)</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
-          profitdashboard does access / membership lookups (live). clickbank,
-          jvzoo and digistore do orders + refunds once their API keys are set.
-          mock returns safe canned data.
-        </p>
-      </div>
-      <div className="space-y-2 border-t pt-4">
-        <Label htmlFor="access_product_key">Access lookup product key</Label>
-        <Input
-          id="access_product_key"
-          name="access_product_key"
-          defaultValue={product?.support_config?.access_product_key ?? ""}
-          placeholder="e.g. mobile_profit"
-          disabled={isPending}
-        />
-        <p className="text-xs text-muted-foreground">
-          For a multi-product access API (e.g. Profit Dashboard): the
-          provider&apos;s product key a customer must hold to count as a member
-          of this product. Leave blank to accept any membership.
-        </p>
-      </div>
-      {!isCreate && (
-        <div className="space-y-3 border-t pt-4">
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Platform API keys</p>
-            <p className="text-xs text-muted-foreground">
-              Per platform: a <span className="font-medium">view</span> key
-              (order lookups) and an <span className="font-medium">edit</span>{" "}
-              key (refunds). Leave a field blank to keep the current key; keys
-              in use are listed on the product page.
-            </p>
-          </div>
-          {(["clickbank", "jvzoo", "digistore"] as const).map((p) => (
-            <div key={p} className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <Label htmlFor={`key_${p}_view`} className="text-xs">
-                  <span className="capitalize">{p}</span> · view
-                </Label>
-                <Input
-                  id={`key_${p}_view`}
-                  name={`key_${p}_view`}
-                  type="password"
-                  autoComplete="off"
-                  placeholder="••••••"
-                  disabled={isPending}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`key_${p}_refund`} className="text-xs">
-                  <span className="capitalize">{p}</span> · refund
-                </Label>
-                <Input
-                  id={`key_${p}_refund`}
-                  name={`key_${p}_refund`}
-                  type="password"
-                  autoComplete="off"
-                  placeholder="••••••"
-                  disabled={isPending}
-                />
-              </div>
-            </div>
-          ))}
+      <div className="grid gap-x-4 gap-y-4 @2xl:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input
+            id="name"
+            name="name"
+            defaultValue={product?.name}
+            required
+            disabled={isPending}
+          />
         </div>
-      )}
-      <div className="space-y-1 border-t pt-4">
-        <p className="text-sm font-medium">
-          Support facts (used in customer replies)
-        </p>
-        <p className="text-xs text-muted-foreground">
-          The agent uses ONLY these links in replies and never invents URLs.
-          Leave a field blank if you don’t have it.
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="support_platform">Access / membership platform</Label>
-        <Input
-          id="support_platform"
-          name="support_platform"
-          defaultValue={product?.support_config?.platform ?? ""}
-          placeholder="Digistore24"
-          disabled={isPending}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="login_url">Login / sign-in URL</Label>
-        <Input
-          id="login_url"
-          name="login_url"
-          type="url"
-          defaultValue={product?.support_config?.login_url ?? ""}
-          placeholder="https://..."
-          disabled={isPending}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="reset_url">Password reset URL</Label>
-        <Input
-          id="reset_url"
-          name="reset_url"
-          type="url"
-          defaultValue={product?.support_config?.reset_url ?? ""}
-          placeholder="https://..."
-          disabled={isPending}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="dashboard_url">Account dashboard URL</Label>
-        <Input
-          id="dashboard_url"
-          name="dashboard_url"
-          type="url"
-          defaultValue={product?.support_config?.dashboard_url ?? ""}
-          placeholder="https://..."
-          disabled={isPending}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="support_notes">Access notes</Label>
-        <Textarea
-          id="support_notes"
-          name="support_notes"
-          defaultValue={product?.support_config?.notes ?? ""}
-          placeholder="e.g. access is emailed after purchase; use the email you bought with"
-          disabled={isPending}
-        />
-      </div>
-      <div className="space-y-2 border-t pt-4">
-        <Label htmlFor="signature">Reply signature</Label>
-        <Textarea
-          id="signature"
-          name="signature"
-          defaultValue={product?.support_config?.signature ?? ""}
-          placeholder={"Best,\nThe Mobile Profits Team"}
-          disabled={isPending}
-        />
-        <p className="text-xs text-muted-foreground">
-          Appended to every outbound reply (agent + manual). Leave blank for
-          none.
-        </p>
-      </div>
-      <div className="space-y-1 border-t pt-4">
-        <p className="text-sm font-medium">Refund policy</p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="refund_threshold">Refund after N requests</Label>
-        <Input
-          id="refund_threshold"
-          name="refund_threshold"
-          type="number"
-          min="1"
-          step="1"
-          defaultValue={product?.refund_threshold ?? ""}
-          placeholder="3 (default)"
-          disabled={isPending}
-        />
-        <p className="text-xs text-muted-foreground">
-          After this many refund requests from the same customer, the agent
-          drafts a refund instead of another retention offer. Blank uses the
-          default of 3 (offer twice, then refund).
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="is_active">Status</Label>
-        <Select
-          name="is_active"
-          defaultValue={product && !product.is_active ? "inactive" : "active"}
-          disabled={isPending}
-        >
-          <SelectTrigger id="is_active" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="space-y-2">
+          <Label htmlFor="platform">Platform</Label>
+          <Select
+            name="platform"
+            defaultValue={product?.platform ?? "clickbank"}
+            disabled={isPending}
+          >
+            <SelectTrigger id="platform" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="clickbank">clickbank</SelectItem>
+              <SelectItem value="jvzoo">jvzoo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2 @2xl:col-span-2">
+          <Label htmlFor="adapter_key">Adapter</Label>
+          <Select
+            name="adapter_key"
+            defaultValue={product?.adapter_key ?? "profitdashboard"}
+            disabled={isPending}
+          >
+            <SelectTrigger id="adapter_key" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="profitdashboard">
+                profitdashboard (access lookup)
+              </SelectItem>
+              <SelectItem value="clickbank">clickbank</SelectItem>
+              <SelectItem value="jvzoo">jvzoo</SelectItem>
+              <SelectItem value="digistore">digistore</SelectItem>
+              <SelectItem value="mock">mock (no real API)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            profitdashboard does access / membership lookups (live). clickbank,
+            jvzoo and digistore do orders + refunds once their API keys are set.
+            mock returns safe canned data.
+          </p>
+        </div>
+        <div className="space-y-2 border-t pt-4 @2xl:col-span-2">
+          <Label htmlFor="access_product_key">Access lookup product key</Label>
+          <Input
+            id="access_product_key"
+            name="access_product_key"
+            defaultValue={product?.support_config?.access_product_key ?? ""}
+            placeholder="e.g. mobile_profit"
+            disabled={isPending}
+          />
+          <p className="text-xs text-muted-foreground">
+            For a multi-product access API (e.g. Profit Dashboard): the
+            provider&apos;s product key a customer must hold to count as a
+            member of this product. Leave blank to accept any membership.
+          </p>
+        </div>
+        {!isCreate && (
+          <div className="space-y-3 border-t pt-4 @2xl:col-span-2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Platform API keys</p>
+              <p className="text-xs text-muted-foreground">
+                Per platform: a <span className="font-medium">view</span> key
+                (order lookups) and an <span className="font-medium">edit</span>{" "}
+                key (refunds). Leave a field blank to keep the current key; keys
+                in use are listed on the product page.
+              </p>
+            </div>
+            {(["clickbank", "jvzoo", "digistore"] as const).map((p) => (
+              <div key={p} className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor={`key_${p}_view`} className="text-xs">
+                    <span className="capitalize">{p}</span> · view
+                  </Label>
+                  <Input
+                    id={`key_${p}_view`}
+                    name={`key_${p}_view`}
+                    type="password"
+                    autoComplete="off"
+                    placeholder="••••••"
+                    disabled={isPending}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor={`key_${p}_refund`} className="text-xs">
+                    <span className="capitalize">{p}</span> · refund
+                  </Label>
+                  <Input
+                    id={`key_${p}_refund`}
+                    name={`key_${p}_refund`}
+                    type="password"
+                    autoComplete="off"
+                    placeholder="••••••"
+                    disabled={isPending}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="space-y-1 border-t pt-4 @2xl:col-span-2">
+          <p className="text-sm font-medium">
+            Support facts (used in customer replies)
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The agent uses ONLY these links in replies and never invents URLs.
+            Leave a field blank if you don’t have it.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="support_platform">Access / membership platform</Label>
+          <Input
+            id="support_platform"
+            name="support_platform"
+            defaultValue={product?.support_config?.platform ?? ""}
+            placeholder="Digistore24"
+            disabled={isPending}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="login_url">Login / sign-in URL</Label>
+          <Input
+            id="login_url"
+            name="login_url"
+            type="url"
+            defaultValue={product?.support_config?.login_url ?? ""}
+            placeholder="https://..."
+            disabled={isPending}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="reset_url">Password reset URL</Label>
+          <Input
+            id="reset_url"
+            name="reset_url"
+            type="url"
+            defaultValue={product?.support_config?.reset_url ?? ""}
+            placeholder="https://..."
+            disabled={isPending}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="dashboard_url">Account dashboard URL</Label>
+          <Input
+            id="dashboard_url"
+            name="dashboard_url"
+            type="url"
+            defaultValue={product?.support_config?.dashboard_url ?? ""}
+            placeholder="https://..."
+            disabled={isPending}
+          />
+        </div>
+        <div className="space-y-2 @2xl:col-span-2">
+          <Label htmlFor="support_notes">Access notes</Label>
+          <Textarea
+            id="support_notes"
+            name="support_notes"
+            defaultValue={product?.support_config?.notes ?? ""}
+            placeholder="e.g. access is emailed after purchase; use the email you bought with"
+            disabled={isPending}
+          />
+        </div>
+        <div className="space-y-2 border-t pt-4 @2xl:col-span-2">
+          <Label htmlFor="signature">Reply signature</Label>
+          <Textarea
+            id="signature"
+            name="signature"
+            defaultValue={product?.support_config?.signature ?? ""}
+            placeholder={"Best,\nThe Mobile Profits Team"}
+            disabled={isPending}
+          />
+          <p className="text-xs text-muted-foreground">
+            Appended to every outbound reply (agent + manual). Leave blank for
+            none.
+          </p>
+        </div>
+        <div className="space-y-1 border-t pt-4 @2xl:col-span-2">
+          <p className="text-sm font-medium">Refund policy</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="refund_threshold">Refund after N requests</Label>
+          <Input
+            id="refund_threshold"
+            name="refund_threshold"
+            type="number"
+            min="1"
+            step="1"
+            defaultValue={product?.refund_threshold ?? ""}
+            placeholder="3 (default)"
+            disabled={isPending}
+          />
+          <p className="text-xs text-muted-foreground">
+            After this many refund requests from the same customer, the agent
+            drafts a refund instead of another retention offer. Blank uses the
+            default of 3 (offer twice, then refund).
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="is_active">Status</Label>
+          <Select
+            name="is_active"
+            defaultValue={product && !product.is_active ? "inactive" : "active"}
+            disabled={isPending}
+          >
+            <SelectTrigger id="is_active" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={isPending}>

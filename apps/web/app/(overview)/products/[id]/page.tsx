@@ -50,7 +50,7 @@ export default async function ProductPage({
   const cfg = product.support_config
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex max-w-4xl flex-col gap-6">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold">{product.name}</h1>
