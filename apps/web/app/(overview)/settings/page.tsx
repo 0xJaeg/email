@@ -21,7 +21,7 @@ export default async function SettingsPage() {
   const settings = await getAppSettings(admin)
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex max-w-md flex-col gap-6">
       <RefundSettingsForm
         refundDailyLimit={settings.refundDailyLimit}
         refundAlertRecipients={settings.refundAlertRecipients}

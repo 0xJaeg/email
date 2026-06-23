@@ -81,7 +81,6 @@ export function RefundSettingsForm({
               defaultValue={refundDailyLimit ?? ""}
               placeholder="No cap"
               disabled={isPending}
-              className="max-w-xs"
             />
             <p className="text-xs text-muted-foreground">
               Max refunds executed per day (UTC). Blank or 0 = no cap. Once
