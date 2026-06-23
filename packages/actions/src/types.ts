@@ -60,6 +60,10 @@ export type HttpCallInfo = {
   endpoint: string
   method: string
   status: number | null
+  /** Compact, PII-light summary of the request we sent (shown in the trace). */
+  request?: string
+  /** Compact, PII-light summary of the response we got (shown in the trace). */
+  response?: string
 }
 
 export type OrderLookupResult = {

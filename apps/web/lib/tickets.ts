@@ -148,6 +148,8 @@ export type DecisionLookup = {
   endpoint?: string
   method?: string
   status?: number | null
+  request?: string
+  response?: string
 }
 
 export type DecisionContext = {

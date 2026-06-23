@@ -37,11 +37,12 @@ export const ProfitDashboardAdapter: ProductAdapter = {
   async checkAccess({ email, expectedProductKey }) {
     const apiKey = process.env.PROFITDASHBOARD_API_KEY
     if (!apiKey) throw new Error("Missing PROFITDASHBOARD_API_KEY in env")
+    const bare = bareEmail(email)
 
     const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: { "x-api-key": apiKey, "content-type": "application/json" },
-      body: JSON.stringify({ email: bareEmail(email) }),
+      body: JSON.stringify({ email: bare }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     if (!res.ok) {
@@ -49,10 +50,24 @@ export const ProfitDashboardAdapter: ProductAdapter = {
         `profitdashboard access check: POST ${ENDPOINT} → HTTP ${res.status}`
       )
     }
-    const http = { endpoint: ENDPOINT, method: "POST", status: res.status }
 
     const body = (await res.json()) as LookupResponse
     const d = body.data
+    // PII-light request/response summaries for the ticket trace — the meaningful
+    // envelope fields only (never the name/address/phone the API also returns).
+    const http = {
+      endpoint: ENDPOINT,
+      method: "POST",
+      status: res.status,
+      request: JSON.stringify({ email: bare }),
+      response: JSON.stringify({
+        status: body.status ?? null,
+        exists: d?.exists ?? null,
+        product: d?.product?.key ?? null,
+        role: d?.role ?? null,
+      }),
+    }
+
     if (!body.status || !d?.exists) {
       return { hasAccess: false, details: null, http }
     }

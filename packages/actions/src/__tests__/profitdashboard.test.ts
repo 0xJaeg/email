@@ -58,6 +58,13 @@ describe("profitdashboard adapter", () => {
     }
     expect(JSON.parse(init.body)).toEqual({ email: "madhav5448@gmail.com" })
     expect(init.headers["x-api-key"]).toBe("test-key")
+
+    // The trace captures a PII-light request + response — the envelope fields,
+    // never the address / phone the API also returns.
+    expect(r.http?.request).toContain("madhav5448@gmail.com")
+    expect(r.http?.response).toContain("mobile_profit")
+    expect(r.http?.response).not.toContain("ater road")
+    expect(r.http?.response).not.toContain("9977176638")
   })
 
   it("grants access when the member's product matches expectedProductKey", async () => {
