@@ -1,6 +1,7 @@
 "use client"
 
 import { type FormEvent, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { createProduct, updateProduct } from "@/lib/product-actions"
 import { setProductKeys } from "@/lib/credential-actions"
@@ -22,14 +23,29 @@ export function ProductForm({
   mode,
   product,
   closeSheet,
+  redirectTo,
 }: {
   mode: "create" | "update"
   product?: ProductRow
-  closeSheet: () => void
+  /** Called on success when rendered in a Sheet (closes it). */
+  closeSheet?: () => void
+  /** When set (full-page editor), navigate here on success instead. */
+  redirectTo?: string
 }) {
   const isCreate = mode === "create"
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  // On success: a full-page editor navigates back; a Sheet just closes.
+  function finish() {
+    if (redirectTo) {
+      router.push(redirectTo)
+      router.refresh()
+    } else {
+      closeSheet?.()
+    }
+  }
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -45,7 +61,7 @@ export function ProductForm({
           return
         }
         toast.success(result.message)
-        closeSheet()
+        finish()
         return
       }
       const result = await updateProduct(formData)
@@ -62,7 +78,7 @@ export function ProductForm({
         return
       }
       toast.success(result.message)
-      closeSheet()
+      finish()
     })
   }
 
@@ -143,8 +159,8 @@ export function ProductForm({
             <p className="text-xs text-muted-foreground">
               Per platform: a <span className="font-medium">view</span> key
               (order lookups) and an <span className="font-medium">edit</span>{" "}
-              key (refunds). Leave a field blank to keep the current key; keys in
-              use are listed on the product page.
+              key (refunds). Leave a field blank to keep the current key; keys
+              in use are listed on the product page.
             </p>
           </div>
           {(["clickbank", "jvzoo", "digistore"] as const).map((p) => (
