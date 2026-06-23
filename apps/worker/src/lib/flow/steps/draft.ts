@@ -26,11 +26,15 @@ export const DraftStep: Step = {
     const isRefund =
       dec.decision === "issue_refund" ||
       dec.decision === "issue_refund_chargeback"
+    const isUnsubscribe = dec.decision === "unsubscribe"
     const isReply =
       dec.decision === "send_offer_1" ||
       dec.decision === "send_offer_2" ||
       dec.decision === "send_faq_reply"
 
+    // Unsubscribe proposes the opt-out (added to the suppression list + pushed to
+    // the external email system on approval, via suppressContact) and drafts the
+    // confirmation — so we only tell them they're removed once approval runs it.
     const proposedActions: ProposedAction[] = isRefund
       ? [
           { type: "issue_refund" },
@@ -42,7 +46,9 @@ export const DraftStep: Step = {
                 : "refund",
           },
         ]
-      : []
+      : isUnsubscribe
+        ? [{ type: "suppress_contact", reason: "unsubscribe" }]
+        : []
 
     const context = enrichment
       ? { inquiry_type: cls.inquiry_type, ...enrichment.context }
@@ -96,7 +102,7 @@ export const DraftStep: Step = {
         status: "success",
         payload: { decision_id: row.id, decision: dec.decision },
       })
-    } else if (isReply) {
+    } else if (isReply || isUnsubscribe) {
       await draftAndQueue(
         ctx,
         row.id,

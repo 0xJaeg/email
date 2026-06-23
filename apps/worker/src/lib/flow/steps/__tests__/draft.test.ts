@@ -17,9 +17,18 @@ import { DraftStep } from "../draft.js"
 import { REPLY_HEADER } from "../../../instructions.js"
 import type { StepContext, FlowStepConfig } from "../../types.js"
 
-function makeCtx(): StepContext {
+// Captures the `decisions` insert payload (reset on each makeCtx call) so a test
+// can assert the proposed_actions the draft step persists.
+let decisionInserts: Record<string, unknown>[] = []
+
+function makeCtx(decision = "send_faq_reply"): StepContext {
+  decisionInserts = []
+  let table = ""
   const b: Record<string, unknown> = {}
-  b.insert = vi.fn(() => b)
+  b.insert = vi.fn((p: Record<string, unknown>) => {
+    if (table === "decisions") decisionInserts.push(p)
+    return b
+  })
   b.update = vi.fn(() => b)
   b.select = vi.fn(() => b)
   b.eq = vi.fn(() => b)
@@ -51,13 +60,13 @@ function makeCtx(): StepContext {
     },
     enrichment: null,
     decision: {
-      decision: "send_faq_reply",
+      decision,
       template_used: null,
       refund_request_count: null,
       combinedReasoning: "r",
       llmModel: "claude-haiku-4-5",
     },
-    supabase: { from: () => b } as never,
+    supabase: { from: (t: string) => ((table = t), b) } as never,
     anthropic: {} as never,
   }
 }
@@ -84,5 +93,16 @@ describe("DraftStep reply instructions", () => {
     expect(generateReply.mock.calls[0]?.[0].replyInstructions).toBe(
       `${REPLY_HEADER}\n\n---\n\n`
     )
+  })
+
+  it("decision 'unsubscribe' proposes suppress_contact and drafts a reply", async () => {
+    generateReply.mockClear()
+    await DraftStep.run(makeCtx("unsubscribe"), cfg("confirm removal"))
+    // Proposes the opt-out (added to the suppression list + pushed to the
+    // external system on approval) and still drafts the confirmation reply.
+    expect(decisionInserts[0]?.proposed_actions).toEqual([
+      { type: "suppress_contact", reason: "unsubscribe" },
+    ])
+    expect(generateReply).toHaveBeenCalled()
   })
 })
