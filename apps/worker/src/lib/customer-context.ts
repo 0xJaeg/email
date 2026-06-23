@@ -9,8 +9,8 @@ import type {
 // operator can SEE what happened behind the scenes — including a down/erroring
 // endpoint, which is otherwise indistinguishable from a genuine "not found".
 export type LookupRecord = {
-  adapter: string // adapter key, e.g. "profitdashboard"
-  operation: "order_lookup" | "access_check"
+  adapter: string // adapter key, e.g. "profitdashboard", "mailwizz"
+  operation: "order_lookup" | "access_check" | "unsubscribe"
   ok: boolean // false = the call threw (endpoint down / auth failed / timeout)
   summary: string // outcome on success; the error message on failure
   endpoint?: string // the HTTP endpoint hit, when the adapter made a real call

@@ -6,6 +6,7 @@ import {
   DecisionBadge,
 } from "@/components/shared/status-badges"
 import type { FlowStep, FlowStepStatus } from "@/lib/flow-trace"
+import type { DecisionLookup } from "@/lib/tickets"
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -42,6 +43,59 @@ function StepDot({ status }: { status: FlowStepStatus }) {
   )
 }
 
+// The external API calls a step made — endpoint, status, and the request we sent
+// + response we got — so an operator can see whether a failure is the endpoint,
+// our request, or their data. Shared by the order-lookup and unsubscribe steps.
+function LookupList({ lookups }: { lookups: DecisionLookup[] }) {
+  if (lookups.length === 0) return null
+  return (
+    <ul className="flex flex-col gap-1">
+      {lookups.map((l, i) => (
+        <li
+          key={i}
+          className={cn(
+            "flex flex-wrap items-center gap-1.5 font-heading text-xs",
+            l.ok ? "text-muted-foreground" : "text-destructive"
+          )}
+        >
+          <span className="font-medium">{l.adapter}</span>·
+          <span>
+            {l.operation === "order_lookup"
+              ? "order lookup"
+              : l.operation === "unsubscribe"
+                ? "unsubscribe"
+                : "access check"}
+          </span>
+          {l.endpoint ? (
+            <span className="font-mono opacity-80">
+              {l.method ? `${l.method} ` : ""}
+              {l.endpoint}
+              {l.status != null ? ` → ${l.status}` : ""}
+            </span>
+          ) : null}
+          <span>· {l.ok ? l.summary : `⚠ ${l.summary}`}</span>
+          {l.request || l.response ? (
+            <div className="mt-1 w-full space-y-0.5 border-l-2 border-border pl-2 font-mono text-[11px] break-all text-muted-foreground/80">
+              {l.request ? (
+                <div>
+                  <span className="opacity-60">req </span>
+                  {l.request}
+                </div>
+              ) : null}
+              {l.response ? (
+                <div>
+                  <span className="opacity-60">res </span>
+                  {l.response}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
   if (!detail) return null
   if (detail.kind === "text")
@@ -67,50 +121,7 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
   if (detail.kind === "order-access")
     return (
       <div className="flex flex-col gap-2">
-        {detail.lookups.length > 0 ? (
-          <ul className="flex flex-col gap-1">
-            {detail.lookups.map((l, i) => (
-              <li
-                key={i}
-                className={cn(
-                  "flex flex-wrap items-center gap-1.5 font-heading text-xs",
-                  l.ok ? "text-muted-foreground" : "text-destructive"
-                )}
-              >
-                <span className="font-medium">{l.adapter}</span>·
-                <span>
-                  {l.operation === "order_lookup"
-                    ? "order lookup"
-                    : "access check"}
-                </span>
-                {l.endpoint ? (
-                  <span className="font-mono opacity-80">
-                    {l.method ? `${l.method} ` : ""}
-                    {l.endpoint}
-                    {l.status != null ? ` → ${l.status}` : ""}
-                  </span>
-                ) : null}
-                <span>· {l.ok ? l.summary : `⚠ ${l.summary}`}</span>
-                {l.request || l.response ? (
-                  <div className="mt-1 w-full space-y-0.5 border-l-2 border-border pl-2 font-mono text-[11px] break-all text-muted-foreground/80">
-                    {l.request ? (
-                      <div>
-                        <span className="opacity-60">req </span>
-                        {l.request}
-                      </div>
-                    ) : null}
-                    {l.response ? (
-                      <div>
-                        <span className="opacity-60">res </span>
-                        {l.response}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <LookupList lookups={detail.lookups} />
         {detail.orders.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No matching order found.
@@ -161,6 +172,7 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
       </div>
     )
   }
+  if (detail.kind === "api-call") return <LookupList lookups={detail.lookups} />
   return null
 }
 
