@@ -21,6 +21,7 @@ export type FlowDetail =
     }
   | { kind: "decision"; value: string | null; reasoning: string | null }
   | { kind: "actions"; actions: ProposedAction[] }
+  | { kind: "api-call"; lookups: DecisionLookup[] }
 
 export type FlowStep = {
   key: string
@@ -176,6 +177,13 @@ function nodeToStep(
           access: decision.context?.access ?? null,
           lookups: decision.context?.lookups ?? [],
         },
+      }
+    case "unsubscribe_call":
+      return {
+        key,
+        title: "Unsubscribe call",
+        status: s.outcome === "failed" ? "failed" : "done",
+        detail: { kind: "api-call", lookups: decision.context?.lookups ?? [] },
       }
     case "refund_ladder":
       return {

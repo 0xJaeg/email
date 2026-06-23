@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { unsubscribeFromAllLists } from "../mailwizz.js"
 
+function mockFetch(body: string, ok = true, status = 200) {
+  return vi.fn().mockResolvedValue({ ok, status, text: async () => body })
+}
+
 describe("mailwizz unsubscribeFromAllLists", () => {
   beforeEach(() => {
     process.env.MAILWIZZ_API_URL = "https://portal.example.com/api/index.php"
@@ -12,15 +16,17 @@ describe("mailwizz unsubscribeFromAllLists", () => {
     delete process.env.MAILWIZZ_API_KEY
   })
 
-  it("PUTs the all-lists unsubscribe with the X-Api-Key header + EMAIL body", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+  it("PUTs the all-lists unsubscribe with X-Api-Key + EMAIL body; success → outcome success", async () => {
+    const fetchMock = mockFetch('{"status":"success"}')
     vi.stubGlobal("fetch", fetchMock)
 
     const r = await unsubscribeFromAllLists("jane@example.com")
 
-    expect(r.ok).toBe(true)
+    expect(r.outcome).toBe("success")
     expect(r.status).toBe(200)
     expect(r.detail).toBe("unsubscribed")
+    expect(r.request).toBe("EMAIL=jane@example.com")
+    expect(r.response).toContain("success")
     const call = fetchMock.mock.calls[0] as [
       string,
       { method: string; headers: Record<string, string>; body: string },
@@ -33,23 +39,29 @@ describe("mailwizz unsubscribeFromAllLists", () => {
     expect(String(call[1].body)).toBe("EMAIL=jane%40example.com")
   })
 
-  it("returns ok:false with the HTTP status on a non-OK response (no throw)", async () => {
+  it("maps a 'subscriber not found' error response to email_not_found", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 500 })
+      mockFetch('{"status":"error","error":"Subscriber not found"}')
     )
     const r = await unsubscribeFromAllLists("x@y.com")
-    expect(r.ok).toBe(false)
+    expect(r.outcome).toBe("email_not_found")
+  })
+
+  it("maps a non-OK HTTP response to failed (no throw)", async () => {
+    vi.stubGlobal("fetch", mockFetch("", false, 500))
+    const r = await unsubscribeFromAllLists("x@y.com")
+    expect(r.outcome).toBe("failed")
     expect(r.status).toBe(500)
     expect(r.detail).toBe("http_500")
   })
 
-  it("returns not_configured (no fetch) when the key is missing", async () => {
+  it("returns failed/not_configured (no fetch) when the key is missing", async () => {
     delete process.env.MAILWIZZ_API_KEY
     const fetchMock = vi.fn()
     vi.stubGlobal("fetch", fetchMock)
     const r = await unsubscribeFromAllLists("x@y.com")
-    expect(r.ok).toBe(false)
+    expect(r.outcome).toBe("failed")
     expect(r.detail).toBe("not_configured")
     expect(fetchMock).not.toHaveBeenCalled()
   })

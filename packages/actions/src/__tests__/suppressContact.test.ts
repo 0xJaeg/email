@@ -84,7 +84,11 @@ describe("suppressContact", () => {
 
   it("in production, calls MailWizz and audits the endpoint + status", async () => {
     process.env.APP_ENV = "production"
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '{"status":"success"}',
+    })
     vi.stubGlobal("fetch", fetchMock)
     const { supabase, auditInsert } = mockSupabase()
     const r = await suppressContact({
@@ -111,7 +115,9 @@ describe("suppressContact", () => {
     process.env.APP_ENV = "production"
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 500 })
+      vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 500, text: async () => "" })
     )
     const { supabase } = mockSupabase()
     const r = await suppressContact({
