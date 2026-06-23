@@ -13,6 +13,8 @@ import {
   IconSend,
   IconCoin,
   IconReceiptRefund,
+  IconShieldCheck,
+  IconThumbUp,
   type Icon,
 } from "@tabler/icons-react"
 import type { ReportStats } from "@/lib/reports"
@@ -54,7 +56,7 @@ function StatCard({
           {value}
         </CardTitle>
         {hint ? (
-          <span className="text-muted-foreground mt-1 text-xs">{hint}</span>
+          <span className="mt-1 text-xs text-muted-foreground">{hint}</span>
         ) : null}
       </CardHeader>
     </Card>
@@ -81,7 +83,9 @@ export function ReportCards({ stats }: { stats: ReportStats }) {
         value={String(stats.needsHuman)}
         icon={IconUserExclamation}
         tone={stats.needsHuman > 0 ? "alert" : "neutral"}
-        hint={stats.needsHuman > 0 ? "Couldn't be handled automatically" : undefined}
+        hint={
+          stats.needsHuman > 0 ? "Couldn't be handled automatically" : undefined
+        }
       />
       <StatCard
         label="Auto-handled"
@@ -89,7 +93,11 @@ export function ReportCards({ stats }: { stats: ReportStats }) {
         icon={IconSparkles}
         hint="Decided without a person"
       />
-      <StatCard label="Replies sent" value={String(stats.sent)} icon={IconSend} />
+      <StatCard
+        label="Replies sent"
+        value={String(stats.sent)}
+        icon={IconSend}
+      />
       <StatCard
         label="Refunds today"
         value={String(stats.refundsToday)}
@@ -112,6 +120,22 @@ export function ReportCards({ stats }: { stats: ReportStats }) {
         value={`$${stats.estCostUsd.toFixed(2)}`}
         icon={IconCoin}
         hint="From recorded token usage"
+      />
+      <StatCard
+        label="Spam blocked"
+        value={String(stats.spamBlocked)}
+        icon={IconShieldCheck}
+        hint="Quarantined automatically"
+      />
+      <StatCard
+        label="Approval rate"
+        value={stats.approvalRate != null ? `${stats.approvalRate}%` : "—"}
+        icon={IconThumbUp}
+        hint={
+          stats.reviewedCount > 0
+            ? `${stats.sent} of ${stats.reviewedCount} approved`
+            : "No reviews yet"
+        }
       />
     </div>
   )
