@@ -102,10 +102,11 @@ async function countPriorRefunds(
     .from("decisions")
     .select("id, emails!inner(from_email)")
     // The classifier writes the category KEY from flow_nodes.config.categories as the
-    // classification. The refund category's key is "refund" (it was "refund_request" before
-    // the 2026-06-18 category rename). This MUST stay in sync with that key, or the ladder
-    // silently never advances past offer 1 — every prior request counts as 0. Pinned by a test.
-    .eq("classification", "refund")
+    // classification. Count both "refund" and "chargeback" requests — someone who earlier
+    // threatened a chargeback should escalate the ladder faster. These keys MUST stay in
+    // sync with the live categories, or the ladder silently never advances past offer 1
+    // (every prior request counts as 0). Pinned by a test.
+    .in("classification", ["refund", "chargeback"])
     .gte("created_at", since)
   if (error) {
     throw new Error(`count_prior_refunds_failed: ${error.message}`)

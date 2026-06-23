@@ -20,6 +20,10 @@ function makeSupabase(priorRefunds: number, filters: Array<[string, unknown]> = 
       filters.push([col, val])
       return b
     })
+    b.in = vi.fn((col: string, val: unknown) => {
+      filters.push([col, val])
+      return b
+    })
     b.gte = vi.fn(() => b)
     b.then = (resolve: (v: unknown) => void) =>
       resolve({
@@ -62,10 +66,10 @@ describe("decideRefund — configurable refund threshold", () => {
     expect((await run(3, 4)).decision).toBe("issue_refund")
   })
 
-  // Regression guard: the prior-request count must filter on the classification value
-  // the live classifier actually writes ("refund"). It was "refund_request", which silently
-  // matched 0 rows after the 2026-06-18 category rename, freezing the ladder on offer 1.
-  it("counts prior refunds by the live 'refund' classification", async () => {
+  // Regression guard: the prior-request count must filter on the classification VALUES
+  // the live classifier writes ("refund" + "chargeback"). It was "refund_request", which
+  // silently matched 0 rows after the 2026-06-18 rename, freezing the ladder on offer 1.
+  it("counts prior refund + chargeback requests by their live classifications", async () => {
     const filters: Array<[string, unknown]> = []
     await decideRefund({
       email,
@@ -74,6 +78,6 @@ describe("decideRefund — configurable refund threshold", () => {
       refundThreshold: null,
     })
     const classification = filters.find(([col]) => col === "classification")
-    expect(classification?.[1]).toBe("refund")
+    expect(classification?.[1]).toEqual(["refund", "chargeback"])
   })
 })
