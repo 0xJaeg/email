@@ -27,6 +27,18 @@ export type ProductRow = {
   created_at: string
 }
 
+// Only the columns the products TABLE renders — keeps the list query light so it
+// scales to 50 rows/page. Full data (support_config, refund_threshold) loads on
+// the product page via getProduct.
+export type ProductListRow = {
+  id: string
+  name: string
+  slug: string
+  platform: string
+  adapter_key: string | null
+  is_active: boolean
+}
+
 const PRODUCT_COLS =
   "id, name, slug, platform, adapter_key, support_config, refund_threshold, is_active, created_at"
 
@@ -49,15 +61,15 @@ export async function getProducts(
   query: string,
   page: number,
   size: number
-): Promise<{ data: ProductRow[]; count: number }> {
+): Promise<{ data: ProductListRow[]; count: number }> {
   const supabase = getServerSupabase()
 
+  // Only the table columns — no support_config jsonb per row (loaded per-product).
   let q = supabase
     .from("products")
-    .select(
-      "id, name, slug, platform, adapter_key, support_config, refund_threshold, is_active, created_at",
-      { count: "exact" }
-    )
+    .select("id, name, slug, platform, adapter_key, is_active", {
+      count: "exact",
+    })
     .order("created_at", { ascending: false })
 
   const esc = sanitizeSearch(query)
@@ -68,11 +80,5 @@ export async function getProducts(
     page * size - 1
   )
   if (error) throw error
-  return {
-    data: (data ?? []).map((r) => ({
-      ...r,
-      support_config: (r.support_config ?? {}) as SupportConfig,
-    })),
-    count: count ?? 0,
-  }
+  return { data: (data ?? []) as ProductListRow[], count: count ?? 0 }
 }

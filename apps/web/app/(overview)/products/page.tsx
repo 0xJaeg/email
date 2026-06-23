@@ -27,7 +27,7 @@ export default async function ProductsPage({
   const params = await searchParams
   const query = params.query ?? ""
   const page = Number(params.page) || 1
-  const size = Number(params.size) || 10
+  const size = Number(params.size) || 50
 
   return (
     <div className="flex flex-col gap-2 md:gap-4">
@@ -40,7 +40,7 @@ export default async function ProductsPage({
 
       <Suspense
         key={`${query}-${page}-${size}`}
-        fallback={<p className="text-muted-foreground text-sm">Loading…</p>}
+        fallback={<p className="text-sm text-muted-foreground">Loading…</p>}
       >
         <ProductsTable query={query} page={page} size={size} />
       </Suspense>
