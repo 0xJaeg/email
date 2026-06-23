@@ -18,12 +18,14 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { IconLoader2 } from "@tabler/icons-react"
+import { cn } from "@workspace/ui/lib/utils"
 
 export function ProductForm({
   mode,
   product,
   closeSheet,
   redirectTo,
+  className,
 }: {
   mode: "create" | "update"
   product?: ProductRow
@@ -31,6 +33,9 @@ export function ProductForm({
   closeSheet?: () => void
   /** When set (full-page editor), navigate here on success instead. */
   redirectTo?: string
+  /** Form-root classes — each context supplies its own padding (the Sheet
+   * insets with px-4; the full-page editor aligns flush with the page). */
+  className?: string
 }) {
   const isCreate = mode === "create"
   const router = useRouter()
@@ -83,7 +88,7 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="@container space-y-4 px-4 pb-4">
+    <form onSubmit={onSubmit} className={cn("@container space-y-4", className)}>
       {!isCreate && <input type="hidden" name="id" value={product?.id} />}
       <div className="grid gap-x-4 gap-y-4 @2xl:grid-cols-2">
         <div className="space-y-2">
