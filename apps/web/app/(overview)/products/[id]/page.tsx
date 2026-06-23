@@ -4,6 +4,7 @@ import { getServerSupabase } from "@/lib/supabase/admin"
 import { getProduct, type ProductRow } from "@/lib/products"
 import { ProductForm } from "@/components/products/product-form"
 import { Badge } from "@workspace/ui/components/badge"
+import { IconAlertTriangle } from "@tabler/icons-react"
 
 export const dynamic = "force-dynamic"
 
@@ -53,10 +54,13 @@ export default async function ProductPage({
       </div>
 
       {!encConfigured && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          CREDENTIALS_ENC_KEY isn&apos;t set — saving an API key will fail until
-          it&apos;s configured.
-        </p>
+        <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+          <IconAlertTriangle className="size-4 shrink-0" />
+          <span>
+            CREDENTIALS_ENC_KEY isn&apos;t set — saving an API key will fail
+            until it&apos;s configured.
+          </span>
+        </div>
       )}
 
       <ProductForm
