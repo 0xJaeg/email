@@ -20,7 +20,6 @@ import {
   IconTicket,
   IconBox,
   IconInbox,
-  IconKey,
   IconSitemap,
   IconSettings,
 } from "@tabler/icons-react"
@@ -53,7 +52,6 @@ const configuration = {
   items: [
     { title: "Products", url: "/products", icon: <IconBox /> },
     { title: "Inboxes", url: "/inboxes", icon: <IconInbox /> },
-    { title: "API keys", url: "/credentials", icon: <IconKey /> },
     { title: "Decision flow", url: "/flows", icon: <IconSitemap /> },
   ],
 }
