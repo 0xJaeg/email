@@ -50,13 +50,26 @@ export type ReportStats = {
   refundsToday: number
   refundDailyLimit: number | null // null = no cap
   refundLimitReached: boolean
+  spamBlocked: number // emails quarantined as spam
+  approvalRate: number | null // % of reviewed drafts approved; null when none reviewed yet
+  reviewedCount: number // approved (sent) + rejected
 }
 
 const COST_WINDOW_DAYS = 30
 const VOLUME_DAYS = 14
 const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ]
 
 // Pure: inbound timestamps → an ordered last-N-days series (zero-filled), in
@@ -67,7 +80,11 @@ export function bucketVolumeByDay(
   days = VOLUME_DAYS
 ): VolumePoint[] {
   const start = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (days - 1))
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - (days - 1)
+    )
   )
   const points: VolumePoint[] = []
   const index = new Map<string, number>()
@@ -75,7 +92,11 @@ export function bucketVolumeByDay(
     const d = new Date(start)
     d.setUTCDate(start.getUTCDate() + i)
     const key = d.toISOString().slice(0, 10)
-    points.push({ date: key, label: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`, count: 0 })
+    points.push({
+      date: key,
+      label: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`,
+      count: 0,
+    })
     index.set(key, i)
   }
   for (const ts of received) {
@@ -91,7 +112,10 @@ type RawUsage = {
   output_tokens?: number
   cache_read_input_tokens?: number | null
 }
-function toUsage(model: string, u: RawUsage | null | undefined): TokenUsage | null {
+function toUsage(
+  model: string,
+  u: RawUsage | null | undefined
+): TokenUsage | null {
   if (!u) return null
   return {
     model,
@@ -113,9 +137,7 @@ export async function fetchReportStats(client: DbClient): Promise<ReportStats> {
   const since = new Date(
     Date.now() - COST_WINDOW_DAYS * 86_400_000
   ).toISOString()
-  const volSince = new Date(
-    Date.now() - VOLUME_DAYS * 86_400_000
-  ).toISOString()
+  const volSince = new Date(Date.now() - VOLUME_DAYS * 86_400_000).toISOString()
 
   const [
     totalEmails,
@@ -136,6 +158,8 @@ export async function fetchReportStats(client: DbClient): Promise<ReportStats> {
     volRows,
     appSettings,
     refundsToday,
+    rejected,
+    spamQuarantine,
   ] = await Promise.all([
     client.from("emails").select("*", head).eq("direction", "inbound"),
     client.from("decisions").select("*", head),
@@ -169,10 +193,13 @@ export async function fetchReportStats(client: DbClient): Promise<ReportStats> {
       .limit(10000),
     getAppSettings(client),
     countRefundsToday(client),
+    decByStatus("rejected"),
+    decByDecision("quarantine_spam"),
   ])
 
   const decisions = totalDecisions.count ?? 0
   const escalations = (escalate.count ?? 0) + (needsHuman.count ?? 0)
+  const reviewed = (sent.count ?? 0) + (rejected.count ?? 0)
 
   // Estimate AI spend from the token usage recorded in the audit log.
   const usages: TokenUsage[] = []
@@ -224,5 +251,9 @@ export async function fetchReportStats(client: DbClient): Promise<ReportStats> {
     refundLimitReached:
       appSettings.refundDailyLimit != null &&
       refundsToday >= appSettings.refundDailyLimit,
+    spamBlocked: spamQuarantine.count ?? 0,
+    approvalRate:
+      reviewed > 0 ? Math.round(((sent.count ?? 0) / reviewed) * 100) : null,
+    reviewedCount: reviewed,
   }
 }
