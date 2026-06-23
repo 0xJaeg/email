@@ -1,7 +1,6 @@
 import type { NodeType } from "./types.js"
 import { SpamFilterNode } from "./nodes/spam-filter.js"
 import { ClassifyNode } from "./nodes/classify.js"
-import { LookupGateNode } from "./nodes/lookup-gate.js"
 import { EnrichNode } from "./nodes/enrich.js"
 import { DecideNode } from "./nodes/decide.js"
 import { DraftNode } from "./nodes/draft.js"
@@ -14,7 +13,6 @@ import { ApiActionNode } from "./nodes/api-action.js"
 export const NODE_REGISTRY: Record<string, NodeType> = {
   [SpamFilterNode.type]: SpamFilterNode,
   [ClassifyNode.type]: ClassifyNode,
-  [LookupGateNode.type]: LookupGateNode,
   [EnrichNode.type]: EnrichNode,
   [DecideNode.type]: DecideNode,
   [DraftNode.type]: DraftNode,
