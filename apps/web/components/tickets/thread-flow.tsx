@@ -91,6 +91,22 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
                   </span>
                 ) : null}
                 <span>· {l.ok ? l.summary : `⚠ ${l.summary}`}</span>
+                {l.request || l.response ? (
+                  <div className="mt-1 w-full space-y-0.5 border-l-2 border-border pl-2 font-mono text-[11px] break-all text-muted-foreground/80">
+                    {l.request ? (
+                      <div>
+                        <span className="opacity-60">req </span>
+                        {l.request}
+                      </div>
+                    ) : null}
+                    {l.response ? (
+                      <div>
+                        <span className="opacity-60">res </span>
+                        {l.response}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>

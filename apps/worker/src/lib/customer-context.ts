@@ -16,6 +16,8 @@ export type LookupRecord = {
   endpoint?: string // the HTTP endpoint hit, when the adapter made a real call
   method?: string
   status?: number | null // HTTP status code
+  request?: string // PII-light summary of the request we sent
+  response?: string // PII-light summary of the response we got
 }
 
 export type GatheredContext = {
