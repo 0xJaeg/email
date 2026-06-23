@@ -1,12 +1,11 @@
-import type {
-  SuppressContactArgs,
-  SuppressContactResult,
-} from "./types.js"
+import type { SuppressContactArgs, SuppressContactResult } from "./types.js"
+import { unsubscribeFromAllLists } from "./mailwizz.js"
 
-// Adds a contact to the global suppression list (outbound-email opt-out) and,
-// if SUPPRESSION_WEBHOOK_URL is configured, notifies the external email/
-// marketing system. The DB record is the source of truth; the webhook is
-// best-effort. Every attempt is audited.
+// Adds a contact to the global suppression list (outbound-email opt-out) and, in
+// production, unsubscribes them from MailWizz (the real marketing-system removal).
+// The DB record is the source of truth; the MailWizz call is best-effort and
+// gated to APP_ENV=production so it never fires in development. Every attempt is
+// audited with the real endpoint + HTTP status.
 export async function suppressContact(
   args: SuppressContactArgs
 ): Promise<SuppressContactResult> {
@@ -19,22 +18,22 @@ export async function suppressContact(
       { onConflict: "email" }
     )
 
-  let webhook: string
-  const url = process.env.SUPPRESSION_WEBHOOK_URL
-  if (!url) {
-    webhook = "no_webhook_configured"
-  } else if (dbErr) {
-    webhook = "skipped_after_db_error"
+  // External removal in MailWizz — only in production. Development still records
+  // the internal opt-out above (so the flow is testable) but skips the real call.
+  let mailwizz:
+    | string
+    | { endpoint: string; method: "PUT"; status: number | null; outcome: string }
+  if (dbErr) {
+    mailwizz = "skipped_after_db_error"
+  } else if (process.env.APP_ENV !== "production") {
+    mailwizz = "skipped (development)"
   } else {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, reason: args.reason }),
-      })
-      webhook = `posted_${res.status}`
-    } catch (err) {
-      webhook = `webhook_failed: ${err instanceof Error ? err.message : String(err)}`
+    const r = await unsubscribeFromAllLists(email)
+    mailwizz = {
+      endpoint: r.endpoint,
+      method: r.method,
+      status: r.status,
+      outcome: r.detail,
     }
   }
 
@@ -48,7 +47,7 @@ export async function suppressContact(
       decision_id: args.decisionId,
       email,
       reason: args.reason,
-      webhook,
+      mailwizz,
     },
   })
   return ok ? { ok: true } : { ok: false, error: dbErr.message }
