@@ -7,7 +7,7 @@ import type { ProductAdapter } from "../types.js"
 export const ClickbankAdapter: ProductAdapter = {
   key: "clickbank",
   async lookupOrder() {
-    return { found: false, orders: [] }
+    return { found: false, orders: [], configured: false }
   },
   async checkAccess() {
     return { hasAccess: false, details: null }

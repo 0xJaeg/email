@@ -64,7 +64,9 @@ function LookupList({ lookups }: { lookups: DecisionLookup[] }) {
               ? "order lookup"
               : l.operation === "unsubscribe"
                 ? "unsubscribe"
-                : "access check"}
+                : l.operation === "add_user"
+                  ? "add user"
+                  : "access check"}
           </span>
           {l.endpoint ? (
             <span className="font-mono opacity-80">

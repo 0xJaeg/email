@@ -4,7 +4,7 @@ import type { ProductAdapter } from "../types.js"
 export const JvzooAdapter: ProductAdapter = {
   key: "jvzoo",
   async lookupOrder() {
-    return { found: false, orders: [] }
+    return { found: false, orders: [], configured: false }
   },
   async checkAccess() {
     return { hasAccess: false, details: null }

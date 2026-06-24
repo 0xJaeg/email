@@ -13,6 +13,7 @@ export type {
   Order,
   OrderLookupResult,
   AccessResult,
+  HttpCallInfo,
   ProposedAction,
   SuppressContactArgs,
   SuppressContactResult,

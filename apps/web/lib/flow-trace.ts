@@ -185,6 +185,45 @@ function nodeToStep(
         status: s.outcome === "failed" ? "failed" : "done",
         detail: { kind: "api-call", lookups: decision.context?.lookups ?? [] },
       }
+    // Purchase-first login/refund/chargeback steps. Each shows ONLY its own
+    // calls (filtered by operation) so the same lookup isn't repeated across the
+    // purchase / access / add-user steps. `failed` (escalated) renders red.
+    case "purchase_lookup":
+      return {
+        key,
+        title: "Checked purchase (ClickBank / JVZoo / Digistore)",
+        status: s.outcome === "failed" ? "failed" : "done",
+        detail: {
+          kind: "api-call",
+          lookups: (decision.context?.lookups ?? []).filter(
+            (l) => l.operation === "order_lookup"
+          ),
+        },
+      }
+    case "access_check":
+      return {
+        key,
+        title: "Checked access (Profit Dashboard)",
+        status: s.outcome === "failed" ? "failed" : "done",
+        detail: {
+          kind: "api-call",
+          lookups: (decision.context?.lookups ?? []).filter(
+            (l) => l.operation === "access_check"
+          ),
+        },
+      }
+    case "add_to_dashboard":
+      return {
+        key,
+        title: "Add to dashboard",
+        status: s.outcome === "failed" ? "failed" : "done",
+        detail: {
+          kind: "api-call",
+          lookups: (decision.context?.lookups ?? []).filter(
+            (l) => l.operation === "add_user"
+          ),
+        },
+      }
     case "refund_ladder":
       return {
         key,
