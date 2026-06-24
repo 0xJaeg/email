@@ -28,12 +28,14 @@ export default async function TicketsPage({
   return (
     <div className="flex flex-col gap-2 md:gap-4">
       <TicketsRealtime />
-      <Suspense>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <TicketStatusFilter />
+      <div className="flex items-center justify-between gap-2">
+        <Suspense>
           <SearchBar placeholder="Search sender or subject" />
-        </div>
-      </Suspense>
+        </Suspense>
+        <Suspense>
+          <TicketStatusFilter />
+        </Suspense>
+      </div>
       <Suspense
         key={`${state}-${query}-${page}-${size}`}
         fallback={<p className="text-sm text-muted-foreground">Loading…</p>}
