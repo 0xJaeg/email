@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { getServerSupabase } from "@/lib/supabase/admin"
-import { getTickets } from "@/lib/tickets"
+import { getTickets, type TicketState } from "@/lib/tickets"
 import {
   Table,
   TableBody,
@@ -9,12 +9,25 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
+import { Badge } from "@workspace/ui/components/badge"
 import { TablePagination } from "@/components/shared/table-pagination"
 import {
   ClassificationBadge,
   DecisionBadge,
-  ThreadStatusBadge,
 } from "@/components/shared/status-badges"
+import { ReviewApprovalSheet } from "@/components/approvals/review-approval-sheet"
+import { EscalationReplySheet } from "@/components/approvals/escalation-reply-sheet"
+
+// Human-readable decision label for the inline review sheet (so an operator
+// never approves a money-moving refund thinking it's a plain reply).
+const DECISION_LABELS: Record<string, string> = {
+  send_faq_reply: "FAQ reply",
+  send_offer_1: "Offer (1st)",
+  send_offer_2: "Offer (2nd)",
+  issue_refund: "Refund",
+  issue_refund_chargeback: "Refund (chargeback)",
+  escalate: "Escalation",
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -28,16 +41,19 @@ export async function TicketsTable({
   query,
   page,
   size,
+  state,
 }: {
   query: string
   page: number
   size: number
+  state: TicketState
 }) {
   const { data, count } = await getTickets(
     getServerSupabase(),
     query,
     page,
-    size
+    size,
+    state
   )
 
   return (
@@ -52,32 +68,27 @@ export async function TicketsTable({
               <TableHead>Decision</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Created</TableHead>
+              <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
-                  className="text-muted-foreground py-10 text-center"
+                  colSpan={7}
+                  className="py-10 text-center text-muted-foreground"
                 >
                   No tickets found.
                 </TableCell>
               </TableRow>
             ) : (
               data.map((t) => (
-                <TableRow
-                  key={t.id}
-                  className="hover:bg-muted/50 relative cursor-pointer"
-                >
+                <TableRow key={t.id} className="hover:bg-muted/50">
                   <TableCell className="max-w-50 truncate font-medium">
                     {t.sender}
                   </TableCell>
-                  <TableCell className="text-muted-foreground max-w-70 truncate">
-                    <Link
-                      href={`/tickets/${t.id}`}
-                      className="after:absolute after:inset-0"
-                    >
+                  <TableCell className="max-w-70 truncate text-muted-foreground">
+                    <Link href={`/tickets/${t.id}`} className="hover:underline">
                       {t.subject}
                     </Link>
                   </TableCell>
@@ -88,10 +99,46 @@ export async function TicketsTable({
                     <DecisionBadge value={t.decision} />
                   </TableCell>
                   <TableCell>
-                    <ThreadStatusBadge value={t.status} />
+                    {t.state === "done" ? (
+                      <Badge variant="secondary">Done</Badge>
+                    ) : (
+                      <Badge>Open</Badge>
+                    )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-right tabular-nums">
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
                     {formatDate(t.createdAt)}
+                  </TableCell>
+                  <TableCell className="flex justify-end text-right">
+                    {t.state !== "done" &&
+                    t.decisionStatus === "needs_human" ? (
+                      <EscalationReplySheet
+                        row={{
+                          threadId: t.id,
+                          sender: t.sender,
+                          subject: t.subject,
+                          body: t.body,
+                          reasoning: t.llmReasoning,
+                        }}
+                      />
+                    ) : t.state !== "done" &&
+                      t.decisionId &&
+                      t.decisionStatus === "pending_approval" ? (
+                      <ReviewApprovalSheet
+                        row={{
+                          id: t.decisionId,
+                          sender: t.sender,
+                          subject: t.subject,
+                          decisionLabel:
+                            DECISION_LABELS[t.decision ?? ""] ??
+                            t.decision ??
+                            "Reply",
+                          body: t.body,
+                          draftReplyText: t.draftReplyText,
+                          context: t.context,
+                          proposedActions: t.proposedActions,
+                        }}
+                      />
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))

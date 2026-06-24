@@ -5,93 +5,69 @@ import { sanitizeSearch } from "@/lib/search"
 // accepts either. Imported as a type only (no secret-key runtime code).
 type DbClient = ServerClient
 
-export type ActivityRow = {
-  id: string
-  action: string
-  status: string
-  error: string | null
-  sender: string | null
-  subject: string | null
-  threadId: string | null
-  /** The reply the agent sent, on send_reply rows (from the audit payload). */
-  replyText: string | null
-  createdAt: string
-}
+export type TicketState = "open" | "done" | "all"
 
-export async function fetchActivity(
-  client: DbClient,
-  query: string,
-  page: number,
-  size: number
-): Promise<{ data: ActivityRow[]; count: number }> {
-  let q = client
-    .from("audit_log")
-    .select(
-      "id, action, status, error, created_at, payload, emails(thread_id, from_email, subject)",
-      { count: "exact" }
-    )
-    .order("created_at", { ascending: false })
-
-  const esc = sanitizeSearch(query)
-  if (esc) {
-    q = q.or(`action.ilike.%${esc}%,error.ilike.%${esc}%`)
-  }
-
-  const { data, error, count } = await q.range(
-    (page - 1) * size,
-    page * size - 1
-  )
-  if (error) throw new Error(`fetchActivity failed: ${error.message}`)
-  return {
-    data: (data ?? []).map((r) => {
-      // email_id has on-delete-set-null and is absent for system events;
-      // the to-one embed comes back as object-or-array depending on PostgREST.
-      const email = Array.isArray(r.emails) ? r.emails[0] : r.emails
-      const payload = (r.payload ?? {}) as Record<string, unknown>
-      const replyText =
-        typeof payload.reply_text === "string" ? payload.reply_text : null
-      return {
-        id: r.id,
-        action: r.action,
-        status: r.status,
-        error: r.error,
-        sender: email?.from_email ?? null,
-        subject: email?.subject ?? null,
-        threadId: email?.thread_id ?? null,
-        replyText,
-        createdAt: r.created_at,
-      }
-    }),
-    count: count ?? 0,
-  }
-}
-
-export type ThreadTicketRow = {
+export type TicketRow = {
   id: string
   sender: string
   subject: string
-  status: string
   classification: string | null
   decision: string | null
+  /** "open" (needs a human) or "done" (resolved) — computed by the view. */
+  state: string
   createdAt: string
+  // Latest decision's payload — lets an "open" row render the inline
+  // approve/reject sheet without a second fetch.
+  decisionId: string | null
+  decisionStatus: string | null
+  draftReplyText: string | null
+  llmReasoning: string | null
+  context: DecisionContext | null
+  proposedActions: ProposedAction[]
+  body: string | null
 }
 
-// Per-thread ticket list (one row = one conversation), searchable + paginated.
-// Takes a client param so this module stays client-safe (the dashboard's
-// realtime tickets-table imports fetchTickets from here).
+type TicketViewRow = {
+  id: string
+  sender_email: string
+  subject: string
+  created_at: string
+  decision_id: string | null
+  classification: string | null
+  decision: string | null
+  decision_status: string | null
+  llm_reasoning: string | null
+  draft_reply_text: string | null
+  context: DecisionContext | null
+  proposed_actions: ProposedAction[] | null
+  body_text: string | null
+  state: string
+}
+
+// Per-thread ticket list (one row = one conversation) from the `thread_tickets`
+// view: the thread + its latest decision + a computed open/done state, so the
+// page can filter by state and paginate. Replaces the separate Approvals
+// (state="open") and Activity (state="done") pages.
 export async function getTickets(
   client: DbClient,
   query: string,
   page: number,
-  size: number
-): Promise<{ data: ThreadTicketRow[]; count: number }> {
-  let q = client
-    .from("threads")
+  size: number,
+  state: TicketState
+): Promise<{ data: TicketRow[]; count: number }> {
+  // thread_tickets is a Postgres view (not in the generated Database types);
+  // query it untyped and map the rows. Its shape is owned by the migration
+  // 20260624000002_thread_tickets_view.sql.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = (client as any)
+    .from("thread_tickets")
     .select(
-      "id, sender_email, subject, status, created_at, emails(decisions(classification, decision, created_at))",
+      "id, sender_email, subject, created_at, decision_id, classification, decision, decision_status, llm_reasoning, draft_reply_text, context, proposed_actions, body_text, state",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
+
+  if (state !== "all") q = q.eq("state", state)
 
   const esc = sanitizeSearch(query)
   if (esc) {
@@ -105,22 +81,22 @@ export async function getTickets(
   if (error) throw new Error(`getTickets failed: ${error.message}`)
 
   return {
-    data: (data ?? []).map((t) => {
-      // Latest decision across the thread's emails — same reduce as fetchTickets.
-      const decisions = (t.emails ?? []).flatMap((e) => e.decisions ?? [])
-      const latest = [...decisions].sort((a, b) =>
-        (b.created_at ?? "").localeCompare(a.created_at ?? "")
-      )[0]
-      return {
-        id: t.id,
-        sender: t.sender_email,
-        subject: t.subject,
-        status: t.status,
-        classification: latest?.classification ?? null,
-        decision: latest?.decision ?? null,
-        createdAt: t.created_at,
-      }
-    }),
+    data: ((data ?? []) as TicketViewRow[]).map((t) => ({
+      id: t.id,
+      sender: t.sender_email,
+      subject: t.subject,
+      classification: t.classification ?? null,
+      decision: t.decision ?? null,
+      state: t.state,
+      createdAt: t.created_at,
+      decisionId: t.decision_id ?? null,
+      decisionStatus: t.decision_status ?? null,
+      draftReplyText: t.draft_reply_text ?? null,
+      llmReasoning: t.llm_reasoning ?? null,
+      context: t.context ?? null,
+      proposedActions: t.proposed_actions ?? [],
+      body: t.body_text ?? null,
+    })),
     count: count ?? 0,
   }
 }

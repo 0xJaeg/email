@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { approveDecision, rejectDecision } from "@/lib/approvals"
-import type { EnrichmentContext, ProposedActionRow } from "@/lib/decisions"
+import type { DecisionContext, ProposedAction } from "@/lib/tickets"
 import {
   Sheet,
   SheetContent,
@@ -33,13 +33,13 @@ export type ReviewRow = {
   decisionLabel: string
   body: string | null
   draftReplyText: string | null
-  context: EnrichmentContext | null
-  proposedActions: ProposedActionRow[]
+  context: DecisionContext | null
+  proposedActions: ProposedAction[]
 }
 
 // What each proposed action means in plain language + whether it's "heavy"
 // (money moves / outbound suppression) so the reviewer can't miss it.
-function describeAction(a: ProposedActionRow): {
+function describeAction(a: ProposedAction): {
   label: string
   heavy: boolean
   icon: typeof IconReceiptRefund
