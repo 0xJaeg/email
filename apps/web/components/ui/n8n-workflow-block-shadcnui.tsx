@@ -49,22 +49,37 @@ function ConnectionLine({
   from,
   to,
   nodes,
+  orientation,
 }: {
   from: string
   to: string
   nodes: WorkflowCanvasNode[]
+  orientation: "horizontal" | "vertical"
 }) {
   const fromNode = nodes.find((n) => n.id === from)
   const toNode = nodes.find((n) => n.id === to)
   if (!fromNode || !toNode) return null
 
-  const startX = fromNode.position.x + NODE_WIDTH
-  const startY = fromNode.position.y + NODE_HEIGHT / 2
-  const endX = toNode.position.x
-  const endY = toNode.position.y + NODE_HEIGHT / 2
-  const cp1X = startX + (endX - startX) * 0.5
-  const cp2X = endX - (endX - startX) * 0.5
-  const path = `M${startX},${startY} C${cp1X},${startY} ${cp2X},${endY} ${endX},${endY}`
+  let path: string
+  if (orientation === "vertical") {
+    // bottom edge of `from` → top edge of `to`, vertical bezier.
+    const startX = fromNode.position.x + NODE_WIDTH / 2
+    const startY = fromNode.position.y + NODE_HEIGHT
+    const endX = toNode.position.x + NODE_WIDTH / 2
+    const endY = toNode.position.y
+    const cp1Y = startY + (endY - startY) * 0.5
+    const cp2Y = endY - (endY - startY) * 0.5
+    path = `M${startX},${startY} C${startX},${cp1Y} ${endX},${cp2Y} ${endX},${endY}`
+  } else {
+    // right edge of `from` → left edge of `to`, horizontal bezier.
+    const startX = fromNode.position.x + NODE_WIDTH
+    const startY = fromNode.position.y + NODE_HEIGHT / 2
+    const endX = toNode.position.x
+    const endY = toNode.position.y + NODE_HEIGHT / 2
+    const cp1X = startX + (endX - startX) * 0.5
+    const cp2X = endX - (endX - startX) * 0.5
+    path = `M${startX},${startY} C${cp1X},${startY} ${cp2X},${endY} ${endX},${endY}`
+  }
 
   return (
     <path
@@ -89,12 +104,15 @@ export function N8nWorkflowBlock({
   connections,
   onNodeClick,
   toolbar,
+  orientation = "horizontal",
 }: {
   nodes: WorkflowCanvasNode[]
   connections: WorkflowCanvasConnection[]
   onNodeClick?: (id: string) => void
   /** Optional controls rendered at the top, inside the card (e.g. a filter). */
   toolbar?: React.ReactNode
+  /** Edge-drawing direction: horizontal (right→left) or vertical (bottom→top). */
+  orientation?: "horizontal" | "vertical"
 }) {
   const [nodes, setNodes] = useState<WorkflowCanvasNode[]>(initialNodes)
   // Re-sync when the caller changes the node SET (e.g. the flow-view filter or a
@@ -165,6 +183,7 @@ export function N8nWorkflowBlock({
                 from={c.from}
                 to={c.to}
                 nodes={nodes}
+                orientation={orientation}
               />
             ))}
           </svg>
@@ -175,9 +194,15 @@ export function N8nWorkflowBlock({
             const fromNode = nodes.find((n) => n.id === c.from)
             const toNode = nodes.find((n) => n.id === c.to)
             if (!fromNode || !toNode) return null
-            const x = (fromNode.position.x + NODE_WIDTH + toNode.position.x) / 2
+            const x =
+              orientation === "vertical"
+                ? (fromNode.position.x + toNode.position.x) / 2 + NODE_WIDTH / 2
+                : (fromNode.position.x + NODE_WIDTH + toNode.position.x) / 2
             const y =
-              (fromNode.position.y + toNode.position.y) / 2 + NODE_HEIGHT / 2
+              orientation === "vertical"
+                ? (fromNode.position.y + NODE_HEIGHT + toNode.position.y) / 2
+                : (fromNode.position.y + toNode.position.y) / 2 +
+                  NODE_HEIGHT / 2
             return (
               <div
                 key={`label-${c.from}->${c.to}->${c.label}`}

@@ -28,9 +28,11 @@ import {
 import { NodeDetailSheet } from "./node-detail-sheet"
 import type { FlowNodeRow, FlowEdgeRow } from "@/lib/flow-graph-types"
 
-// Layout spacing (px) for the layered left-to-right tree.
-const COL_W = 300
-const ROW_H = 150
+// Layout spacing (px) for the layered TOP-TO-BOTTOM tree: depth flows down,
+// siblings at the same depth fan out across. Vertical keeps the long axis
+// (the step depth) on the natural scroll direction.
+const ROW_GAP = 170 // vertical gap per depth level
+const COL_GAP = 280 // horizontal gap between siblings at the same depth
 const X0 = 24
 const Y0 = 24
 
@@ -52,9 +54,9 @@ const NODE_STYLE: Record<
 }
 const FALLBACK = { color: "slate", icon: IconBox }
 
-// Lay the graph out as columns by BFS depth from the start node; stack the
-// nodes discovered at each depth into rows. Maps every node to a canvas node
-// (position + icon/color) and every edge to a connection (named outcome only).
+// Lay the graph out top-to-bottom: BFS depth from the start node sets the ROW
+// (vertical), and nodes discovered at the same depth fan out into columns
+// (horizontal). Maps every node to a canvas node + every edge to a connection.
 function layoutGraph(nodes: FlowNodeRow[], edges: FlowEdgeRow[]) {
   const out = new Map<string, FlowEdgeRow[]>()
   for (const e of edges) {
@@ -85,7 +87,7 @@ function layoutGraph(nodes: FlowNodeRow[], edges: FlowEdgeRow[]) {
       }
     }
   }
-  // Nodes unreachable from start still get placed (column 0).
+  // Nodes unreachable from start still get placed (top row, depth 0).
   for (const n of nodes) {
     if (!depth.has(n.id)) {
       depth.set(n.id, 0)
@@ -93,14 +95,14 @@ function layoutGraph(nodes: FlowNodeRow[], edges: FlowEdgeRow[]) {
     }
   }
 
-  const rowByCol = new Map<number, number>()
+  const colByDepth = new Map<number, number>()
   const canvasNodes: WorkflowCanvasNode[] = []
   for (const id of order) {
     const node = nodes.find((n) => n.id === id)
     if (!node) continue
     const d = depth.get(id) ?? 0
-    const row = rowByCol.get(d) ?? 0
-    rowByCol.set(d, row + 1)
+    const col = colByDepth.get(d) ?? 0
+    colByDepth.set(d, col + 1)
     const style = NODE_STYLE[node.node_type] ?? FALLBACK
     const badges: string[] = []
     if (node.is_start) badges.push("start")
@@ -112,7 +114,7 @@ function layoutGraph(nodes: FlowNodeRow[], edges: FlowEdgeRow[]) {
       description: node.description,
       icon: style.icon,
       color: style.color,
-      position: { x: X0 + d * COL_W, y: Y0 + row * ROW_H },
+      position: { x: X0 + col * COL_GAP, y: Y0 + d * ROW_GAP },
       badges: badges.length ? badges : undefined,
       muted: !node.is_active,
     })
@@ -299,6 +301,7 @@ export function FlowCanvas({
         nodes={canvasNodes}
         connections={connections}
         onNodeClick={setSelectedId}
+        orientation="vertical"
       />
       <NodeDetailSheet
         node={selected}
