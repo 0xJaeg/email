@@ -94,6 +94,16 @@ export function N8nWorkflowBlock({
   onNodeClick?: (id: string) => void
 }) {
   const [nodes, setNodes] = useState<WorkflowCanvasNode[]>(initialNodes)
+  // Re-sync when the caller changes the node SET (e.g. the flow-view filter or a
+  // different inbox). Internal state otherwise sticks at the mount value because
+  // we keep local positions for dragging. Keyed by the id list so a drag (which
+  // changes only a position, not the id set) doesn't reset the layout.
+  const idsKey = initialNodes.map((n) => n.id).join("|")
+  const syncedIdsKey = useRef(idsKey)
+  if (syncedIdsKey.current !== idsKey) {
+    syncedIdsKey.current = idsKey
+    setNodes(initialNodes)
+  }
   const canvasRef = useRef<HTMLDivElement>(null)
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null)
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
