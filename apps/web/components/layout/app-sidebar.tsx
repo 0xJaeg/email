@@ -13,9 +13,7 @@ import {
 } from "@workspace/ui/components/sidebar"
 import {
   IconDashboard,
-  IconListDetails,
   IconInnerShadowTop,
-  IconClipboardCheck,
   IconUsers,
   IconTicket,
   IconBox,
@@ -39,11 +37,7 @@ const overview = {
 
 const operations = {
   label: "Operations",
-  items: [
-    { title: "Tickets", url: "/tickets", icon: <IconTicket /> },
-    { title: "Approvals", url: "/approvals", icon: <IconClipboardCheck /> },
-    { title: "Activity", url: "/activity", icon: <IconListDetails /> },
-  ],
+  items: [{ title: "Tickets", url: "/tickets", icon: <IconTicket /> }],
 }
 
 // Admin-only groups — operators see Overview + Operations only.
