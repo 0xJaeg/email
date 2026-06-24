@@ -272,26 +272,30 @@ export function FlowCanvas({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
-          Show steps for ticket type:
-        </span>
-        <Select value={view} onValueChange={setView}>
-          <SelectTrigger className="w-64">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={VIEW_TRUNK}>Classified ticket only</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.key} value={c.key}>
-                {c.label || c.key}
-              </SelectItem>
-            ))}
-            <SelectItem value={VIEW_ALL}>Show all branches</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
       <N8nWorkflowBlock
+        toolbar={
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Show steps for ticket type:
+            </span>
+            <Select value={view} onValueChange={setView}>
+              <SelectTrigger className="w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={VIEW_TRUNK}>
+                  Classified ticket only
+                </SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.key} value={c.key}>
+                    {c.label || c.key}
+                  </SelectItem>
+                ))}
+                <SelectItem value={VIEW_ALL}>Show all branches</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        }
         nodes={canvasNodes}
         connections={connections}
         onNodeClick={setSelectedId}

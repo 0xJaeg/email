@@ -88,10 +88,13 @@ export function N8nWorkflowBlock({
   nodes: initialNodes,
   connections,
   onNodeClick,
+  toolbar,
 }: {
   nodes: WorkflowCanvasNode[]
   connections: WorkflowCanvasConnection[]
   onNodeClick?: (id: string) => void
+  /** Optional controls rendered at the top, inside the card (e.g. a filter). */
+  toolbar?: React.ReactNode
 }) {
   const [nodes, setNodes] = useState<WorkflowCanvasNode[]>(initialNodes)
   // Re-sync when the caller changes the node SET (e.g. the flow-view filter or a
@@ -137,6 +140,7 @@ export function N8nWorkflowBlock({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col rounded-2xl border bg-background/60 p-2">
+      {toolbar ? <div className="px-1 pt-1 pb-2">{toolbar}</div> : null}
       <div
         ref={canvasRef}
         className="relative min-h-0 w-full flex-1 overflow-auto rounded-xl border bg-muted/20"
