@@ -157,7 +157,7 @@ export function N8nWorkflowBlock({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-2xl border bg-background/60 p-2">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border bg-background/60 p-2">
       {toolbar ? <div className="px-1 pt-1 pb-2">{toolbar}</div> : null}
       <div
         ref={canvasRef}

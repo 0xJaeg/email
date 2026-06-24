@@ -273,7 +273,7 @@ export function FlowCanvas({
       : null
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-3">
       <N8nWorkflowBlock
         toolbar={
           <div className="flex items-center gap-2">

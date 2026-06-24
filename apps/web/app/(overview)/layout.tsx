@@ -33,9 +33,9 @@ export default async function OverviewLayout({
       }
     >
       <AppSidebar variant="inset" user={navUser} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <SiteHeader />
-        <main className="flex min-h-0 flex-1 flex-col p-2 lg:p-4">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col p-2 lg:p-4">
           {children}
         </main>
       </SidebarInset>
