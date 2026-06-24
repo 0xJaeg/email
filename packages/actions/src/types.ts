@@ -70,6 +70,11 @@ export type OrderLookupResult = {
   found: boolean
   orders: Order[]
   http?: HttpCallInfo
+  /** false = this adapter is a credential-pending stub (no real call was made);
+   * absent/true = a real answer. The purchase-lookup node escalates when EVERY
+   * platform is unconfigured (or threw), so "we couldn't check" is never
+   * mistaken for "no purchase found". */
+  configured?: boolean
 }
 
 export type AccessResult = {

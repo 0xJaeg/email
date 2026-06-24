@@ -155,8 +155,20 @@ describe("runGraph", () => {
     const g = graph("a", [node("a", "A"), node("b", "B")], [["a", "go", "b"]])
     const out = await runGraph(g, reg, {} as StepContext)
     expect(out.path).toEqual([
-      { node_id: "a", node_key: "a", node_type: "A", outcome: "go", halted: false },
-      { node_id: "b", node_key: "b", node_type: "B", outcome: "spam", halted: true },
+      {
+        node_id: "a",
+        node_key: "a",
+        node_type: "A",
+        outcome: "go",
+        halted: false,
+      },
+      {
+        node_id: "b",
+        node_key: "b",
+        node_type: "B",
+        outcome: "spam",
+        halted: true,
+      },
     ])
   })
 
@@ -254,5 +266,92 @@ describe("seeded default tree (equivalence)", () => {
     )
     await runGraph(buildGraph(), reg, {} as StepContext)
     expect(seen).toEqual(["spam_filter"])
+  })
+})
+
+describe("login_access purchase → access → add-user wiring", () => {
+  // Mirrors the migration's login branch. Documents that the graph routes each
+  // outcome to the right step (purchase first, then access, then add-user).
+  const LOGIN_NODES = [
+    "classify",
+    "purchase_lookup",
+    "access_check",
+    "add_to_dashboard",
+    "reply_login",
+    "reply_no_order",
+    "escalate",
+  ]
+  const LOGIN_EDGES: [string, string, string][] = [
+    ["classify", "login_access", "purchase_lookup"],
+    ["purchase_lookup", "found", "access_check"],
+    ["purchase_lookup", "not_found", "reply_no_order"],
+    ["purchase_lookup", "failed", "escalate"],
+    ["access_check", "has_access", "reply_login"],
+    ["access_check", "no_access", "add_to_dashboard"],
+    ["access_check", "failed", "escalate"],
+    ["add_to_dashboard", "success", "reply_login"],
+    ["add_to_dashboard", "failed", "escalate"],
+  ]
+  // Walk the login branch with a fixed outcome per node (terminal nodes "done").
+  const walk = async (outcomes: Record<string, string>) => {
+    const seen: string[] = []
+    const reg: Record<string, NodeType> = Object.fromEntries(
+      LOGIN_NODES.map((k) => [
+        k,
+        {
+          type: k,
+          run: async () => {
+            seen.push(k)
+            return { outcome: outcomes[k] ?? "done" }
+          },
+        } as NodeType,
+      ])
+    )
+    const g = graph(
+      "classify",
+      LOGIN_NODES.map((k) => node(k, k)),
+      LOGIN_EDGES
+    )
+    await runGraph(g, reg, {} as StepContext)
+    return seen
+  }
+
+  it("purchase found + access active → send login help", async () => {
+    expect(
+      await walk({
+        classify: "login_access",
+        purchase_lookup: "found",
+        access_check: "has_access",
+      })
+    ).toEqual(["classify", "purchase_lookup", "access_check", "reply_login"])
+  })
+
+  it("purchase found + no access → add to dashboard (stub fails → escalate)", async () => {
+    expect(
+      await walk({
+        classify: "login_access",
+        purchase_lookup: "found",
+        access_check: "no_access",
+        add_to_dashboard: "failed",
+      })
+    ).toEqual([
+      "classify",
+      "purchase_lookup",
+      "access_check",
+      "add_to_dashboard",
+      "escalate",
+    ])
+  })
+
+  it("no purchase → can't-find-order reply", async () => {
+    expect(
+      await walk({ classify: "login_access", purchase_lookup: "not_found" })
+    ).toEqual(["classify", "purchase_lookup", "reply_no_order"])
+  })
+
+  it("purchase APIs unavailable → escalate to a human", async () => {
+    expect(
+      await walk({ classify: "login_access", purchase_lookup: "failed" })
+    ).toEqual(["classify", "purchase_lookup", "escalate"])
   })
 })

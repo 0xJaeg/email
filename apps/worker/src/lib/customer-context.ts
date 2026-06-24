@@ -3,6 +3,7 @@ import type {
   Order,
   AccessResult,
   OrderLookupResult,
+  HttpCallInfo,
 } from "@workspace/actions"
 
 // One external API call the lookup made, captured for the per-ticket trace so an
@@ -10,7 +11,7 @@ import type {
 // endpoint, which is otherwise indistinguishable from a genuine "not found".
 export type LookupRecord = {
   adapter: string // adapter key, e.g. "profitdashboard", "mailwizz"
-  operation: "order_lookup" | "access_check" | "unsubscribe"
+  operation: "order_lookup" | "access_check" | "unsubscribe" | "add_user"
   ok: boolean // false = the call threw (endpoint down / auth failed / timeout)
   summary: string // outcome on success; the error message on failure
   endpoint?: string // the HTTP endpoint hit, when the adapter made a real call
@@ -25,6 +26,46 @@ export type GatheredContext = {
   context: { orders: Order[]; access: AccessResult; lookups: LookupRecord[] }
   // Rendered block fed to the reply model as verified customer context.
   customerContext: string
+}
+
+// LookupRecord builders — the single source of truth for the PII-light summaries
+// shared by gatherCustomerContext and the purchase / access / add-user flow nodes,
+// so the trace reads identically wherever a lookup happens.
+export function okLookup(
+  adapter: string,
+  operation: LookupRecord["operation"],
+  summary: string,
+  http?: HttpCallInfo
+): LookupRecord {
+  return { adapter, operation, ok: true, summary, ...(http ?? {}) }
+}
+
+export function errLookup(
+  adapter: string,
+  operation: LookupRecord["operation"],
+  err: unknown
+): LookupRecord {
+  return {
+    adapter,
+    operation,
+    ok: false,
+    summary: err instanceof Error ? err.message : String(err),
+  }
+}
+
+// The customerContext lines, kept here so every step renders the purchase / access
+// facts identically (the reply model is told to use ONLY what's here, never invent).
+export function purchaseLine(orders: Order[]): string {
+  const order = orders[0]
+  return order
+    ? `- Purchase: ${order.productName}, order ${order.orderId}, ${order.amount} ${order.currency}, purchased ${order.purchasedAt}.`
+    : "- No purchase found for this email address."
+}
+
+export function accessLine(access: AccessResult): string {
+  return access.hasAccess
+    ? `- Account access: active. ${access.details ?? ""}`.trim()
+    : "- Account access: NOT found — they may not have been granted access. Offer to investigate / resend access details."
 }
 
 // Runs the read-only enrichment actions (lookupOrder + checkAccess) for an
@@ -42,22 +83,18 @@ export async function gatherCustomerContext(
   let lookup: OrderLookupResult = { found: false, orders: [] }
   try {
     lookup = await adapter.lookupOrder({ email: email.from_email })
-    lookups.push({
-      adapter: adapter.key,
-      operation: "order_lookup",
-      ok: true,
-      summary: lookup.found
-        ? `${lookup.orders.length} order(s) found`
-        : "no matching order",
-      ...(lookup.http ?? {}),
-    })
+    lookups.push(
+      okLookup(
+        adapter.key,
+        "order_lookup",
+        lookup.found
+          ? `${lookup.orders.length} order(s) found`
+          : "no matching order",
+        lookup.http
+      )
+    )
   } catch (err) {
-    lookups.push({
-      adapter: adapter.key,
-      operation: "order_lookup",
-      ok: false,
-      summary: err instanceof Error ? err.message : String(err),
-    })
+    lookups.push(errLookup(adapter.key, "order_lookup", err))
   }
 
   const order = lookup.orders[0] ?? null
@@ -68,40 +105,22 @@ export async function gatherCustomerContext(
       order,
       expectedProductKey,
     })
-    lookups.push({
-      adapter: adapter.key,
-      operation: "access_check",
-      ok: true,
-      summary: access.hasAccess ? "access active" : "no access",
-      ...(access.http ?? {}),
-    })
+    lookups.push(
+      okLookup(
+        adapter.key,
+        "access_check",
+        access.hasAccess ? "access active" : "no access",
+        access.http
+      )
+    )
   } catch (err) {
-    lookups.push({
-      adapter: adapter.key,
-      operation: "access_check",
-      ok: false,
-      summary: err instanceof Error ? err.message : String(err),
-    })
-  }
-
-  const lines: string[] = []
-  if (lookup.found && order) {
-    lines.push(
-      `- Purchase: ${order.productName}, order ${order.orderId}, ${order.amount} ${order.currency}, purchased ${order.purchasedAt}.`
-    )
-  } else {
-    lines.push("- No purchase found for this email address.")
-  }
-  if (access.hasAccess) {
-    lines.push(`- Account access: active. ${access.details ?? ""}`.trim())
-  } else {
-    lines.push(
-      "- Account access: NOT found — they may not have been granted access. Offer to investigate / resend access details."
-    )
+    lookups.push(errLookup(adapter.key, "access_check", err))
   }
 
   return {
     context: { orders: lookup.orders, access, lookups },
-    customerContext: lines.join("\n"),
+    customerContext: [purchaseLine(lookup.orders), accessLine(access)].join(
+      "\n"
+    ),
   }
 }

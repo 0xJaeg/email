@@ -5,6 +5,9 @@ import { EnrichNode } from "./nodes/enrich.js"
 import { DecideNode } from "./nodes/decide.js"
 import { DraftNode } from "./nodes/draft.js"
 import { OrderLookupNode } from "./nodes/order-lookup.js"
+import { PurchaseLookupNode } from "./nodes/purchase-lookup.js"
+import { AccessCheckNode } from "./nodes/access-check.js"
+import { AddToDashboardNode } from "./nodes/add-to-dashboard.js"
 import { RefundLadderNode } from "./nodes/refund-ladder.js"
 import { SendReplyNode } from "./nodes/send-reply.js"
 import { ApiActionNode } from "./nodes/api-action.js"
@@ -18,6 +21,9 @@ export const NODE_REGISTRY: Record<string, NodeType> = {
   [DecideNode.type]: DecideNode,
   [DraftNode.type]: DraftNode,
   [OrderLookupNode.type]: OrderLookupNode,
+  [PurchaseLookupNode.type]: PurchaseLookupNode,
+  [AccessCheckNode.type]: AccessCheckNode,
+  [AddToDashboardNode.type]: AddToDashboardNode,
   [RefundLadderNode.type]: RefundLadderNode,
   [SendReplyNode.type]: SendReplyNode,
   [ApiActionNode.type]: ApiActionNode,

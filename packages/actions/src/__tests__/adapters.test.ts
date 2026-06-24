@@ -30,7 +30,9 @@ describe("getAdapter", () => {
 
 describe("adapter enrichment (lookupOrder / checkAccess)", () => {
   it("mock: lookupOrder returns a found order", async () => {
-    const r = await getAdapter("mock").lookupOrder({ email: "alice@example.com" })
+    const r = await getAdapter("mock").lookupOrder({
+      email: "alice@example.com",
+    })
     expect(r.found).toBe(true)
     expect(r.orders.length).toBeGreaterThan(0)
     expect(r.orders[0]?.orderId).toBeTruthy()
@@ -45,9 +47,11 @@ describe("adapter enrichment (lookupOrder / checkAccess)", () => {
     expect(r.details).toBeTruthy()
   })
 
-  it("clickbank: lookupOrder returns not-found until credentials are configured", async () => {
+  it("clickbank: lookupOrder returns not-found + configured:false until credentials are configured", async () => {
     const r = await getAdapter("clickbank").lookupOrder({ email: "x@y.com" })
     expect(r.found).toBe(false)
     expect(r.orders).toEqual([])
+    // configured:false lets purchase_lookup escalate (vs. claim "no purchase").
+    expect(r.configured).toBe(false)
   })
 })
