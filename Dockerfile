@@ -4,7 +4,7 @@
 # same image as three services (web / api / worker) with different start
 # commands, so it carries every workspace's deps + build output. Dev deps are
 # kept on purpose: web needs them to build, and api/worker run via `tsx`.
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 # Non-interactive corepack so the pinned pnpm version downloads without a prompt.
