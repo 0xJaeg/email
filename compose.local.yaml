@@ -1,0 +1,12 @@
+# Local-only override for verifying the stack on your machine. Publishes the
+# web + api ports to localhost so you can curl them or point `pnpm sim` at the
+# api. NOT used in production — Coolify routes to the `expose`d ports over its
+# own proxy network. Usage:
+#   docker compose --env-file .env.local -f compose.coolify.yaml -f compose.local.yaml up --build
+services:
+  web:
+    ports:
+      - "3000:3000"
+  api:
+    ports:
+      - "3001:3001"

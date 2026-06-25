@@ -1,0 +1,27 @@
+# Dependencies & build artifacts — reinstalled / rebuilt inside the image
+node_modules
+**/node_modules
+.next
+**/.next
+.turbo
+**/.turbo
+**/dist
+coverage
+**/coverage
+
+# Git & local env — secrets come from Coolify (build args + runtime env),
+# never baked into the image
+.git
+.gitignore
+.env
+.env.*
+
+# Customer PII & scratch — must never ship in an image
+scripts/fixtures/ticketdesk-*.json
+.playwright-mcp/
+verify-*.png
+.superpowers/
+
+# OS / editor cruft
+.DS_Store
+**/*.log

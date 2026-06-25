@@ -1,0 +1,80 @@
+# Production stack for Coolify (Docker Compose deployment).
+#
+# The existing docker-compose.yml stays redis-only for local `pnpm db:start`;
+# THIS file is the deployed stack. web / api / worker all run the SAME image
+# (built once from the root Dockerfile) with different start commands. Coolify
+# assigns domains to `web` and `api` and routes to their exposed ports over its
+# internal proxy network — so no host ports are published here.
+#
+# Env vars are referenced as ${VARS} and supplied by Coolify's env UI (or, for
+# local testing, `docker compose --env-file .env.local -f compose.coolify.yaml up --build`).
+
+x-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+  args:
+    NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+
+x-app-env: &app-env
+  NODE_ENV: production
+  APP_ENV: ${APP_ENV:-production}
+  REDIS_URL: redis://redis:6379
+  NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+  SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+  AGENT_MAIL_WEBHOOK_SECRET: ${AGENT_MAIL_WEBHOOK_SECRET}
+  AGENT_MAIL_API_KEY: ${AGENT_MAIL_API_KEY}
+  AGENT_MAIL_INBOX_ID: ${AGENT_MAIL_INBOX_ID}
+  CREDENTIALS_ENC_KEY: ${CREDENTIALS_ENC_KEY}
+  SUPPRESSION_WEBHOOK_URL: ${SUPPRESSION_WEBHOOK_URL:-}
+  MAILWIZZ_API_URL: ${MAILWIZZ_API_URL:-}
+  MAILWIZZ_API_KEY: ${MAILWIZZ_API_KEY:-}
+
+services:
+  web:
+    build: *app-build
+    image: email-agent
+    command: pnpm --filter web start
+    environment:
+      <<: *app-env
+      PORT: "3000"
+    expose:
+      - "3000"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  api:
+    image: email-agent
+    pull_policy: never
+    command: pnpm --filter api start
+    environment:
+      <<: *app-env
+      PORT: "3001"
+    expose:
+      - "3001"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    image: email-agent
+    pull_policy: never
+    command: pnpm --filter worker start
+    environment:
+      <<: *app-env
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
