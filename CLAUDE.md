@@ -86,6 +86,10 @@ Vitest is the workspace test runner — `pnpm test` runs across the monorepo; pe
 
 Node `>=20` and `pnpm@9.15.9` are required (declared in root `package.json`).
 
+## Deployment
+
+Deployed as a **single VPS running [Coolify](https://coolify.io) (self-hosted PaaS) + Docker Compose** — the apps are containers in one stack, not separate deployables. The root `Dockerfile` builds **one image for the whole monorepo** (pnpm `fetch` → `install --offline` → `pnpm build`, keeping dev deps so web can build and api/worker can run via `tsx`); `compose.coolify.yaml` runs that image as four services sharing it via different `start` commands — `web` (`:3000`), `api` (`:3001`, the Agent Mail webhook), `worker`, and `redis` (persisted volume). Coolify supplies git-push deploys, the env-var store, automatic TLS, and routes its assigned domains (`app.*` → web, `hooks.*` → api) over its internal proxy network, so **no host ports are published**. The redis-only root `docker-compose.yml` stays for local `pnpm db:start`. **`NEXT_PUBLIC_*` must be set as build-time env in Coolify** (they inline into the browser bundle); all other secrets (`SUPABASE_SECRET_KEY`, `ANTHROPIC_API_KEY`, `AGENT_MAIL_*`, `CREDENTIALS_ENC_KEY`, `REDIS_URL=redis://redis:6379`, …) are runtime env. Supabase / Anthropic / Agent Mail remain external. Verify the containers locally before deploying with `docker compose --env-file .env.local -f compose.coolify.yaml -f compose.local.yaml up --build` (the `compose.local.yaml` override publishes web/api to localhost for testing; Coolify does not use it).
+
 ## Architecture
 
 **Monorepo layout** (pnpm workspaces + Turbo):
