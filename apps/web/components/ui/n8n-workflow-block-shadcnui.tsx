@@ -28,10 +28,17 @@ export interface WorkflowCanvasConnection {
   from: string
   to: string
   label?: string
+  // Pre-routed waypoints (canvas coords) from the caller's layout. When present
+  // and neither endpoint has been dragged, the edge follows these — they bend
+  // around intervening nodes — instead of a straight center-to-center bezier.
+  points?: { x: number; y: number }[]
+  // Pre-computed label anchor (the laid-out label center). Falls back to the
+  // edge midpoint when absent, or once an endpoint is dragged.
+  labelPos?: { x: number; y: number }
 }
 
-const NODE_WIDTH = 220
-const NODE_HEIGHT = 104
+export const NODE_WIDTH = 220
+export const NODE_HEIGHT = 104
 
 const colorClasses: Record<string, string> = {
   rose: "border-rose-400/40 bg-rose-400/10 text-rose-500",
@@ -46,22 +53,31 @@ const colorClasses: Record<string, string> = {
 }
 
 function ConnectionLine({
-  from,
-  to,
+  connection,
   nodes,
   orientation,
+  routed,
 }: {
-  from: string
-  to: string
+  connection: WorkflowCanvasConnection
   nodes: WorkflowCanvasNode[]
   orientation: "horizontal" | "vertical"
+  // Use the connection's pre-routed waypoints (true) or fall back to a straight
+  // center-to-center bezier (false, e.g. after an endpoint has been dragged).
+  routed: boolean
 }) {
-  const fromNode = nodes.find((n) => n.id === from)
-  const toNode = nodes.find((n) => n.id === to)
+  const fromNode = nodes.find((n) => n.id === connection.from)
+  const toNode = nodes.find((n) => n.id === connection.to)
   if (!fromNode || !toNode) return null
 
   let path: string
-  if (orientation === "vertical") {
+  if (routed && connection.points && connection.points.length >= 2) {
+    // Follow the laid-out waypoints, which bend around intervening nodes.
+    path =
+      "M" +
+      connection.points
+        .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+        .join(" L")
+  } else if (orientation === "vertical") {
     // bottom edge of `from` → top edge of `to`, vertical bezier.
     const startX = fromNode.position.x + NODE_WIDTH / 2
     const startY = fromNode.position.y + NODE_HEIGHT
@@ -89,6 +105,7 @@ function ConnectionLine({
       strokeWidth={2}
       strokeDasharray="6,6"
       strokeLinecap="round"
+      strokeLinejoin="round"
       opacity={0.4}
       className="text-muted-foreground"
     />
@@ -156,6 +173,16 @@ export function N8nWorkflowBlock({
     dragStartPosition.current = null
   }
 
+  // Has this node been dragged off its laid-out position? If so, its edges'
+  // pre-routed waypoints are stale, so those edges (and their labels) fall back
+  // to live geometry. initialNodes carries the layout; nodes carries drags.
+  const isMoved = (id: string) => {
+    const cur = nodes.find((n) => n.id === id)?.position
+    const init = initialNodes.find((n) => n.id === id)?.position
+    if (!cur || !init) return false
+    return Math.abs(cur.x - init.x) > 0.5 || Math.abs(cur.y - init.y) > 0.5
+  }
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border bg-background/60 p-2">
       {toolbar ? <div className="px-1 pt-1 pb-2">{toolbar}</div> : null}
@@ -180,26 +207,33 @@ export function N8nWorkflowBlock({
             {connections.map((c) => (
               <ConnectionLine
                 key={`${c.from}->${c.to}->${c.label ?? ""}`}
-                from={c.from}
-                to={c.to}
+                connection={c}
                 nodes={nodes}
                 orientation={orientation}
+                routed={!isMoved(c.from) && !isMoved(c.to)}
               />
             ))}
           </svg>
 
-          {/* Branch outcome labels, positioned at each connection's midpoint. */}
+          {/* Branch outcome labels: at the laid-out anchor, or the edge
+              midpoint once an endpoint is dragged (the anchor goes stale). */}
           {connections.map((c) => {
             if (!c.label) return null
             const fromNode = nodes.find((n) => n.id === c.from)
             const toNode = nodes.find((n) => n.id === c.to)
             if (!fromNode || !toNode) return null
-            const x =
-              orientation === "vertical"
+            const anchored =
+              c.labelPos && !isMoved(c.from) && !isMoved(c.to)
+                ? c.labelPos
+                : null
+            const x = anchored
+              ? anchored.x
+              : orientation === "vertical"
                 ? (fromNode.position.x + toNode.position.x) / 2 + NODE_WIDTH / 2
                 : (fromNode.position.x + NODE_WIDTH + toNode.position.x) / 2
-            const y =
-              orientation === "vertical"
+            const y = anchored
+              ? anchored.y
+              : orientation === "vertical"
                 ? (fromNode.position.y + NODE_HEIGHT + toNode.position.y) / 2
                 : (fromNode.position.y + toNode.position.y) / 2 +
                   NODE_HEIGHT / 2
