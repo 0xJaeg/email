@@ -46,6 +46,10 @@
     "./types": {
       "types": "./src/types.ts",
       "default": "./dist/types.js"
+    },
+    "./api-routing-spec": {
+      "types": "./src/api-routing-spec.ts",
+      "default": "./dist/api-routing-spec.js"
     }
   },
   "dependencies": {
