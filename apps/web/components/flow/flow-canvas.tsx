@@ -13,8 +13,11 @@ import {
   IconKey,
   IconUserPlus,
 } from "@tabler/icons-react"
+import * as dagre from "dagre"
 import {
   N8nWorkflowBlock,
+  NODE_WIDTH,
+  NODE_HEIGHT,
   type WorkflowCanvasNode,
   type WorkflowCanvasConnection,
 } from "@/components/ui/n8n-workflow-block-shadcnui"
@@ -28,13 +31,14 @@ import {
 import { NodeDetailSheet } from "./node-detail-sheet"
 import type { FlowNodeRow, FlowEdgeRow } from "@/lib/flow-graph-types"
 
-// Layout spacing (px) for the layered TOP-TO-BOTTOM tree: depth flows down,
-// siblings at the same depth fan out across. Vertical keeps the long axis
-// (the step depth) on the natural scroll direction.
-const ROW_GAP = 170 // vertical gap per depth level
-const COL_GAP = 280 // horizontal gap between siblings at the same depth
-const X0 = 24
-const Y0 = 24
+// Layered TOP-TO-BOTTOM layout via dagre: ranks flow down, siblings fan out
+// across, and each edge is routed (with waypoints) around intervening nodes so
+// shared targets like "Escalate to human" no longer pile overlapping lines and
+// labels down a single column. Spacing (px):
+const RANK_GAP = 90 // vertical gap between ranks (depth levels)
+const NODE_GAP = 70 // horizontal gap between nodes in the same rank
+const EDGE_GAP = 30 // gap between parallel edges
+const MARGIN = 24 // padding around the laid-out graph
 
 // Presentation per node_type: a palette key (see colorClasses in the canvas)
 // and a tabler icon. Unknown types fall back to a neutral box.
@@ -54,55 +58,45 @@ const NODE_STYLE: Record<
 }
 const FALLBACK = { color: "slate", icon: IconBox }
 
-// Lay the graph out top-to-bottom: BFS depth from the start node sets the ROW
-// (vertical), and nodes discovered at the same depth fan out into columns
-// (horizontal). Maps every node to a canvas node + every edge to a connection.
+// Lay the graph out top-to-bottom with dagre: it assigns ranks (depth → row),
+// orders nodes within a rank to minimise edge crossings, and routes each edge
+// through waypoints that bend around other nodes. Maps every node to a canvas
+// node (top-left position) + every edge to a connection carrying its waypoints
+// and label anchor, so the renderer never has to re-derive them.
 function layoutGraph(nodes: FlowNodeRow[], edges: FlowEdgeRow[]) {
-  const out = new Map<string, FlowEdgeRow[]>()
-  for (const e of edges) {
-    const list = out.get(e.from_node_id)
-    if (list) list.push(e)
-    else out.set(e.from_node_id, [e])
-  }
-  for (const list of out.values()) list.sort((a, b) => a.position - b.position)
+  const g = new dagre.graphlib.Graph({ multigraph: true })
+  g.setGraph({
+    rankdir: "TB",
+    nodesep: NODE_GAP,
+    edgesep: EDGE_GAP,
+    ranksep: RANK_GAP,
+    marginx: MARGIN,
+    marginy: MARGIN,
+  })
+  g.setDefaultEdgeLabel(() => ({}))
 
-  const start = nodes.find((n) => n.is_start) ?? nodes[0]
-  const depth = new Map<string, number>()
-  const order: string[] = []
-  if (start) {
-    depth.set(start.id, 0)
-    order.push(start.id)
-    const seen = new Set([start.id])
-    const queue = [start.id]
-    while (queue.length) {
-      const id = queue.shift()!
-      const d = depth.get(id) ?? 0
-      for (const e of out.get(id) ?? []) {
-        depth.set(e.to_node_id, Math.max(depth.get(e.to_node_id) ?? 0, d + 1))
-        if (!seen.has(e.to_node_id)) {
-          seen.add(e.to_node_id)
-          order.push(e.to_node_id)
-          queue.push(e.to_node_id)
-        }
-      }
-    }
-  }
-  // Nodes unreachable from start still get placed (top row, depth 0).
-  for (const n of nodes) {
-    if (!depth.has(n.id)) {
-      depth.set(n.id, 0)
-      order.push(n.id)
-    }
-  }
+  for (const n of nodes)
+    g.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
+  edges.forEach((e, i) => {
+    // "default" is an unconditional next-step; only real branches get a label,
+    // and a labelled edge reserves space so dagre keeps the label clear.
+    const label = e.outcome === "default" ? undefined : e.outcome
+    g.setEdge(
+      e.from_node_id,
+      e.to_node_id,
+      label
+        ? { width: label.length * 6 + 14, height: 18, labelpos: "c" }
+        : {},
+      `e${i}`
+    )
+  })
 
-  const colByDepth = new Map<number, number>()
+  dagre.layout(g)
+
   const canvasNodes: WorkflowCanvasNode[] = []
-  for (const id of order) {
-    const node = nodes.find((n) => n.id === id)
-    if (!node) continue
-    const d = depth.get(id) ?? 0
-    const col = colByDepth.get(d) ?? 0
-    colByDepth.set(d, col + 1)
+  for (const node of nodes) {
+    const dn = g.node(node.id)
+    if (!dn) continue
     const style = NODE_STYLE[node.node_type] ?? FALLBACK
     const badges: string[] = []
     if (node.is_start) badges.push("start")
@@ -114,18 +108,27 @@ function layoutGraph(nodes: FlowNodeRow[], edges: FlowEdgeRow[]) {
       description: node.description,
       icon: style.icon,
       color: style.color,
-      position: { x: X0 + col * COL_GAP, y: Y0 + d * ROW_GAP },
+      // dagre reports node CENTERS; the canvas positions by top-left.
+      position: { x: dn.x - NODE_WIDTH / 2, y: dn.y - NODE_HEIGHT / 2 },
       badges: badges.length ? badges : undefined,
       muted: !node.is_active,
     })
   }
 
-  const connections: WorkflowCanvasConnection[] = edges.map((e) => ({
-    from: e.from_node_id,
-    to: e.to_node_id,
-    // "default" is an unconditional next-step; only label real branches.
-    label: e.outcome === "default" ? undefined : e.outcome,
-  }))
+  const connections: WorkflowCanvasConnection[] = edges.map((e, i) => {
+    const de = g.edge(e.from_node_id, e.to_node_id, `e${i}`)
+    const label = e.outcome === "default" ? undefined : e.outcome
+    return {
+      from: e.from_node_id,
+      to: e.to_node_id,
+      label,
+      points: de?.points,
+      labelPos:
+        label && de && typeof de.x === "number"
+          ? { x: de.x, y: de.y }
+          : undefined,
+    }
+  })
 
   return { canvasNodes, connections }
 }
