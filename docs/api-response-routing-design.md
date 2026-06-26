@@ -78,3 +78,14 @@ What the public docs actually say, per platform. **Planning-level — Ben's acco
 **Implication:** the routing spec gains an HTTP layer per response case (status / condition + the outcome it maps to). ClickBank + the live APIs can be specced now; Digistore24 details confirm from Ben's account; **JVZoo needs the IPN-vs-lookup decision before its rows are real.**
 
 Sources: ClickBank Orders API (support.clickbank.com) · Digistore24 dev docs (dev.digistore24.com) · JVZoo API (api.jvzoo.com/docs).
+
+## Step behavior + gaps surfaced (2026-06-26)
+Second ticket: spell out "exactly what happens" at the action/terminal steps (the vague "Escalate to human" label hid the real mechanism). Shown via a **"What this step does"** section on the node panel, read from `STEP_BEHAVIOR` in code (`packages/actions/src/step-behavior.ts`). Non-API steps use this; API steps use `ROUTING_SPEC`.
+
+What the steps actually do: **escalate** → marks the ticket `needs_human`, drafts nothing, a person writes + sends the reply by hand. **reply** (send_faq_reply / offers) → AI drafts → approval queue → a person approves/edits → sent via Agent Mail (never auto-sent). **refund ladder** → offer1 → offer2 → refund/chargeback; the refund is a pending action that fires on approval (daily cap). **spam** → quarantined, flow stops.
+
+Writing this down surfaced **two gaps — raised to Ben, not changed unilaterally** (per scope decision):
+1. **Escalations notify nobody.** A `needs_human` ticket sits in the queue with no alert. If the queue isn't watched, an escalated customer waits indefinitely. Decision for Ben: should escalations fire an alert? (Reuse the existing internal-alert mechanism — `sendInternalAlert` / `alertRefundLimitReached`.)
+2. **A failed AI draft silently drops the customer.** If `generateReply` errors, the decision is set to `failed` and the ticket moves to "done" — no action item, customer never contacted. Decision for Ben: route a failed draft to `needs_human` instead of "done"?
+
+Gap #1 is made visible in the panel copy (escalate's "no automatic alert" note), which is the point of the ticket — the documentation forces the realization.
