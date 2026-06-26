@@ -50,6 +50,10 @@
     "./api-routing-spec": {
       "types": "./src/api-routing-spec.ts",
       "default": "./dist/api-routing-spec.js"
+    },
+    "./step-behavior": {
+      "types": "./src/step-behavior.ts",
+      "default": "./dist/step-behavior.js"
     }
   },
   "dependencies": {

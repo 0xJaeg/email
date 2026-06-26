@@ -16,6 +16,10 @@ import {
   type ResponseKind,
   type ApiState,
 } from "@workspace/actions/api-routing-spec"
+import {
+  STEP_BEHAVIOR,
+  behaviorKeyFor,
+} from "@workspace/actions/step-behavior"
 import { NodePromptForm } from "./node-prompt-form"
 import {
   ClassifyConfigForm,
@@ -230,6 +234,46 @@ function ApiRoutingSection({
   )
 }
 
+// Ben's ask: spell out exactly what each action/terminal step does (the vague
+// "Escalate to human" label hides the real mechanism). Read from STEP_BEHAVIOR
+// (code) so it stays honest. API steps use ApiRoutingSection instead.
+function StepBehaviorSection({
+  nodeType,
+  config,
+}: {
+  nodeType: string
+  config: Record<string, unknown>
+}) {
+  const key = behaviorKeyFor(nodeType, config)
+  const behavior = key ? STEP_BEHAVIOR[key] : null
+  if (!behavior) return null
+
+  return (
+    <Section title="What this step does">
+      <p className="text-sm text-muted-foreground">{behavior.summary}</p>
+      <ol className="flex flex-col gap-1.5">
+        {behavior.steps.map((step, i) => (
+          <li key={i} className="flex gap-2.5 text-sm">
+            <span className="mt-0.5 flex size-4 flex-none items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground">
+              {i + 1}
+            </span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+      {behavior.notes?.length ? (
+        <div className="mt-1 flex flex-col gap-1 rounded-md border bg-muted/40 p-2.5">
+          {behavior.notes.map((note, i) => (
+            <p key={i} className="text-xs text-muted-foreground">
+              <span className="font-medium">Note:</span> {note}
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </Section>
+  )
+}
+
 // The wide sheet shown when a node on /flows is clicked: identity + config +
 // outgoing branches, and the editable AI prompt for prompt-driven nodes (other
 // nodes show their prompt read-only, or nothing if they have none).
@@ -286,6 +330,8 @@ export function NodeDetailSheet({
             ) : null}
 
             <ApiRoutingSection nodeType={node.node_type} branches={branches} />
+
+            <StepBehaviorSection nodeType={node.node_type} config={node.config} />
 
             {classifyEditor ? (
               <div className="flex flex-col gap-2">
