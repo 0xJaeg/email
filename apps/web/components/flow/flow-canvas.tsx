@@ -246,10 +246,16 @@ export function FlowCanvas({
     ? edges
         .filter((e) => e.from_node_id === selected.id)
         .sort((a, b) => a.position - b.position)
-        .map((e) => ({
-          outcome: e.outcome,
-          to: nodes.find((n) => n.id === e.to_node_id)?.title ?? e.to_node_id,
-        }))
+        .map((e) => {
+          const target = nodes.find((n) => n.id === e.to_node_id)
+          return {
+            outcome: e.outcome,
+            to: target?.title ?? e.to_node_id,
+            // One-line summary of where this branch leads, shown under it on the
+            // panel so you don't have to open the destination to see what it does.
+            toDescription: target?.description ?? null,
+          }
+        })
     : []
 
   // For a classify node, build the editable category list (config categories
