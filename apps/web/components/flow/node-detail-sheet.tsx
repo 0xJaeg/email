@@ -28,7 +28,7 @@ import {
 } from "./classify-config-form"
 import { PROMPT_DRIVEN_NODES, type FlowNodeRow } from "@/lib/flow-graph-types"
 
-type Branch = { outcome: string; to: string }
+type Branch = { outcome: string; to: string; toDescription?: string | null }
 type Category = { key: string; label?: string; description?: string }
 
 function Section({
@@ -353,11 +353,11 @@ export function NodeDetailSheet({
 
                 <Section title="Branches">
                   {branches.length ? (
-                    <ul className="flex flex-col gap-1.5">
+                    <ul className="flex flex-col gap-2.5">
                       {branches.map((b) => (
                         <li
                           key={`${b.outcome}->${b.to}`}
-                          className="flex items-center gap-2 text-sm"
+                          className="grid grid-cols-[auto_1fr] items-start gap-x-2 text-sm"
                         >
                           <Badge
                             variant="secondary"
@@ -365,8 +365,17 @@ export function NodeDetailSheet({
                           >
                             {b.outcome}
                           </Badge>
-                          <IconArrowRight className="size-3.5 text-muted-foreground" />
-                          <span>{b.to}</span>
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <IconArrowRight className="size-3.5 text-muted-foreground" />
+                              <span>{b.to}</span>
+                            </div>
+                            {b.toDescription ? (
+                              <p className="ml-[1.375rem] text-xs text-muted-foreground">
+                                {b.toDescription}
+                              </p>
+                            ) : null}
+                          </div>
                         </li>
                       ))}
                     </ul>
