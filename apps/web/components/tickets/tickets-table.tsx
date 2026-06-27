@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
 import { TablePagination } from "@/components/shared/table-pagination"
 import {
   ClassificationBadge,
@@ -108,37 +109,42 @@ export async function TicketsTable({
                   <TableCell className="text-right text-muted-foreground tabular-nums">
                     {formatDate(t.createdAt)}
                   </TableCell>
-                  <TableCell className="flex justify-end text-right">
-                    {t.state !== "done" &&
-                    t.decisionStatus === "needs_human" ? (
-                      <EscalationReplySheet
-                        row={{
-                          threadId: t.id,
-                          sender: t.sender,
-                          subject: t.subject,
-                          body: t.body,
-                          reasoning: t.llmReasoning,
-                        }}
-                      />
-                    ) : t.state !== "done" &&
-                      t.decisionId &&
-                      t.decisionStatus === "pending_approval" ? (
-                      <ReviewApprovalSheet
-                        row={{
-                          id: t.decisionId,
-                          sender: t.sender,
-                          subject: t.subject,
-                          decisionLabel:
-                            DECISION_LABELS[t.decision ?? ""] ??
-                            t.decision ??
-                            "Reply",
-                          body: t.body,
-                          draftReplyText: t.draftReplyText,
-                          context: t.context,
-                          proposedActions: t.proposedActions,
-                        }}
-                      />
-                    ) : null}
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {t.state !== "done" &&
+                      t.decisionStatus === "needs_human" ? (
+                        <EscalationReplySheet
+                          row={{
+                            threadId: t.id,
+                            sender: t.sender,
+                            subject: t.subject,
+                            body: t.body,
+                            reasoning: t.llmReasoning,
+                          }}
+                        />
+                      ) : t.state !== "done" &&
+                        t.decisionId &&
+                        t.decisionStatus === "pending_approval" ? (
+                        <ReviewApprovalSheet
+                          row={{
+                            id: t.decisionId,
+                            sender: t.sender,
+                            subject: t.subject,
+                            decisionLabel:
+                              DECISION_LABELS[t.decision ?? ""] ??
+                              t.decision ??
+                              "Reply",
+                            body: t.body,
+                            draftReplyText: t.draftReplyText,
+                            context: t.context,
+                            proposedActions: t.proposedActions,
+                          }}
+                        />
+                      ) : null}
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/tickets/${t.id}`}>View</Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
