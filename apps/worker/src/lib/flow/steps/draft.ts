@@ -50,9 +50,16 @@ export const DraftStep: Step = {
         ? [{ type: "suppress_contact", reason: "unsubscribe" }]
         : []
 
-    const context = enrichment
-      ? { inquiry_type: cls.inquiry_type, ...enrichment.context }
-      : { inquiry_type: cls.inquiry_type }
+    // Carry this node's send-delay range (if set) onto the decision so approval
+    // can schedule the reply with a human-feeling delay without re-loading the
+    // node. config.condition is the node's config (see toStepConfig).
+    const sendDelay = readSendDelay(config.condition)
+    const context = {
+      ...(enrichment
+        ? { inquiry_type: cls.inquiry_type, ...enrichment.context }
+        : { inquiry_type: cls.inquiry_type }),
+      ...(sendDelay ? { send_delay: sendDelay } : {}),
+    }
 
     const { data: row, error: decErr } = await supabase
       .from("decisions")
@@ -120,6 +127,22 @@ export const DraftStep: Step = {
 
     return { decisionId: row.id }
   },
+}
+
+// This node's optional send-delay range (minutes), read from node.config
+// (FlowStepConfig.condition). 0/0 or missing means send immediately.
+function readSendDelay(
+  condition: unknown
+): { min: number; max: number } | null {
+  if (!condition || typeof condition !== "object") return null
+  const c = condition as Record<string, unknown>
+  const min = Number(c.send_delay_min_minutes)
+  const max = Number(c.send_delay_max_minutes)
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null
+  const lo = Math.max(0, min)
+  const hi = Math.max(lo, max)
+  if (lo === 0 && hi === 0) return null
+  return { min: lo, max: hi }
 }
 
 // Generate the reply, queue it for approval, and audit. On failure, mark the

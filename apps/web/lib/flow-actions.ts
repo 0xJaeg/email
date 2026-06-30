@@ -100,3 +100,45 @@ export async function updateClassifyCategories(
   revalidatePath("/flows")
   return { error: false, message: "Categories saved." }
 }
+
+// Set a send_reply node's send-delay range (minutes). The worker stamps this
+// onto each decision; on approval the reply is sent after a random wait in the
+// range (so it feels hand-written). Both 0 = send immediately. Merges into the
+// node's existing config so other keys are preserved.
+export async function updateNodeSendDelay(
+  nodeId: string,
+  minMinutes: number,
+  maxMinutes: number
+): Promise<Result> {
+  const auth = await requireAdmin()
+  if (!auth.ok) return { error: true, message: "Not authorized." }
+  if (!nodeId) return { error: true, message: "Missing node id." }
+
+  const min = Math.trunc(Number(minMinutes))
+  const max = Math.trunc(Number(maxMinutes))
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < 0)
+    return { error: true, message: "Delay must be zero or more minutes." }
+  if (max < min)
+    return { error: true, message: "Max delay can't be less than the min." }
+
+  const { data: node, error: readErr } = await auth.admin
+    .from("flow_nodes")
+    .select("config")
+    .eq("id", nodeId)
+    .maybeSingle()
+  if (readErr) return { error: true, message: readErr.message }
+
+  const config = {
+    ...((node?.config as Record<string, unknown>) ?? {}),
+    send_delay_min_minutes: min,
+    send_delay_max_minutes: max,
+  }
+  const { error } = await auth.admin
+    .from("flow_nodes")
+    .update({ config, updated_at: new Date().toISOString() })
+    .eq("id", nodeId)
+  if (error) return { error: true, message: error.message }
+
+  revalidatePath("/flows")
+  return { error: false, message: "Send delay saved." }
+}

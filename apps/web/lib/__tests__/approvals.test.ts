@@ -48,9 +48,12 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }))
 
-const mockSendReply = vi.fn()
-vi.mock("@workspace/actions/send-reply", () => ({
-  sendReply: (...a: unknown[]) => mockSendReply(...a),
+// approveDecision now ENQUEUES the reply to the sends queue (the worker sends it
+// asynchronously, after an optional per-node delay) instead of sending inline.
+// Mock the queue so the real server-only producer isn't imported in the test.
+const mockEnqueue = vi.fn()
+vi.mock("@/lib/queue", () => ({
+  getSendsQueue: () => ({ add: mockEnqueue }),
 }))
 const mockRefundCustomer = vi.fn()
 vi.mock("@workspace/actions/refund-customer", () => ({
@@ -73,10 +76,7 @@ const emails = {
 
 describe("approveDecision", () => {
   beforeEach(() => {
-    mockSendReply.mockReset().mockResolvedValue({
-      ok: true,
-      sentMessageId: "msg_sent",
-    })
+    mockEnqueue.mockReset()
     mockRefundCustomer.mockReset().mockResolvedValue({
       ok: true,
       refundId: "rf_1",
@@ -84,7 +84,7 @@ describe("approveDecision", () => {
     mockSuppressContact.mockReset().mockResolvedValue({ ok: true })
   })
 
-  it("for a reply decision, sends the reply and does NOT issue a refund", async () => {
+  it("for a reply decision, enqueues the reply and does NOT issue a refund", async () => {
     serverSupabase = makeServerSupabase({
       id: "dec-1",
       decision: "send_faq_reply",
@@ -93,10 +93,10 @@ describe("approveDecision", () => {
     })
     await approveDecision("dec-1")
     expect(mockRefundCustomer).not.toHaveBeenCalled()
-    expect(mockSendReply).toHaveBeenCalledTimes(1)
+    expect(mockEnqueue).toHaveBeenCalledTimes(1)
   })
 
-  it("sends the operator's edited text when an edit is provided", async () => {
+  it("enqueues the operator's edited text when an edit is provided", async () => {
     serverSupabase = makeServerSupabase({
       id: "dec-1b",
       decision: "send_faq_reply",
@@ -104,12 +104,14 @@ describe("approveDecision", () => {
       emails,
     })
     await approveDecision("dec-1b", "Operator-polished reply.")
-    expect(mockSendReply).toHaveBeenCalledWith(
-      expect.objectContaining({ replyText: "Operator-polished reply." })
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      "send_reply",
+      expect.objectContaining({ replyText: "Operator-polished reply." }),
+      expect.anything()
     )
   })
 
-  it("sends the original draft when the edit is unchanged/blank", async () => {
+  it("enqueues the original draft when the edit is unchanged/blank", async () => {
     serverSupabase = makeServerSupabase({
       id: "dec-1c",
       decision: "send_faq_reply",
@@ -117,12 +119,14 @@ describe("approveDecision", () => {
       emails,
     })
     await approveDecision("dec-1c", "   ")
-    expect(mockSendReply).toHaveBeenCalledWith(
-      expect.objectContaining({ replyText: "Original draft." })
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      "send_reply",
+      expect.objectContaining({ replyText: "Original draft." }),
+      expect.anything()
     )
   })
 
-  it("for a refund decision, issues the refund (default mock adapter) then sends", async () => {
+  it("for a refund decision, issues the refund (default mock adapter) then enqueues", async () => {
     serverSupabase = makeServerSupabase({
       id: "dec-2",
       proposed_actions: [{ type: "issue_refund" }],
@@ -133,7 +137,7 @@ describe("approveDecision", () => {
     expect(mockRefundCustomer).toHaveBeenCalledWith(
       expect.objectContaining({ adapterKey: "mock" })
     )
-    expect(mockSendReply).toHaveBeenCalledTimes(1)
+    expect(mockEnqueue).toHaveBeenCalledTimes(1)
   })
 
   it("resolves the refund adapter from the thread's product", async () => {
@@ -170,10 +174,10 @@ describe("approveDecision", () => {
     expect(mockSuppressContact).toHaveBeenCalledWith(
       expect.objectContaining({ email: "jordan@example.com", reason: "refund" })
     )
-    expect(mockSendReply).toHaveBeenCalledTimes(1)
+    expect(mockEnqueue).toHaveBeenCalledTimes(1)
   })
 
-  it("sends from the thread's routed inbox when one is set", async () => {
+  it("enqueues from the thread's routed inbox when one is set", async () => {
     serverSupabase = makeServerSupabase(
       {
         id: "dec-5",
@@ -187,8 +191,10 @@ describe("approveDecision", () => {
       }
     )
     await approveDecision("dec-5")
-    expect(mockSendReply).toHaveBeenCalledWith(
-      expect.objectContaining({ inboxId: "inbox_routed" })
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      "send_reply",
+      expect.objectContaining({ inboxId: "inbox_routed" }),
+      expect.anything()
     )
   })
 
@@ -203,22 +209,36 @@ describe("approveDecision", () => {
       { thread: { inbox_id: null } }
     )
     await approveDecision("dec-8")
-    expect(mockSendReply).not.toHaveBeenCalled()
+    expect(mockEnqueue).not.toHaveBeenCalled()
+  })
+
+  it("schedules the reply with a delay from the decision's send_delay range", async () => {
+    serverSupabase = makeServerSupabase({
+      id: "dec-9",
+      decision: "send_faq_reply",
+      draft_reply_text: "Hi…",
+      context: { send_delay: { min: 5, max: 5 } },
+      emails,
+    })
+    await approveDecision("dec-9")
+    expect(mockEnqueue).toHaveBeenCalledWith("send_reply", expect.any(Object), {
+      delay: 5 * 60_000,
+    })
   })
 
   it("is a no-op when the decision was already handled (claim returns nothing)", async () => {
     serverSupabase = makeServerSupabase(null)
     await approveDecision("dec-3")
     expect(mockRefundCustomer).not.toHaveBeenCalled()
-    expect(mockSendReply).not.toHaveBeenCalled()
+    expect(mockEnqueue).not.toHaveBeenCalled()
   })
 })
 
 describe("rejectDecision", () => {
-  it("claims and rejects without sending or refunding", async () => {
+  it("claims and rejects without enqueuing or refunding", async () => {
     serverSupabase = makeServerSupabase({ id: "dec-4" })
     await rejectDecision("dec-4", "not warranted")
-    expect(mockSendReply).not.toHaveBeenCalled()
+    expect(mockEnqueue).not.toHaveBeenCalled()
     expect(mockRefundCustomer).not.toHaveBeenCalled()
   })
 })

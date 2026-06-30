@@ -1,6 +1,5 @@
 "use server"
 
-import { sendReply } from "@workspace/actions/send-reply"
 import { refundCustomer } from "@workspace/actions/refund-customer"
 import { suppressContact } from "@workspace/actions/suppress-contact"
 import type { ProposedAction } from "@workspace/actions/types"
@@ -8,6 +7,7 @@ import { getServerSupabase } from "@/lib/supabase/admin"
 import { getActionSupabase } from "@/lib/supabase/server"
 import { resolveSenderInbox } from "@/lib/sender-inbox"
 import { getReplySignature, withSignature } from "@/lib/reply-signature"
+import { getSendsQueue } from "@/lib/queue"
 import { getAppSettings, countRefundsToday } from "@/lib/settings"
 import { sendInternalAlert } from "@workspace/actions/send-internal-alert"
 
@@ -30,7 +30,7 @@ export async function approveDecision(
     .eq("id", decisionId)
     .eq("status", "pending_approval")
     .select(
-      "id, draft_reply_text, proposed_actions, emails(id, from_email, subject, agent_mail_message_id, body_text, thread_id)"
+      "id, draft_reply_text, proposed_actions, context, emails(id, from_email, subject, agent_mail_message_id, body_text, thread_id)"
     )
     .maybeSingle()
 
@@ -160,37 +160,14 @@ export async function approveDecision(
     }
   }
 
-  // Notify. resolveSenderInbox() throws if the thread has no registered inbox —
-  // catch it here so a partial state (refund succeeded, notify failed) is
-  // recorded rather than leaving the decision in limbo.
-  const sent = await (async () => {
-    let inboxId: string
-    try {
-      inboxId = await resolveSenderInbox(supabase, emailRow.thread_id)
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err)
-      return { ok: false as const, error }
-    }
-    const signature = await getReplySignature(supabase, emailRow.thread_id)
-    return sendReply({
-      inboxId,
-      inReplyToMessageId: emailRow.agent_mail_message_id ?? "",
-      replyText: withSignature(replyText, signature),
-      decisionId,
-      emailId: emailRow.id,
-      to: emailRow.from_email,
-      subject: `Re: ${emailRow.subject}`,
-      supabase,
-    })
-  })()
-
-  if (sent.ok) {
-    await supabase
-      .from("decisions")
-      .update({ status: "sent" })
-      .eq("id", decisionId)
-  } else {
-    // Reply failed to send — capture the partial state (and any refund issued).
+  // Resolve the send target now. resolveSenderInbox() throws if the thread has
+  // no registered inbox — handle it here so a partial state (refund succeeded,
+  // notify failed) is recorded rather than leaving the decision in limbo.
+  let inboxId: string
+  try {
+    inboxId = await resolveSenderInbox(supabase, emailRow.thread_id)
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err)
     await supabase
       .from("decisions")
       .update({ status: "failed" })
@@ -198,14 +175,41 @@ export async function approveDecision(
     await supabase.from("audit_log").insert({
       action: "approve_decision_failed",
       status: "failure",
-      error: sent.error,
+      error,
       payload: {
         decision_id: decisionId,
-        step: "sendReply",
+        step: "resolve_inbox",
         ...(refundId ? { refund_id_already_issued: refundId } : {}),
       },
     })
+    return
   }
+
+  // Send asynchronously via the sends queue, optionally after a per-node delay
+  // so the reply feels hand-written rather than instant. The refund/suppress
+  // actions above already ran — only the email waits. The send worker flips the
+  // decision to sent/failed; until then it stays 'approved' (in-flight).
+  const signature = await getReplySignature(supabase, emailRow.thread_id)
+  const delayMs = randomSendDelayMs(claimed.context)
+  await getSendsQueue().add(
+    "send_reply",
+    {
+      decisionId,
+      emailId: emailRow.id,
+      inboxId,
+      inReplyToMessageId: emailRow.agent_mail_message_id ?? "",
+      replyText: withSignature(replyText, signature),
+      to: emailRow.from_email,
+      subject: `Re: ${emailRow.subject}`,
+    },
+    { delay: delayMs }
+  )
+  await supabase.from("audit_log").insert({
+    action: "reply_scheduled",
+    email_id: emailRow.id,
+    status: "success",
+    payload: { decision_id: decisionId, delay_ms: delayMs },
+  })
 }
 
 export async function rejectDecision(
@@ -240,6 +244,19 @@ function extractOrderId(body: string | null): string | null {
   if (!body) return null
   const m = body.match(ORDER_RE)
   return m ? (m[1] ?? null) : null
+}
+
+// Random delay (ms) for the outbound reply, from the send_delay range (minutes)
+// the draft step stamped on the decision context. Missing / 0 → send now.
+function randomSendDelayMs(context: unknown): number {
+  if (!context || typeof context !== "object") return 0
+  const d = (context as Record<string, unknown>).send_delay
+  if (!d || typeof d !== "object") return 0
+  const { min, max } = d as { min?: unknown; max?: unknown }
+  const lo = Math.max(0, Number(min) || 0)
+  const hi = Math.max(lo, Number(max) || 0)
+  if (hi === 0) return 0
+  return Math.round((lo + Math.random() * (hi - lo)) * 60_000)
 }
 
 // The product adapter that executes a refund for this thread's product.

@@ -21,6 +21,7 @@ import {
   behaviorKeyFor,
 } from "@workspace/actions/step-behavior"
 import { NodePromptForm } from "./node-prompt-form"
+import { NodeDelayForm } from "./node-delay-form"
 import {
   ClassifyConfigForm,
   type CategoryRow,
@@ -332,6 +333,31 @@ export function NodeDetailSheet({
             <ApiRoutingSection nodeType={node.node_type} branches={branches} />
 
             <StepBehaviorSection nodeType={node.node_type} config={node.config} />
+
+            {node.node_type === "send_reply" &&
+            (node.config as { decision?: string }).decision !== "escalate" ? (
+              <div className="flex flex-col gap-2">
+                <h3 className="px-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Send delay
+                </h3>
+                <NodeDelayForm
+                  nodeId={node.id}
+                  min={
+                    Number(
+                      (node.config as Record<string, unknown>)
+                        .send_delay_min_minutes
+                    ) || 0
+                  }
+                  max={
+                    Number(
+                      (node.config as Record<string, unknown>)
+                        .send_delay_max_minutes
+                    ) || 0
+                  }
+                  closeSheet={onClose}
+                />
+              </div>
+            ) : null}
 
             {classifyEditor ? (
               <div className="flex flex-col gap-2">
