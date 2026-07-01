@@ -80,7 +80,7 @@ export const webhooksRoute = new Hono().post("/agent-mail", async (c) => {
       },
       { onConflict: "agent_mail_thread_id" }
     )
-    .select("id")
+    .select("id, resume_node_key, resume_from_decision_id")
     .single()
 
   if (threadErr || !thread) {
@@ -95,6 +95,11 @@ export const webhooksRoute = new Hono().post("/agent-mail", async (c) => {
     return c.json({ error: "db_error" }, 500)
   }
 
+  // A reply lands on a thread whose resume cursor is set (an offer/question we
+  // sent is awaiting an answer). Flag it + link it to that decision so the
+  // worker resumes the flow at the right node instead of restarting.
+  const isReply = Boolean(thread.resume_node_key)
+
   const { data: email, error: emailErr } = await supabase
     .from("emails")
     .insert({
@@ -108,6 +113,8 @@ export const webhooksRoute = new Hono().post("/agent-mail", async (c) => {
       body_html: event.message.html ?? null,
       raw_payload: toJson(event),
       received_at: event.message.timestamp,
+      is_reply: isReply,
+      resumed_from_decision_id: isReply ? thread.resume_from_decision_id : null,
     })
     .select("id")
     .single()

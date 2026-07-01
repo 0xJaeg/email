@@ -12,10 +12,7 @@ vi.mock("@workspace/actions", () => ({ getAdapter: () => ({ key: "mock" }) }))
 import { EnrichStep } from "../enrich.js"
 import type { StepContext, FlowStepConfig } from "../../types.js"
 
-function makeCtx(opts: {
-  needsLookup?: boolean
-  inquiry_type?: "existing_member" | "prospective_buyer"
-}): StepContext {
+function makeCtx(opts: { needsLookup?: boolean }): StepContext {
   const b: Record<string, unknown> = {}
   b.insert = vi.fn(() => b)
   b.then = (r: (v: unknown) => void) => r({ data: null, error: null })
@@ -39,7 +36,6 @@ function makeCtx(opts: {
     },
     classification: {
       classification: "faq",
-      inquiry_type: opts.inquiry_type ?? "prospective_buyer",
       reasoning: "r",
       usage: {
         input_tokens: 1,
@@ -62,33 +58,24 @@ const cfg: FlowStepConfig = {
 }
 
 describe("EnrichStep needsLookup gate", () => {
-  it("looks up when needsLookup=true even if not an existing member", async () => {
+  it("looks up when needsLookup=true", async () => {
     gatherCustomerContext.mockClear()
-    const patch = await EnrichStep.run(
-      makeCtx({ needsLookup: true, inquiry_type: "prospective_buyer" }),
-      cfg
-    )
+    const patch = await EnrichStep.run(makeCtx({ needsLookup: true }), cfg)
     expect(gatherCustomerContext).toHaveBeenCalled()
     expect(patch.enrichment).not.toBeNull()
   })
 
-  it("skips when needsLookup=false even for an existing member", async () => {
+  it("skips when needsLookup=false", async () => {
     gatherCustomerContext.mockClear()
-    const patch = await EnrichStep.run(
-      makeCtx({ needsLookup: false, inquiry_type: "existing_member" }),
-      cfg
-    )
+    const patch = await EnrichStep.run(makeCtx({ needsLookup: false }), cfg)
     expect(gatherCustomerContext).not.toHaveBeenCalled()
     expect(patch.enrichment).toBeNull()
   })
 
-  it("falls back to inquiry_type when needsLookup is undefined", async () => {
+  it("skips when needsLookup is undefined (no implicit gate)", async () => {
     gatherCustomerContext.mockClear()
-    const patch = await EnrichStep.run(
-      makeCtx({ inquiry_type: "existing_member" }),
-      cfg
-    )
-    expect(gatherCustomerContext).toHaveBeenCalled()
-    expect(patch.enrichment).not.toBeNull()
+    const patch = await EnrichStep.run(makeCtx({}), cfg)
+    expect(gatherCustomerContext).not.toHaveBeenCalled()
+    expect(patch.enrichment).toBeNull()
   })
 })

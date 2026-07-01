@@ -10,12 +10,18 @@ import type {
 // stops immediately (e.g. spam). maxHops guards against edge cycles. Every node
 // visited is appended to ctx.path (in order) so the caller can persist the exact
 // executed path for the per-ticket trace.
+//
+// opts.startNodeKey resumes the walk at a specific node (by node_key) instead of
+// the top — used when a customer replies to a prior offer and we jump straight
+// to the on-reply decision node. An unknown key falls back to the start node so
+// a reply is never dropped.
 export async function runGraph(
   graph: FlowGraph,
   registry: Record<string, NodeType>,
-  ctx: StepContext
+  ctx: StepContext,
+  opts?: { startNodeKey?: string }
 ): Promise<StepContext> {
-  let currentId = graph.startId
+  let currentId = resolveStartId(graph, opts?.startNodeKey)
   const maxHops = graph.nodes.size + 1
   let hops = 0
   const path: FlowRunStep[] = []
@@ -44,4 +50,22 @@ export async function runGraph(
   if (hops >= maxHops) console.warn(`[flow] maxHops reached — possible cycle`)
   ctx.path = path
   return ctx
+}
+
+// Resolve the node id to start the walk from. With no key, start at the graph's
+// start node. With a key, find the node with that node_key; if it is missing
+// (e.g. the graph was edited after the offer was sent), warn and fall back to
+// the start node so the reply is still processed rather than dropped.
+function resolveStartId(
+  graph: FlowGraph,
+  startNodeKey?: string
+): string | null {
+  if (!startNodeKey) return graph.startId
+  for (const n of graph.nodes.values()) {
+    if (n.node_key === startNodeKey) return n.id
+  }
+  console.warn(
+    `[flow] resume node_key '${startNodeKey}' not found — starting from the top`
+  )
+  return graph.startId
 }

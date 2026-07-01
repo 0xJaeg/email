@@ -43,11 +43,6 @@ async function classify(
     .join("\n")
   const Result = z.object({
     classification: z.enum(keys),
-    inquiry_type: z
-      .enum(["existing_member", "prospective_buyer"])
-      .describe(
-        "existing_member if they reference a purchase/account they already have; prospective_buyer if they're asking about buying or joining"
-      ),
     reasoning: z
       .string()
       .describe("1-2 sentences explaining the signals that drove this label"),

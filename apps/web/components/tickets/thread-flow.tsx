@@ -104,9 +104,16 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
     return <p className="text-sm text-muted-foreground">{detail.text}</p>
   if (detail.kind === "classification")
     return (
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Classified as</span>
-        <ClassificationBadge value={detail.value} />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Classified as</span>
+          <ClassificationBadge value={detail.value} />
+        </div>
+        {detail.reasoning ? (
+          <p className="max-w-[60ch] border-l-2 border-border pl-3 text-sm text-muted-foreground italic">
+            “{detail.reasoning}”
+          </p>
+        ) : null}
       </div>
     )
   if (detail.kind === "decision")

@@ -2,6 +2,7 @@
 
 import { refundCustomer } from "@workspace/actions/refund-customer"
 import { suppressContact } from "@workspace/actions/suppress-contact"
+import { coachingSignup } from "@workspace/actions/coaching-signup"
 import type { ProposedAction } from "@workspace/actions/types"
 import { getServerSupabase } from "@/lib/supabase/admin"
 import { getActionSupabase } from "@/lib/supabase/server"
@@ -141,7 +142,23 @@ export async function approveDecision(
         supabase,
       })
       if (!refund.ok) {
-        await rewind("issue_refund", refund.error)
+        // Refund attempt failed at the gateway — assign to a human (Ben's
+        // "not successful → assign to human") instead of silently retrying.
+        await supabase
+          .from("decisions")
+          .update({
+            status: "needs_human",
+            approved_at: null,
+            approved_by: null,
+          })
+          .eq("id", decisionId)
+        await supabase.from("audit_log").insert({
+          action: "approve_decision_refund_failed",
+          email_id: emailRow.id,
+          status: "failure",
+          error: refund.error,
+          payload: { decision_id: decisionId, step: "issue_refund" },
+        })
         return
       }
       refundId = refund.refundId
@@ -157,6 +174,17 @@ export async function approveDecision(
         await rewind("suppress_contact", suppressed.error)
         return
       }
+    } else if (action.type === "coaching_signup") {
+      // Save-the-sale: subscribe them to the coaching series. Best-effort — a
+      // failed / not-yet-configured signup must NOT block the retention reply,
+      // so we never rewind here (coachingSignup audits the outcome itself).
+      await coachingSignup({
+        decisionId,
+        emailId: emailRow.id,
+        email: emailRow.from_email,
+        list: action.list,
+        supabase,
+      })
     }
   }
 
@@ -191,6 +219,7 @@ export async function approveDecision(
   // decision to sent/failed; until then it stays 'approved' (in-flight).
   const signature = await getReplySignature(supabase, emailRow.thread_id)
   const delayMs = randomSendDelayMs(claimed.context)
+  const awaitsReplyAt = readAwaitsReplyAt(claimed.context)
   await getSendsQueue().add(
     "send_reply",
     {
@@ -201,6 +230,10 @@ export async function approveDecision(
       replyText: withSignature(replyText, signature),
       to: emailRow.from_email,
       subject: `Re: ${emailRow.subject}`,
+      // When the customer replies to this offer/question, the send worker uses
+      // these to stamp the thread's resume cursor (only after the send lands).
+      awaitsReplyAt,
+      threadId: emailRow.thread_id,
     },
     { delay: delayMs }
   )
@@ -257,6 +290,14 @@ function randomSendDelayMs(context: unknown): number {
   const hi = Math.max(lo, Number(max) || 0)
   if (hi === 0) return 0
   return Math.round((lo + Math.random() * (hi - lo)) * 60_000)
+}
+
+// The resume node_key the draft step stamped on the decision context (the node
+// the customer's reply should resume at). Null when this reply awaits nothing.
+function readAwaitsReplyAt(context: unknown): string | null {
+  if (!context || typeof context !== "object") return null
+  const v = (context as Record<string, unknown>).awaits_reply_at
+  return typeof v === "string" && v ? v : null
 }
 
 // The product adapter that executes a refund for this thread's product.

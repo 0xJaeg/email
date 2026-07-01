@@ -36,7 +36,6 @@ export type StepContext = {
   productFacts?: string
   classification?: {
     classification: string
-    inquiry_type: string
     reasoning: string
     usage: {
       input_tokens: number
@@ -46,8 +45,8 @@ export type StepContext = {
     }
   }
   enrichment?: GatheredContext | null
-  // Set by the order_lookup node; EnrichStep honors it (falls back to the
-  // inquiry_type gate when nothing set it).
+  // Set by the order_lookup / purchase_lookup nodes; EnrichStep only enriches
+  // when this is true (no implicit gate).
   needsLookup?: boolean
   decision?: {
     decision: string
@@ -58,6 +57,20 @@ export type StepContext = {
     sonnetUsage?: RefundDecision["sonnet_usage"]
   }
   decisionId?: string
+  // Present only on a RESUMED run (the customer replied to a prior offer or
+  // question). The processor sets this from the prior decision so an on-reply
+  // reply_branch node can branch on the customer's new message without
+  // re-classifying, and can set ctx.classification from priorDecision.
+  priorDecision?: {
+    decisionId: string
+    decision: string
+    classification: string
+    template_used: string | null
+    refund_request_count: number | null
+    context: Record<string, unknown> | null
+    resumeNodeKey: string
+  }
+  isReply?: boolean
   // The exact path the graph walk took (one entry per node visited), recorded by
   // runGraph and persisted to flow_runs/flow_run_steps for the per-ticket trace.
   path?: FlowRunStep[]

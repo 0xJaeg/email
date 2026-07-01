@@ -47,6 +47,90 @@ function classifyBody(bodyText: string): {
   return { outcome: "failed", detail: err || "error" }
 }
 
+export type MailwizzSubscribeResult = {
+  ok: boolean
+  status: number | null
+  endpoint: string
+  method: "POST"
+  /** PII-light: the email param we sent (shown in the trace). */
+  request: string
+  /** PII-light: the response envelope/error, truncated (shown in the trace). */
+  response: string
+  /** "subscribed" / "http_<status>" / "not_configured" / an error message. */
+  detail: string
+}
+
+// MailWizz add-subscriber: POST the email to a specific list. The coaching list
+// uid comes from the arg or MAILWIZZ_COACHING_LIST_UID; without base URL, api
+// key, AND a list uid this is not_configured (the coaching integration is a
+// pending external dependency — never invent a list). Best-effort, never throws.
+export async function subscribeToList(
+  email: string,
+  listUid?: string
+): Promise<MailwizzSubscribeResult> {
+  const base = (process.env.MAILWIZZ_API_URL ?? "").replace(/\/+$/, "")
+  const apiKey = process.env.MAILWIZZ_API_KEY
+  const list = listUid || process.env.MAILWIZZ_COACHING_LIST_UID || ""
+  const method = "POST" as const
+  const request = `EMAIL=${email}`
+  const endpoint = `${base}/lists/${list || "<list>"}/subscribers`
+
+  if (!base || !apiKey || !list) {
+    return {
+      ok: false,
+      status: null,
+      endpoint,
+      method,
+      request,
+      response: "",
+      detail: "not_configured",
+    }
+  }
+
+  try {
+    const res = await fetch(endpoint, {
+      method,
+      headers: {
+        "X-Api-Key": apiKey,
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ EMAIL: email }).toString(),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    })
+    const response = (await res.text().catch(() => "")).slice(0, 300)
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        endpoint,
+        method,
+        request,
+        response,
+        detail: `http_${res.status}`,
+      }
+    }
+    return {
+      ok: true,
+      status: res.status,
+      endpoint,
+      method,
+      request,
+      response,
+      detail: "subscribed",
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      status: null,
+      endpoint,
+      method,
+      request,
+      response: "",
+      detail: err instanceof Error ? err.message : String(err),
+    }
+  }
+}
+
 export async function unsubscribeFromAllLists(
   email: string
 ): Promise<MailwizzResult> {

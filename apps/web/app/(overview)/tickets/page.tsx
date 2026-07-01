@@ -21,9 +21,13 @@ export default async function TicketsPage({
   const query = params.query ?? ""
   const page = Number(params.page) || 1
   const size = Number(params.size) || 10
-  // Default to the work queue (open); ?status=done|all switch the view.
+  // Default to the work queue (open); ?status=done|all|quarantined switch the view.
   const state: TicketState =
-    params.status === "done" || params.status === "all" ? params.status : "open"
+    params.status === "done" ||
+    params.status === "all" ||
+    params.status === "quarantined"
+      ? params.status
+      : "open"
 
   return (
     <div className="flex flex-col gap-2 md:gap-4">

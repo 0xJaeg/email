@@ -19,7 +19,7 @@ export async function processEmail(job: Job) {
   const { data: emailRow, error: emailErr } = await supabase
     .from("emails")
     .select(
-      "id, thread_id, from_email, to_email, subject, body_text, agent_mail_message_id"
+      "id, thread_id, from_email, to_email, subject, body_text, agent_mail_message_id, is_reply, resumed_from_decision_id"
     )
     .eq("id", emailId)
     .single()
@@ -41,6 +41,14 @@ export async function processEmail(job: Job) {
 
   // Run the per-inbox decision tree (node graph the worker walks).
   const graph = await loadGraph(supabase, routing.inboxId)
+
+  // If this is a reply to a prior offer/question, resume the flow at the node
+  // that offer is awaiting an answer at (instead of restarting at spam_filter).
+  const prior =
+    emailRow.is_reply && emailRow.resumed_from_decision_id
+      ? await loadPriorDecision(supabase, emailRow.resumed_from_decision_id)
+      : null
+
   const ctx: StepContext = {
     email,
     inboxId: routing.inboxId,
@@ -48,8 +56,27 @@ export async function processEmail(job: Job) {
     productFacts,
     supabase,
     anthropic,
+    ...(prior ? { priorDecision: prior, isReply: true } : {}),
   }
-  await runGraph(graph, NODE_REGISTRY, ctx)
+  await runGraph(
+    graph,
+    NODE_REGISTRY,
+    ctx,
+    prior ? { startNodeKey: prior.resumeNodeKey } : undefined
+  )
+
+  // Clear the thread's resume cursor so this same reply isn't re-detected on a
+  // later message (best-effort — the decision is already saved).
+  if (prior && email.thread_id) {
+    await supabase
+      .from("threads")
+      .update({
+        resume_node_key: null,
+        resume_from_decision_id: null,
+        awaiting_reply_since: null,
+      })
+      .eq("id", email.thread_id)
+  }
 
   // Persist the exact executed path (best-effort — the decision is already saved).
   await persistFlowRun(supabase, ctx)
@@ -137,5 +164,38 @@ async function resolveRouting(
       supportConfig: product?.support_config ?? null,
       refundThreshold: product?.refund_threshold ?? null,
     },
+  }
+}
+
+// Load the decision a reply is responding to, plus the node its offer/question
+// is awaiting an answer at (stamped on the decision context as awaits_reply_at).
+// Returns null when there's nothing to resume (no such decision, or it wasn't
+// awaiting a reply) so the caller falls back to a normal fresh run.
+async function loadPriorDecision(
+  supabase: ReturnType<typeof getSupabase>,
+  decisionId: string
+): Promise<StepContext["priorDecision"] | null> {
+  const { data } = await supabase
+    .from("decisions")
+    .select(
+      "id, decision, classification, template_used, refund_request_count, context"
+    )
+    .eq("id", decisionId)
+    .maybeSingle()
+  if (!data) return null
+  const context = (data.context as Record<string, unknown> | null) ?? null
+  const resumeNodeKey =
+    context && typeof context.awaits_reply_at === "string"
+      ? context.awaits_reply_at
+      : null
+  if (!resumeNodeKey) return null
+  return {
+    decisionId: data.id,
+    decision: data.decision ?? "",
+    classification: data.classification ?? "",
+    template_used: data.template_used ?? null,
+    refund_request_count: data.refund_request_count ?? null,
+    context,
+    resumeNodeKey,
   }
 }

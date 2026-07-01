@@ -12,6 +12,9 @@ import { RefundLadderNode } from "./nodes/refund-ladder.js"
 import { SendReplyNode } from "./nodes/send-reply.js"
 import { ApiActionNode } from "./nodes/api-action.js"
 import { UnsubscribeCallNode } from "./nodes/unsubscribe-call.js"
+import { ReplyBranchNode } from "./nodes/reply-branch.js"
+import { RefundDraftNode } from "./nodes/refund-draft.js"
+import { StopNode } from "./nodes/stop.js"
 
 // Maps flow_nodes.node_type to its NodeType implementation.
 export const NODE_REGISTRY: Record<string, NodeType> = {
@@ -28,4 +31,7 @@ export const NODE_REGISTRY: Record<string, NodeType> = {
   [SendReplyNode.type]: SendReplyNode,
   [ApiActionNode.type]: ApiActionNode,
   [UnsubscribeCallNode.type]: UnsubscribeCallNode,
+  [ReplyBranchNode.type]: ReplyBranchNode,
+  [RefundDraftNode.type]: RefundDraftNode,
+  [StopNode.type]: StopNode,
 }

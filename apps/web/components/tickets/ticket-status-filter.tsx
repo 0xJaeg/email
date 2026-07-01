@@ -6,11 +6,17 @@ import { cn } from "@workspace/ui/lib/utils"
 // Open / Done / All filter for the unified tickets table (replaces the separate
 // Approvals + Activity pages). URL-driven like the search bar: sets ?status= and
 // resets ?page= so results start at page 1. Default (no param) = open.
-const OPTIONS = [
+const OPTIONS: { value: string; label: string; title?: string }[] = [
   { value: "open", label: "Open" },
   { value: "done", label: "Done" },
   { value: "all", label: "All" },
-] as const
+  {
+    value: "quarantined",
+    label: "Quarantined",
+    title:
+      "Blocked as likely spam — no reply is sent. Review here to catch anything wrongly quarantined.",
+  },
+]
 
 export function TicketStatusFilter() {
   const searchParams = useSearchParams()
@@ -33,6 +39,7 @@ export function TicketStatusFilter() {
         <button
           key={o.value}
           type="button"
+          title={o.title}
           onClick={() => select(o.value)}
           className={cn(
             "rounded px-3 py-1 text-sm transition-colors",

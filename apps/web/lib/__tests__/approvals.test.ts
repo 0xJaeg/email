@@ -10,9 +10,13 @@ function makeServerSupabase(
     product?: { adapter_key: string }
   }
 ) {
+  const updates: Record<string, unknown>[] = []
   const make = (table: string) => {
     const b: Record<string, unknown> = {}
-    b.update = vi.fn(() => b)
+    b.update = vi.fn((p: Record<string, unknown>) => {
+      updates.push(p)
+      return b
+    })
     b.insert = vi.fn(() => b)
     b.select = vi.fn(() => b)
     b.eq = vi.fn(() => b)
@@ -34,7 +38,7 @@ function makeServerSupabase(
       resolve({ data: null, error: null })
     return b
   }
-  return { from: vi.fn((t: string) => make(t)) }
+  return { from: vi.fn((t: string) => make(t)), updates }
 }
 
 let serverSupabase: ReturnType<typeof makeServerSupabase>
@@ -63,6 +67,10 @@ const mockSuppressContact = vi.fn()
 vi.mock("@workspace/actions/suppress-contact", () => ({
   suppressContact: (...a: unknown[]) => mockSuppressContact(...a),
 }))
+const mockCoachingSignup = vi.fn()
+vi.mock("@workspace/actions/coaching-signup", () => ({
+  coachingSignup: (...a: unknown[]) => mockCoachingSignup(...a),
+}))
 import { approveDecision, rejectDecision } from "../approvals.js"
 
 const emails = {
@@ -82,6 +90,9 @@ describe("approveDecision", () => {
       refundId: "rf_1",
     })
     mockSuppressContact.mockReset().mockResolvedValue({ ok: true })
+    mockCoachingSignup
+      .mockReset()
+      .mockResolvedValue({ ok: true, detail: "subscribed" })
   })
 
   it("for a reply decision, enqueues the reply and does NOT issue a refund", async () => {
@@ -232,9 +243,69 @@ describe("approveDecision", () => {
     expect(mockRefundCustomer).not.toHaveBeenCalled()
     expect(mockEnqueue).not.toHaveBeenCalled()
   })
+
+  it("assigns the ticket to a human (needs_human) and does not send when the refund fails", async () => {
+    mockRefundCustomer.mockResolvedValueOnce({
+      ok: false,
+      error: "gateway down",
+    })
+    serverSupabase = makeServerSupabase({
+      id: "dec-rf",
+      proposed_actions: [{ type: "issue_refund" }],
+      draft_reply_text: "…",
+      emails,
+    })
+    await approveDecision("dec-rf")
+    expect(serverSupabase.updates).toContainEqual(
+      expect.objectContaining({ status: "needs_human" })
+    )
+    expect(mockEnqueue).not.toHaveBeenCalled()
+  })
+
+  it("runs coaching_signup before the reply and still sends even if it fails", async () => {
+    mockCoachingSignup.mockResolvedValueOnce({
+      ok: false,
+      detail: "not_configured",
+    })
+    serverSupabase = makeServerSupabase({
+      id: "dec-cs",
+      decision: "send_faq_reply",
+      proposed_actions: [{ type: "coaching_signup" }],
+      draft_reply_text: "You're added to the coaching series…",
+      emails,
+    })
+    await approveDecision("dec-cs")
+    expect(mockCoachingSignup).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "jordan@example.com" })
+    )
+    expect(mockEnqueue).toHaveBeenCalledTimes(1)
+  })
+
+  it("forwards the resume cursor (awaits_reply_at + threadId) to the send job", async () => {
+    serverSupabase = makeServerSupabase({
+      id: "dec-cur",
+      decision: "send_faq_reply",
+      context: { awaits_reply_at: "await_save_no_problem_reply" },
+      draft_reply_text: "…",
+      emails,
+    })
+    await approveDecision("dec-cur")
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      "send_reply",
+      expect.objectContaining({
+        awaitsReplyAt: "await_save_no_problem_reply",
+        threadId: "th-1",
+      }),
+      expect.anything()
+    )
+  })
 })
 
 describe("rejectDecision", () => {
+  beforeEach(() => {
+    mockEnqueue.mockReset()
+    mockRefundCustomer.mockReset()
+  })
   it("claims and rejects without enqueuing or refunding", async () => {
     serverSupabase = makeServerSupabase({ id: "dec-4" })
     await rejectDecision("dec-4", "not warranted")

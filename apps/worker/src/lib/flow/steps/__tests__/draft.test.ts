@@ -49,7 +49,6 @@ function makeCtx(decision = "send_faq_reply"): StepContext {
     product: null,
     classification: {
       classification: "faq",
-      inquiry_type: "prospective_buyer",
       reasoning: "r",
       usage: {
         input_tokens: 1,
@@ -104,5 +103,29 @@ describe("DraftStep reply instructions", () => {
       { type: "suppress_contact", reason: "unsubscribe" },
     ])
     expect(generateReply).toHaveBeenCalled()
+  })
+
+  it("merges node.config.proposed_actions into the drafted decision", async () => {
+    generateReply.mockClear()
+    await DraftStep.run(makeCtx("send_faq_reply"), {
+      step_key: "draft",
+      position: 4,
+      ai_prompt: "offer",
+      condition: { proposed_actions: [{ type: "coaching_signup" }] },
+    })
+    expect(decisionInserts[0]?.proposed_actions).toEqual([
+      { type: "coaching_signup" },
+    ])
+  })
+
+  it("stamps awaits_reply_at from the node config onto the decision context", async () => {
+    await DraftStep.run(makeCtx("send_faq_reply"), {
+      step_key: "draft",
+      position: 4,
+      ai_prompt: "offer",
+      condition: { awaits_reply_at: "await_save_no_problem_reply" },
+    })
+    const context = decisionInserts[0]?.context as Record<string, unknown>
+    expect(context.awaits_reply_at).toBe("await_save_no_problem_reply")
   })
 })
