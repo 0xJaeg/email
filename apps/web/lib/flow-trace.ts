@@ -12,7 +12,7 @@ export type FlowStepStatus = "done" | "info" | "failed" | "pending"
 
 export type FlowDetail =
   | { kind: "text"; text: string }
-  | { kind: "classification"; value: string | null }
+  | { kind: "classification"; value: string | null; reasoning?: string | null }
   | {
       kind: "order-access"
       orders: DecisionOrder[]
@@ -164,6 +164,7 @@ function nodeToStep(
         detail: {
           kind: "classification",
           value: s.outcome ?? decision.classification,
+          reasoning: decision.context?.classification_reasoning ?? null,
         },
       }
     case "order_lookup":
@@ -321,7 +322,11 @@ function buildInferredTrace(
       key: "classify",
       title: "Email classified",
       status: "done",
-      detail: { kind: "classification", value: decision.classification },
+      detail: {
+        kind: "classification",
+        value: decision.classification,
+        reasoning: decision.context?.classification_reasoning ?? null,
+      },
     })
   }
 

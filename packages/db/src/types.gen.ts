@@ -222,8 +222,10 @@ export type Database = {
           direction: string
           from_email: string
           id: string
+          is_reply: boolean
           raw_payload: Json | null
           received_at: string
+          resumed_from_decision_id: string | null
           subject: string
           thread_id: string
           to_email: string
@@ -235,8 +237,10 @@ export type Database = {
           direction: string
           from_email: string
           id?: string
+          is_reply?: boolean
           raw_payload?: Json | null
           received_at?: string
+          resumed_from_decision_id?: string | null
           subject: string
           thread_id: string
           to_email: string
@@ -248,8 +252,10 @@ export type Database = {
           direction?: string
           from_email?: string
           id?: string
+          is_reply?: boolean
           raw_payload?: Json | null
           received_at?: string
+          resumed_from_decision_id?: string | null
           subject?: string
           thread_id?: string
           to_email?: string
@@ -781,10 +787,13 @@ export type Database = {
       threads: {
         Row: {
           agent_mail_thread_id: string | null
+          awaiting_reply_since: string | null
           created_at: string
           id: string
           inbox_id: string | null
           product_id: string | null
+          resume_from_decision_id: string | null
+          resume_node_key: string | null
           sender_email: string
           status: string
           subject: string
@@ -792,10 +801,13 @@ export type Database = {
         }
         Insert: {
           agent_mail_thread_id?: string | null
+          awaiting_reply_since?: string | null
           created_at?: string
           id?: string
           inbox_id?: string | null
           product_id?: string | null
+          resume_from_decision_id?: string | null
+          resume_node_key?: string | null
           sender_email: string
           status?: string
           subject: string
@@ -803,10 +815,13 @@ export type Database = {
         }
         Update: {
           agent_mail_thread_id?: string | null
+          awaiting_reply_since?: string | null
           created_at?: string
           id?: string
           inbox_id?: string | null
           product_id?: string | null
+          resume_from_decision_id?: string | null
+          resume_node_key?: string | null
           sender_email?: string
           status?: string
           subject?: string

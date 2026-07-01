@@ -35,7 +35,7 @@ export const DraftStep: Step = {
     // Unsubscribe proposes the opt-out (added to the suppression list + pushed to
     // the external email system on approval, via suppressContact) and drafts the
     // confirmation — so we only tell them they're removed once approval runs it.
-    const proposedActions: ProposedAction[] = isRefund
+    const baseActions: ProposedAction[] = isRefund
       ? [
           { type: "issue_refund" },
           {
@@ -49,16 +49,27 @@ export const DraftStep: Step = {
       : isUnsubscribe
         ? [{ type: "suppress_contact", reason: "unsubscribe" }]
         : []
+    // Nodes can also declare proposed actions in their config (e.g. the
+    // save-the-sale offer proposes coaching_signup) — merge those in.
+    const proposedActions: ProposedAction[] = [
+      ...baseActions,
+      ...readProposedActions(config.condition),
+    ]
 
     // Carry this node's send-delay range (if set) onto the decision so approval
     // can schedule the reply with a human-feeling delay without re-loading the
     // node. config.condition is the node's config (see toStepConfig).
     const sendDelay = readSendDelay(config.condition)
+    // The node this offer/question came from can declare the resume node the
+    // thread will await a reply at (stamped onto the thread cursor at send time).
+    const awaitsReplyAt = readAwaitsReplyAt(config.condition)
     const context = {
-      ...(enrichment
-        ? { inquiry_type: cls.inquiry_type, ...enrichment.context }
-        : { inquiry_type: cls.inquiry_type }),
+      // The classifier's "why this category" — stored so a mis-classification
+      // can be debugged from the ticket instead of blindly re-tuning prompts.
+      classification_reasoning: cls.reasoning,
+      ...(enrichment ? enrichment.context : {}),
       ...(sendDelay ? { send_delay: sendDelay } : {}),
+      ...(awaitsReplyAt ? { awaits_reply_at: awaitsReplyAt } : {}),
     }
 
     const { data: row, error: decErr } = await supabase
@@ -143,6 +154,28 @@ function readSendDelay(
   const hi = Math.max(lo, max)
   if (lo === 0 && hi === 0) return null
   return { min: lo, max: hi }
+}
+
+// Proposed actions a node declares in its config (merged with the decision's
+// own refund/unsubscribe actions). Only well-formed { type: string } entries.
+function readProposedActions(condition: unknown): ProposedAction[] {
+  if (!condition || typeof condition !== "object") return []
+  const raw = (condition as Record<string, unknown>).proposed_actions
+  if (!Array.isArray(raw)) return []
+  return raw.filter(
+    (a): a is ProposedAction =>
+      !!a &&
+      typeof a === "object" &&
+      typeof (a as { type?: unknown }).type === "string"
+  )
+}
+
+// The node_key the thread should resume at when the customer replies to this
+// offer/question. Stamped onto the thread cursor at send time (approvals/send).
+function readAwaitsReplyAt(condition: unknown): string | null {
+  if (!condition || typeof condition !== "object") return null
+  const v = (condition as Record<string, unknown>).awaits_reply_at
+  return typeof v === "string" && v ? v : null
 }
 
 // Generate the reply, queue it for approval, and audit. On failure, mark the

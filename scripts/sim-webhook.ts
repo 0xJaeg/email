@@ -3,20 +3,26 @@
 // Svix verify -> Zod parse -> Supabase persist -> BullMQ enqueue -> worker.
 //
 // Usage:
-//   pnpm sim <scenario> [--sender <email>] [--target <url>]
+//   pnpm sim <scenario> [--sender <email>] [--target <url>] [--thread <id>]
+//
+//   --thread reuses an existing thread id so a scenario lands as a REPLY — used
+//   to drive the save-the-sale resume path (offer -> approve+send -> reply).
 //
 // Scenarios:
-//   refund1    Alice asks for a refund        -> classify=refund_request, decide=send_offer_1
-//   refund2    Alice's second refund          -> decide=send_offer_2 (run refund1 first)
-//   refund3    Alice's third refund           -> decide=issue_refund  (run refund1, refund2 first)
-//   chargeback Bob threatens chargeback       -> Sonnet fires on Bob's *second* call
-//                                                (run once for setup, then again to trigger Sonnet)
-//   faq        Charlie asks an FAQ            -> decide=send_faq_reply
-//   other      Dave sends a thank-you         -> decide=escalate
+//   refund1        Alice asks for a refund (no reason) -> no_problem -> coaching offer
+//   refund2        Alice's second refund               -> decide=send_offer_2 (run refund1 first)
+//   refund3        Alice's third refund                -> decide=issue_refund (run refund1,2 first)
+//   refund_problem Alice refund WITH a stated problem  -> problem branch (help, then await reply)
+//   reply_decline  "no thanks, still want the refund"  -> resumes: not_accepted -> refund_issue
+//   reply_accept   "sure, I'll try the coaching"       -> resumes: accepted -> do nothing
+//   chargeback     Bob threatens chargeback            -> Sonnet fires on Bob's *second* call
+//   faq            Charlie asks an FAQ                 -> decide=send_faq_reply
+//   other          Dave sends a thank-you             -> decide=escalate
 //
-// To run the chargeback path that triggers Sonnet:
-//   pnpm sim chargeback   # Bob's first refund — hits send_offer_1
-//   pnpm sim chargeback   # Bob's second refund + chargeback regex — Sonnet fires
+// Save-the-sale replay (needs the new refund tree deployed to the worker):
+//   pnpm sim refund1                          # no-reason refund -> coaching offer (note the thread id)
+//   # approve it in /approvals so the send worker stamps the thread's resume cursor
+//   pnpm sim reply_decline --thread thr_sim_… # reply on the same thread -> refund drafted for approval
 
 import { Webhook } from "svix"
 import { randomUUID } from "crypto"
@@ -48,6 +54,21 @@ const SCENARIOS: Record<string, Scenario> = {
     subject: "Refund please — third time asking",
     text: "Please just refund my purchase already. Final ask.",
   },
+  refund_problem: {
+    from: "Alice Sim <alice@sim.local>",
+    subject: "Refund — the export is broken",
+    text: "I want a refund. The video export button does nothing when I click it, so the product doesn't work for me.",
+  },
+  reply_decline: {
+    from: "Alice Sim <alice@sim.local>",
+    subject: "Re: about your refund",
+    text: "No thanks, I'm not interested in the coaching emails. I just want the refund please.",
+  },
+  reply_accept: {
+    from: "Alice Sim <alice@sim.local>",
+    subject: "Re: about your refund",
+    text: "Oh nice, sure — I'll give the coaching series a try before deciding. Thanks!",
+  },
   chargeback: {
     from: "Bob Sim <bob@sim.local>",
     subject: "Refund or I'm filing a chargeback",
@@ -70,6 +91,7 @@ const { positionals, values } = parseArgs({
   options: {
     target: { type: "string", default: "http://localhost:3001" },
     sender: { type: "string" },
+    thread: { type: "string" },
   },
   allowPositionals: true,
 })
@@ -90,7 +112,8 @@ const from = values.sender
 const url = `${values.target}/webhooks/agent-mail`
 
 const messageId = `<sim-${randomUUID()}@sim.local>`
-const threadId = `thr_sim_${randomUUID().slice(0, 12)}`
+// --thread reuses an existing thread so this lands as a reply (resume path).
+const threadId = values.thread ?? `thr_sim_${randomUUID().slice(0, 12)}`
 const now = new Date().toISOString()
 
 const payload = {

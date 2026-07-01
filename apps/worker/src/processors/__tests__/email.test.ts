@@ -23,9 +23,9 @@ let mockAdapter: {
 }
 
 // The default node tree loadGraph() returns in tests: classify -> enrich ->
-// decide -> draft (the 4-step pipeline these tests exercise — no spam_filter /
-// lookup_gate, so enrich uses the inquiry_type fallback, as before).
-const NODES = [
+// decide -> draft. With inquiry_type gone this base pipeline does NOT enrich
+// (nothing sets needsLookup); the enrichment test swaps in LOOKUP_NODES.
+const DEFAULT_NODES = [
   {
     id: "n_classify",
     node_key: "classify",
@@ -63,7 +63,7 @@ const NODES = [
     is_start: false,
   },
 ]
-const EDGES = [
+const DEFAULT_EDGES = [
   {
     from_node_id: "n_classify",
     to_node_id: "n_enrich",
@@ -83,6 +83,25 @@ const EDGES = [
     position: 0,
   },
 ]
+
+// A pipeline that enriches via an order_lookup node (as the live tree does):
+// order_lookup sets needsLookup + delegates to EnrichStep, then routes onward.
+const LOOKUP_NODES = [
+  { id: "n_classify", node_key: "classify", node_type: "classify", ai_prompt: null, model: null, config: {}, is_start: true },
+  { id: "n_lookup", node_key: "order_lookup", node_type: "order_lookup", ai_prompt: null, model: null, config: {}, is_start: false },
+  { id: "n_decide", node_key: "decide", node_type: "decide", ai_prompt: null, model: null, config: {}, is_start: false },
+  { id: "n_draft", node_key: "draft", node_type: "draft", ai_prompt: null, model: null, config: {}, is_start: false },
+]
+const LOOKUP_EDGES = [
+  { from_node_id: "n_classify", to_node_id: "n_lookup", outcome: "default", position: 0 },
+  { from_node_id: "n_lookup", to_node_id: "n_decide", outcome: "found", position: 0 },
+  { from_node_id: "n_lookup", to_node_id: "n_decide", outcome: "not_found", position: 1 },
+  { from_node_id: "n_decide", to_node_id: "n_draft", outcome: "default", position: 0 },
+]
+
+// The active tree the mock serves; reset in beforeEach, overridden per-test.
+let NODES = DEFAULT_NODES
+let EDGES = DEFAULT_EDGES
 
 // Minimal chainable Supabase stub that records decision updates + audit inserts.
 function makeSupabase() {
@@ -168,6 +187,8 @@ const job = { id: "job-1", data: { emailId: "email-1" } } as unknown as Job
 
 describe("processEmail", () => {
   beforeEach(() => {
+    NODES = DEFAULT_NODES
+    EDGES = DEFAULT_EDGES
     store.updates.length = 0
     store.audits.length = 0
     store.decisionInserts.length = 0
@@ -236,13 +257,14 @@ describe("processEmail", () => {
     )
   })
 
-  it("for an existing member, gathers context and feeds it to the reply", async () => {
+  it("enriches via an order-lookup node and feeds the context to the reply", async () => {
+    NODES = LOOKUP_NODES
+    EDGES = LOOKUP_EDGES
     productRow = { product_id: "prod-1" }
     productMeta = { adapter_key: "mock" }
     mockParse.mockResolvedValue({
       parsed_output: {
         classification: "faq",
-        inquiry_type: "existing_member",
         reasoning: "existing member asking for help",
       },
       usage: {
@@ -262,13 +284,12 @@ describe("processEmail", () => {
     expect(replyArgs.customerContext).toMatch(/O-1|access/i)
   })
 
-  it("for a prospective buyer, does NOT gather context", async () => {
+  it("does NOT gather context when the flow has no lookup step", async () => {
     productRow = { product_id: "prod-1" }
     productMeta = { adapter_key: "mock" }
     mockParse.mockResolvedValue({
       parsed_output: {
         classification: "faq",
-        inquiry_type: "prospective_buyer",
         reasoning: "asking about joining",
       },
       usage: {

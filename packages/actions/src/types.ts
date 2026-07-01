@@ -105,6 +105,9 @@ export interface ProductAdapter {
 export type ProposedAction =
   | { type: "issue_refund" }
   | { type: "suppress_contact"; reason: string }
+  // Save-the-sale: subscribe the customer to the coaching email series instead
+  // of refunding. `list` is an optional MailWizz list uid (else the env default).
+  | { type: "coaching_signup"; list?: string }
 
 export type SuppressContactArgs = {
   decisionId: string
@@ -116,3 +119,18 @@ export type SuppressContactArgs = {
 }
 
 export type SuppressContactResult = { ok: true } | { ok: false; error: string }
+
+export type CoachingSignupArgs = {
+  decisionId: string
+  /** Links the audit row to the thread so it shows in the ticket's timeline. */
+  emailId: string
+  email: string
+  /** Optional MailWizz list uid; falls back to the env default. */
+  list?: string
+  supabase: ServerClient
+}
+
+// Best-effort: a failed/not-configured signup must NOT block the retention
+// reply (the caller sends it anyway). `detail` is "subscribed" /
+// "skipped (development)" / "not_configured" / "http_<status>" / an error.
+export type CoachingSignupResult = { ok: boolean; detail: string }

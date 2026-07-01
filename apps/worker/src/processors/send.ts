@@ -14,6 +14,10 @@ type SendJob = {
   replyText: string
   to: string
   subject: string
+  /** Resume node_key to stamp on the thread once this reply actually lands. */
+  awaitsReplyAt?: string | null
+  /** Thread whose resume cursor to stamp. */
+  threadId?: string | null
 }
 
 export async function processSend(job: Job) {
@@ -36,4 +40,18 @@ export async function processSend(job: Job) {
     .from("decisions")
     .update({ status: sent.ok ? "sent" : "failed" })
     .eq("id", d.decisionId)
+
+  // If this reply asked the customer something (an offer/question), stamp the
+  // thread's resume cursor now that it actually went out — so their reply
+  // resumes the flow at that node instead of restarting at the spam filter.
+  if (sent.ok && d.awaitsReplyAt && d.threadId) {
+    await supabase
+      .from("threads")
+      .update({
+        resume_node_key: d.awaitsReplyAt,
+        resume_from_decision_id: d.decisionId,
+        awaiting_reply_since: new Date().toISOString(),
+      })
+      .eq("id", d.threadId)
+  }
 }

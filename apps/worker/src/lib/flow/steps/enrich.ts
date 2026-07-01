@@ -7,13 +7,10 @@ import type { Step } from "../types.js"
 export const EnrichStep: Step = {
   key: "enrich",
   async run(ctx) {
-    const { classification, product, email, supabase } = ctx
-    // Prefer an explicit ctx.needsLookup (set by the order_lookup node); fall
-    // back to the inquiry_type gate when nothing set it.
-    const wantLookup =
-      ctx.needsLookup !== undefined
-        ? ctx.needsLookup
-        : classification?.inquiry_type === "existing_member"
+    const { product, email, supabase } = ctx
+    // Enrich only when a lookup node explicitly asked for it (order_lookup /
+    // purchase_lookup set needsLookup). No implicit gate.
+    const wantLookup = ctx.needsLookup === true
     if (!wantLookup || !product?.adapterKey) {
       return { enrichment: null }
     }

@@ -5,7 +5,7 @@ import { sanitizeSearch } from "@/lib/search"
 // accepts either. Imported as a type only (no secret-key runtime code).
 type DbClient = ServerClient
 
-export type TicketState = "open" | "done" | "all"
+export type TicketState = "open" | "done" | "all" | "quarantined"
 
 export type TicketRow = {
   id: string
@@ -67,7 +67,10 @@ export async function getTickets(
     )
     .order("created_at", { ascending: false })
 
-  if (state !== "all") q = q.eq("state", state)
+  // "quarantined" is a cross-cutting view (the spam-blocked tickets, which the
+  // view otherwise buckets under "done"); everything else filters by state.
+  if (state === "quarantined") q = q.eq("decision", "quarantine_spam")
+  else if (state !== "all") q = q.eq("state", state)
 
   const esc = sanitizeSearch(query)
   if (esc) {
@@ -131,7 +134,8 @@ export type DecisionLookup = {
 export type DecisionContext = {
   orders?: DecisionOrder[]
   access?: DecisionAccess | null
-  inquiry_type?: string
+  /** The classifier's short reason for the category it chose. */
+  classification_reasoning?: string
   lookups?: DecisionLookup[]
 }
 

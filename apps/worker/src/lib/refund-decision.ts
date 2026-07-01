@@ -92,7 +92,7 @@ export async function decideRefund(opts: {
 // when the product has no configured threshold.
 const DEFAULT_REFUND_THRESHOLD = 3
 
-async function countPriorRefunds(
+export async function countPriorRefunds(
   supabase: ServerClient,
   senderAddress: string,
   days = 30

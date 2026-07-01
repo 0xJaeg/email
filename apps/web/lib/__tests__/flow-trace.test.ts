@@ -27,7 +27,7 @@ function decision(overrides: Partial<ThreadDecision> = {}): ThreadDecision {
         },
       ],
       access: { hasAccess: true, details: "Your account is active." },
-      inquiry_type: "existing_member",
+      classification_reasoning: "Login support question, no refund intent.",
     },
     proposedActions: [],
     path: [],
@@ -148,7 +148,7 @@ describe("buildFlowTrace", () => {
 
   it("skips the lookup step when no order was pulled, and marks the gate skipped", () => {
     const steps = buildFlowTrace(
-      decision({ context: { inquiry_type: "pre_sale" } }),
+      decision({ context: {} }),
       sentAudit
     )
     expect(steps.find((s) => s.key === "lookup")).toBeUndefined()
@@ -257,6 +257,7 @@ describe("buildFlowTrace — from the recorded path", () => {
     expect(steps.find((s) => s.title === "Email classified")?.detail).toEqual({
       kind: "classification",
       value: "refund",
+      reasoning: "Login support question, no refund intent.",
     })
   })
 

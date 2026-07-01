@@ -355,3 +355,160 @@ describe("login_access purchase → access → add-user wiring", () => {
     ).toEqual(["classify", "purchase_lookup", "escalate"])
   })
 })
+
+describe("runGraph arbitrary start (resume)", () => {
+  const reg = (calls: string[]): Record<string, NodeType> => ({
+    A: {
+      type: "A",
+      run: async () => {
+        calls.push("A")
+        return { outcome: "go" }
+      },
+    },
+    B: {
+      type: "B",
+      run: async () => {
+        calls.push("B")
+        return { outcome: "go" }
+      },
+    },
+    C: {
+      type: "C",
+      run: async () => {
+        calls.push("C")
+        return { outcome: "done" }
+      },
+    },
+  })
+  const threeNodeGraph = () =>
+    graph(
+      "a",
+      [node("a", "A"), node("b", "B"), node("c", "C")],
+      [
+        ["a", "go", "b"],
+        ["b", "go", "c"],
+      ]
+    )
+
+  it("starts at opts.startNodeKey and walks forward from there", async () => {
+    const calls: string[] = []
+    await runGraph(threeNodeGraph(), reg(calls), {} as StepContext, {
+      startNodeKey: "b",
+    })
+    expect(calls).toEqual(["B", "C"])
+  })
+
+  it("falls back to the start node when the startNodeKey is unknown", async () => {
+    const calls: string[] = []
+    await runGraph(threeNodeGraph(), reg(calls), {} as StepContext, {
+      startNodeKey: "does_not_exist",
+    })
+    expect(calls).toEqual(["A", "B", "C"])
+  })
+
+  it("records only the resumed nodes in ctx.path", async () => {
+    const calls: string[] = []
+    const out = await runGraph(threeNodeGraph(), reg(calls), {} as StepContext, {
+      startNodeKey: "b",
+    })
+    expect(out.path?.map((s) => s.node_key)).toEqual(["b", "c"])
+  })
+})
+
+describe("refund save-the-sale tree wiring", () => {
+  // Mirrors the 20260701000003 migration edges. The offer/help replies are
+  // terminal (they await a customer reply via the resume cursor); the await_*
+  // nodes are resume entry points reached with startNodeKey, not an edge.
+  const NODES = [
+    "refund_problem_gate",
+    "reply_save_no_problem",
+    "reply_help_problem",
+    "await_save_no_problem_reply",
+    "await_help_problem_reply",
+    "refund_issue",
+    "stop_do_nothing",
+    "classify",
+  ]
+  const EDGES: [string, string, string][] = [
+    ["refund_problem_gate", "problem", "reply_help_problem"],
+    ["refund_problem_gate", "no_problem", "reply_save_no_problem"],
+    ["await_save_no_problem_reply", "accepted", "stop_do_nothing"],
+    ["await_save_no_problem_reply", "not_accepted", "refund_issue"],
+    ["await_save_no_problem_reply", "new_topic", "classify"],
+    ["await_help_problem_reply", "complete", "stop_do_nothing"],
+    ["await_help_problem_reply", "wants_refund", "refund_issue"],
+    ["await_help_problem_reply", "general", "reply_help_problem"],
+    ["await_help_problem_reply", "new_topic", "classify"],
+  ]
+  const walk = async (startKey: string, outcomes: Record<string, string>) => {
+    const seen: string[] = []
+    const reg: Record<string, NodeType> = Object.fromEntries(
+      NODES.map((k) => [
+        k,
+        {
+          type: k,
+          run: async () => {
+            seen.push(k)
+            return { outcome: outcomes[k] ?? "done" }
+          },
+        } as NodeType,
+      ])
+    )
+    const g = graph(
+      "refund_problem_gate",
+      NODES.map((k) => node(k, k)),
+      EDGES
+    )
+    await runGraph(
+      g,
+      reg,
+      {} as StepContext,
+      startKey === "refund_problem_gate" ? undefined : { startNodeKey: startKey }
+    )
+    return seen
+  }
+
+  it("no-problem refund → coaching offer (terminal, awaits reply)", async () => {
+    expect(
+      await walk("refund_problem_gate", { refund_problem_gate: "no_problem" })
+    ).toEqual(["refund_problem_gate", "reply_save_no_problem"])
+  })
+
+  it("reply accepts the offer → do nothing (stop)", async () => {
+    expect(
+      await walk("await_save_no_problem_reply", {
+        await_save_no_problem_reply: "accepted",
+      })
+    ).toEqual(["await_save_no_problem_reply", "stop_do_nothing"])
+  })
+
+  it("reply declines the offer → refund_issue", async () => {
+    expect(
+      await walk("await_save_no_problem_reply", {
+        await_save_no_problem_reply: "not_accepted",
+      })
+    ).toEqual(["await_save_no_problem_reply", "refund_issue"])
+  })
+
+  it("problem refund → help (terminal, awaits reply)", async () => {
+    expect(
+      await walk("refund_problem_gate", { refund_problem_gate: "problem" })
+    ).toEqual(["refund_problem_gate", "reply_help_problem"])
+  })
+
+  it("after help, still wants refund → refund_issue", async () => {
+    expect(
+      await walk("await_help_problem_reply", {
+        await_help_problem_reply: "wants_refund",
+      })
+    ).toEqual(["await_help_problem_reply", "refund_issue"])
+  })
+
+  it("after help, a general question loops back to help", async () => {
+    expect(
+      await walk("await_help_problem_reply", {
+        await_help_problem_reply: "general",
+      })
+    ).toEqual(["await_help_problem_reply", "reply_help_problem"])
+  })
+})
