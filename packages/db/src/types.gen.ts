@@ -784,6 +784,60 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          customer_name: string | null
+          email: string
+          event_type: string | null
+          id: string
+          order_id: string
+          platform: string
+          product_id: string | null
+          product_name: string | null
+          purchased_at: string | null
+          raw: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          customer_name?: string | null
+          email: string
+          event_type?: string | null
+          id?: string
+          order_id: string
+          platform: string
+          product_id?: string | null
+          product_name?: string | null
+          purchased_at?: string | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          customer_name?: string | null
+          email?: string
+          event_type?: string | null
+          id?: string
+          order_id?: string
+          platform?: string
+          product_id?: string | null
+          product_name?: string | null
+          purchased_at?: string | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       threads: {
         Row: {
           agent_mail_thread_id: string | null
