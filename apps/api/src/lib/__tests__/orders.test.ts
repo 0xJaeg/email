@@ -102,9 +102,13 @@ describe("verifyDigistore", () => {
   function signedDigistore(pairs: [string, string][]): URLSearchParams {
     const params = new URLSearchParams()
     for (const [k, v] of pairs) params.append(k, v)
-    const keys = [...params.keys()].sort()
+    const keys = [...new Set(params.keys())].sort()
     let base = ""
-    for (const k of keys) base += `${k}=${params.get(k)}${SECRET}`
+    for (const k of keys) {
+      const v = params.get(k) ?? ""
+      if (v === "") continue
+      base += `${k}=${v}${SECRET}`
+    }
     params.append(
       "sha_sign",
       createHash("sha512").update(base).digest("hex").toUpperCase()
@@ -129,6 +133,18 @@ describe("verifyDigistore", () => {
     ])
     p.set("order_id", "D-2")
     expect(verifyDigistore(p, SECRET)).toBe(false)
+  })
+  it("accepts a payload with an empty field (empty values are skipped)", () => {
+    expect(
+      verifyDigistore(
+        signedDigistore([
+          ["email", "a@b.com"],
+          ["coupon", ""],
+          ["order_id", "D-1"],
+        ]),
+        SECRET
+      )
+    ).toBe(true)
   })
 })
 

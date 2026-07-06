@@ -92,23 +92,40 @@ export function parseJvzoo(params: URLSearchParams): OrderInput | null {
 // Digistore24 (application/x-www-form-urlencoded IPN)
 // ---------------------------------------------------------------------------
 
-// Digistore24 sha_sign verification.
-// CONFIRM AT GO-LIVE: this implements the standard "sorted params + passphrase,
-// SHA-512, uppercase" scheme, but the exact concatenation must be verified
-// against Digistore's current IPN docs + the dashboard passphrase before trusting
-// it in production. It is isolated here so it's a one-function fix if the format
-// differs.
+// Digistore24 sha_sign verification. Matches their reference sha_sign.php in its
+// default mode (the mode their server signs IPNs with): drop sha_sign, sort the
+// remaining keys as-is (case-sensitive), SKIP any empty-valued field, concat
+// `key=value<passphrase>` per field, SHA-512, uppercase hex. The empty-value skip
+// is the load-bearing detail — an IPN carries blank fields, and including them
+// would never match Digistore's signature.
+//
+// Scalar fields only (Digistore's order fields are scalar). If a signature ever
+// fails, the mismatch is logged with the field names (no values, no passphrase)
+// so it can be diagnosed against a real IPN — e.g. array fields or their
+// alternate uppercase-key mode.
 export function verifyDigistore(
   params: URLSearchParams,
   passphrase: string
 ): boolean {
-  const sig = params.get("sha_sign")
+  const sig = params.get("sha_sign") ?? params.get("SHASIGN")
   if (!sig) return false
-  const keys = [...params.keys()].filter((k) => k !== "sha_sign").sort()
+  const keys = [...new Set(params.keys())]
+    .filter((k) => k !== "sha_sign" && k !== "SHASIGN")
+    .sort()
   let base = ""
-  for (const k of keys) base += `${k}=${params.get(k) ?? ""}${passphrase}`
+  const signed: string[] = []
+  for (const k of keys) {
+    const value = params.get(k) ?? ""
+    if (value === "") continue // Digistore omits empty-valued fields from the hash
+    base += `${k}=${value}${passphrase}`
+    signed.push(k)
+  }
   const calc = createHash("sha512").update(base).digest("hex").toUpperCase()
-  return calc === sig.toUpperCase()
+  if (calc === sig.toUpperCase()) return true
+  console.error(
+    `[webhook] digistore sha_sign mismatch; signed fields=[${signed.join(",")}]`
+  )
+  return false
 }
 
 export function digistoreStatus(event: string): OrderStatus | null {
