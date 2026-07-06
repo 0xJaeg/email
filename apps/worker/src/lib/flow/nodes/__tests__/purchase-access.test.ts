@@ -42,92 +42,67 @@ const ORDER = {
   purchasedAt: "2026-05-01",
 }
 
-const stub = () => ({ found: false, orders: [], configured: false })
-const empty = () => ({ found: false, orders: [] })
-const withOrder = () => ({ found: true, orders: [ORDER] })
-
-function purchaseCtx() {
-  return {
-    email: { from_email: "jane@example.com" },
-    enrichment: null,
-  } as unknown as StepContext
-}
-
 beforeEach(() => {
   for (const k of Object.keys(adapters)) delete adapters[k]
 })
 
-describe("purchase_lookup node", () => {
-  it("escalates (failed) when every platform is an unconfigured stub", async () => {
-    adapters.clickbank = { key: "clickbank", lookupOrder: async () => stub() }
-    adapters.jvzoo = { key: "jvzoo", lookupOrder: async () => stub() }
-    adapters.digistore = { key: "digistore", lookupOrder: async () => stub() }
-    const r = await PurchaseLookupNode.run(purchaseCtx(), NODE)
-    expect(r.outcome).toBe("failed")
-    expect(r.enrichment?.context.orders).toEqual([])
-    const lookups = r.enrichment?.context.lookups ?? []
-    expect(lookups).toHaveLength(3)
-    expect(lookups.every((l) => l.ok === false)).toBe(true)
-    expect(lookups[0]?.summary).toMatch(/not configured/)
-  })
+describe("purchase_lookup node (orders DB)", () => {
+  const ORDER_ROW = {
+    order_id: "O-1",
+    product_name: "Mobile Profits",
+    product_id: "mp",
+    amount: 97,
+    currency: "USD",
+    purchased_at: "2026-05-01",
+  }
+  // ctx whose supabase.from("orders").select().eq().eq() resolves to `result`.
+  function ordersCtx(result: { data: unknown[] | null; error: unknown }) {
+    const q: Record<string, unknown> = {}
+    q.select = () => q
+    q.eq = () => q
+    q.then = (resolve: (v: unknown) => void) => resolve(result)
+    return {
+      email: { from_email: "Jane <JANE@example.com>" },
+      enrichment: null,
+      supabase: { from: () => q },
+    } as unknown as StepContext
+  }
 
-  it("records lookups in a fixed platform order regardless of resolution", async () => {
-    adapters.clickbank = { key: "clickbank", lookupOrder: async () => stub() }
-    adapters.jvzoo = { key: "jvzoo", lookupOrder: async () => stub() }
-    adapters.digistore = { key: "digistore", lookupOrder: async () => stub() }
-    const r = await PurchaseLookupNode.run(purchaseCtx(), NODE)
-    expect((r.enrichment?.context.lookups ?? []).map((l) => l.adapter)).toEqual(
-      ["clickbank", "jvzoo", "digistore"]
+  it("found — maps active orders into purchase-only context", async () => {
+    const r = await PurchaseLookupNode.run(
+      ordersCtx({ data: [ORDER_ROW], error: null }),
+      NODE
     )
-  })
-
-  it("emits 'found' (purchase-only context) when a platform returns an order", async () => {
-    adapters.clickbank = {
-      key: "clickbank",
-      lookupOrder: async () => withOrder(),
-    }
-    adapters.jvzoo = { key: "jvzoo", lookupOrder: async () => stub() }
-    adapters.digistore = { key: "digistore", lookupOrder: async () => stub() }
-    const r = await PurchaseLookupNode.run(purchaseCtx(), NODE)
     expect(r.outcome).toBe("found")
     expect(r.enrichment?.context.orders).toEqual([ORDER])
     expect(r.enrichment?.customerContext).toContain("Purchase:")
     expect(r.enrichment?.customerContext).not.toContain("Account access")
+    expect((r.enrichment?.context.lookups ?? []).at(-1)).toMatchObject({
+      adapter: "orders_db",
+      operation: "order_lookup",
+      ok: true,
+    })
   })
 
-  it("emits 'not_found' when platforms answer cleanly with no purchase", async () => {
-    adapters.clickbank = { key: "clickbank", lookupOrder: async () => empty() }
-    adapters.jvzoo = { key: "jvzoo", lookupOrder: async () => empty() }
-    adapters.digistore = { key: "digistore", lookupOrder: async () => empty() }
-    const r = await PurchaseLookupNode.run(purchaseCtx(), NODE)
+  it("not_found — clean query, no active order", async () => {
+    const r = await PurchaseLookupNode.run(
+      ordersCtx({ data: [], error: null }),
+      NODE
+    )
     expect(r.outcome).toBe("not_found")
+    expect(r.enrichment?.context.orders).toEqual([])
   })
 
-  it("a single clean answer beats throwing/unconfigured peers → not_found", async () => {
-    adapters.clickbank = {
-      key: "clickbank",
-      lookupOrder: async () => {
-        throw new Error("ClickBank 500")
-      },
-    }
-    adapters.jvzoo = { key: "jvzoo", lookupOrder: async () => empty() }
-    adapters.digistore = { key: "digistore", lookupOrder: async () => stub() }
-    const r = await PurchaseLookupNode.run(purchaseCtx(), NODE)
-    expect(r.outcome).toBe("not_found")
-  })
-
-  it("escalates (failed) when every platform throws (e.g. all endpoints down)", async () => {
-    const down = {
-      lookupOrder: async () => {
-        throw new Error("down")
-      },
-    }
-    adapters.clickbank = { key: "clickbank", ...down }
-    adapters.jvzoo = { key: "jvzoo", ...down }
-    adapters.digistore = { key: "digistore", ...down }
-    const r = await PurchaseLookupNode.run(purchaseCtx(), NODE)
+  it("failed — the orders query errored (never claims 'no purchase')", async () => {
+    const r = await PurchaseLookupNode.run(
+      ordersCtx({ data: null, error: { message: "db down" } }),
+      NODE
+    )
     expect(r.outcome).toBe("failed")
-    expect((r.enrichment?.context.lookups ?? []).every((l) => !l.ok)).toBe(true)
+    expect((r.enrichment?.context.lookups ?? []).at(-1)).toMatchObject({
+      adapter: "orders_db",
+      ok: false,
+    })
   })
 })
 
