@@ -35,7 +35,7 @@ export function okLookup(
   adapter: string,
   operation: LookupRecord["operation"],
   summary: string,
-  http?: HttpCallInfo
+  http?: Partial<HttpCallInfo>
 ): LookupRecord {
   return { adapter, operation, ok: true, summary, ...(http ?? {}) }
 }
@@ -43,13 +43,15 @@ export function okLookup(
 export function errLookup(
   adapter: string,
   operation: LookupRecord["operation"],
-  err: unknown
+  err: unknown,
+  http?: Partial<HttpCallInfo>
 ): LookupRecord {
   return {
     adapter,
     operation,
     ok: false,
     summary: err instanceof Error ? err.message : String(err),
+    ...(http ?? {}),
   }
 }
 

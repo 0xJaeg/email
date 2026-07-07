@@ -23,6 +23,9 @@ export const PurchaseLookupNode: NodeType = {
   type: "purchase_lookup",
   async run(ctx) {
     const email = normalizeEmailAddress(ctx.email.from_email)
+    // Shown in the trace as the lookup's "request" so an operator can verify
+    // exactly what we queried — and tell a real "no order" from a failed lookup.
+    const query = `orders: email = ${email}, status = active`
 
     let orders: Order[]
     try {
@@ -32,7 +35,7 @@ export const PurchaseLookupNode: NodeType = {
         ctx,
         "failed",
         [],
-        errLookup("orders_db", "order_lookup", err)
+        errLookup("orders_db", "order_lookup", err, { request: query })
       )
     }
 
@@ -45,7 +48,8 @@ export const PurchaseLookupNode: NodeType = {
         "order_lookup",
         orders.length > 0
           ? `${orders.length} active order(s) for this email`
-          : "no active order for this email"
+          : "no active order for this email",
+        { request: query, response: `${orders.length} row(s)` }
       )
     )
   },
