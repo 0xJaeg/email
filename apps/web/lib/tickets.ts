@@ -136,6 +136,8 @@ export type DecisionContext = {
   access?: DecisionAccess | null
   /** The classifier's short reason for the category it chose. */
   classification_reasoning?: string
+  /** reply_branch "why" keyed by node_key — the reason each gate/branch chose its path. */
+  branch_reasons?: Record<string, string>
   lookups?: DecisionLookup[]
 }
 

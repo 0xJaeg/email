@@ -125,6 +125,22 @@ function StepDetail({ detail }: { detail: FlowStep["detail"] }) {
             “{detail.reasoning}”
           </p>
         ) : null}
+        {detail.snippet ? (
+          <p className="text-sm text-muted-foreground">{detail.snippet}</p>
+        ) : null}
+      </div>
+    )
+  if (detail.kind === "reason")
+    return (
+      <div className="flex flex-col gap-2">
+        {detail.headline ? (
+          <p className="text-sm text-muted-foreground">{detail.headline}</p>
+        ) : null}
+        {detail.reasoning ? (
+          <p className="max-w-[60ch] border-l-2 border-border pl-3 text-sm text-muted-foreground italic">
+            “{detail.reasoning}”
+          </p>
+        ) : null}
       </div>
     )
   if (detail.kind === "order-access")

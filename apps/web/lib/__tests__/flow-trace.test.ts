@@ -343,3 +343,140 @@ describe("buildFlowTrace — from the recorded path", () => {
     ).toMatchObject({ kind: "decision", value: "send_faq_reply" })
   })
 })
+
+describe("buildFlowTrace — save-the-sale branch nodes + reasons", () => {
+  const step = (
+    seq: number,
+    nodeType: string,
+    outcome: string | null,
+    nodeKey = nodeType
+  ) => ({ seq, nodeKey, nodeType, outcome })
+
+  it("renders a reply_branch gate with the chosen path + its reason", () => {
+    const steps = buildFlowTrace(
+      decision({
+        classification: "refund",
+        decision: "send_faq_reply",
+        draftReplyText: "You have been added to our free coaching series.",
+        context: {
+          orders: [
+            {
+              orderId: "O-1",
+              amount: 97,
+              currency: "USD",
+              productName: "P",
+              purchasedAt: "2026-05-01",
+            },
+          ],
+          branch_reasons: {
+            refund_problem_gate:
+              "No specific product issue named, just a request for money back.",
+          },
+        },
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "refund"),
+          step(2, "purchase_lookup", "found", "order_lookup_refund"),
+          step(3, "reply_branch", "no_problem", "refund_problem_gate"),
+          step(4, "send_reply", "done", "reply_save_no_problem"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(
+      steps.find((s) => s.title === "Checked for a specific problem")?.detail
+    ).toEqual({
+      kind: "reason",
+      headline: "Chose: No problem",
+      reasoning:
+        "No specific product issue named, just a request for money back.",
+    })
+    // The reply after a branch shows just the draft, not a duplicate decision.
+    expect(steps.find((s) => s.title === "Drafted reply")?.detail).toEqual({
+      kind: "text",
+      text: "You have been added to our free coaching series.",
+    })
+  })
+
+  it("renders refund_draft with the decision + draft and no repeated reasoning", () => {
+    const steps = buildFlowTrace(
+      decision({
+        classification: "refund",
+        decision: "issue_refund",
+        draftReplyText: "We are processing your refund now.",
+        context: {
+          branch_reasons: {
+            await_save_no_problem_reply:
+              "They declined the offer and still want the refund.",
+          },
+        },
+        path: [
+          step(0, "reply_branch", "not_accepted", "await_save_no_problem_reply"),
+          step(1, "refund_draft", "done", "refund_issue"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(
+      steps.find((s) => s.title === "Read their reply to the offer")?.detail
+    ).toEqual({
+      kind: "reason",
+      headline: "Chose: Not accepted",
+      reasoning: "They declined the offer and still want the refund.",
+    })
+    expect(
+      steps.find((s) => s.title === "Drafted refund reply")?.detail
+    ).toEqual({
+      kind: "decision",
+      value: "issue_refund",
+      reasoning: null,
+      snippet: "We are processing your refund now.",
+    })
+  })
+
+  it("renders a stop node as a clean close", () => {
+    const steps = buildFlowTrace(
+      decision({
+        decision: "do_nothing",
+        path: [
+          step(0, "reply_branch", "accepted", "await_save_no_problem_reply"),
+          step(1, "stop", "done", "stop_do_nothing"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(
+      steps.find((s) => s.title === "Closed — nothing to send")?.detail
+    ).toEqual({
+      kind: "reason",
+      headline:
+        "Customer accepted the offer or the issue was resolved, so no reply or refund was needed.",
+    })
+  })
+
+  it("a plain FAQ reply shows the draft, not the classifier's reasoning again", () => {
+    const steps = buildFlowTrace(
+      decision({
+        classification: "login_access",
+        decision: "send_faq_reply",
+        llmReasoning: "Login support question, no refund intent.",
+        draftReplyText: "Here is how to reset your login.",
+        context: {
+          classification_reasoning: "Login support question, no refund intent.",
+        },
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "login_access"),
+          step(2, "send_reply", "done", "reply_login"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(steps.find((s) => s.title === "Drafted reply")?.detail).toEqual({
+      kind: "decision",
+      value: "send_faq_reply",
+      reasoning: null,
+      snippet: "Here is how to reset your login.",
+    })
+  })
+})

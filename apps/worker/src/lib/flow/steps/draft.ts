@@ -70,6 +70,10 @@ export const DraftStep: Step = {
       ...(enrichment ? enrichment.context : {}),
       ...(sendDelay ? { send_delay: sendDelay } : {}),
       ...(awaitsReplyAt ? { awaits_reply_at: awaitsReplyAt } : {}),
+      // reply_branch "why" per node, so the trace can explain each gate/branch.
+      ...(ctx.branchReasons && Object.keys(ctx.branchReasons).length > 0
+        ? { branch_reasons: ctx.branchReasons }
+        : {}),
     }
 
     const { data: row, error: decErr } = await supabase
