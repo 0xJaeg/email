@@ -21,13 +21,23 @@ export default async function TicketsPage({
   const query = params.query ?? ""
   const page = Number(params.page) || 1
   const size = Number(params.size) || 10
-  // Default to the work queue (open); ?status=done|all|quarantined switch the view.
-  const state: TicketState =
-    params.status === "done" ||
-    params.status === "all" ||
-    params.status === "quarantined"
-      ? params.status
-      : "open"
+  // Default to the work queue (open). Other ?status= values switch the view
+  // (done/all/quarantined) or filter by lookup outcome (found/not_found/failed)
+  // or escalation (escalated).
+  const KNOWN_STATES: TicketState[] = [
+    "done",
+    "all",
+    "quarantined",
+    "found",
+    "not_found",
+    "failed",
+    "escalated",
+  ]
+  const state: TicketState = (KNOWN_STATES as string[]).includes(
+    params.status ?? ""
+  )
+    ? (params.status as TicketState)
+    : "open"
 
   return (
     <div className="flex flex-col gap-2 md:gap-4">

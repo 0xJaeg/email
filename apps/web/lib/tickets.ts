@@ -5,7 +5,17 @@ import { sanitizeSearch } from "@/lib/search"
 // accepts either. Imported as a type only (no secret-key runtime code).
 type DbClient = ServerClient
 
-export type TicketState = "open" | "done" | "all" | "quarantined"
+export type TicketState =
+  | "open"
+  | "done"
+  | "all"
+  | "quarantined"
+  // Lookup-outcome filters (cross-cutting) — from the view's `lookup_outcome`.
+  | "found"
+  | "not_found"
+  | "failed"
+  // Routed to a human.
+  | "escalated"
 
 export type TicketRow = {
   id: string
@@ -67,9 +77,12 @@ export async function getTickets(
     )
     .order("created_at", { ascending: false })
 
-  // "quarantined" is a cross-cutting view (the spam-blocked tickets, which the
-  // view otherwise buckets under "done"); everything else filters by state.
+  // Cross-cutting filters (spam / escalated / lookup outcome) sit alongside the
+  // open/done/all state filter; everything not matched below filters by state.
   if (state === "quarantined") q = q.eq("decision", "quarantine_spam")
+  else if (state === "escalated") q = q.eq("decision_status", "needs_human")
+  else if (state === "found" || state === "not_found" || state === "failed")
+    q = q.eq("lookup_outcome", state)
   else if (state !== "all") q = q.eq("state", state)
 
   const esc = sanitizeSearch(query)
