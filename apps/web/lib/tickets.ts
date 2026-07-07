@@ -243,7 +243,7 @@ export async function getThreadDetail(
   const { data, error } = await client
     .from("threads")
     .select(
-      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, draft_reply_text, approved_at, approved_by, created_at, context, proposed_actions, flow_runs(created_at, flow_run_steps(seq, node_key, node_type, outcome))), audit_log(id, action, status, error, created_at))"
+      "id, sender_email, subject, status, created_at, emails(id, direction, from_email, to_email, subject, body_text, received_at, decisions!decisions_email_id_fkey(id, classification, decision, refund_request_count, template_used, llm_model, llm_reasoning, status, draft_reply_text, approved_at, approved_by, created_at, context, proposed_actions, flow_runs(created_at, flow_run_steps(seq, node_key, node_type, outcome))), audit_log(id, action, status, error, created_at))"
     )
     .eq("id", threadId)
     .maybeSingle()

@@ -31,7 +31,7 @@ export async function approveDecision(
     .eq("id", decisionId)
     .eq("status", "pending_approval")
     .select(
-      "id, draft_reply_text, proposed_actions, context, emails(id, from_email, subject, agent_mail_message_id, body_text, thread_id)"
+      "id, draft_reply_text, proposed_actions, context, emails!decisions_email_id_fkey(id, from_email, subject, agent_mail_message_id, body_text, thread_id)"
     )
     .maybeSingle()
 

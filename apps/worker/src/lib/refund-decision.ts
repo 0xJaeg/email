@@ -100,7 +100,7 @@ export async function countPriorRefunds(
   const since = new Date(Date.now() - days * 86_400_000).toISOString()
   const { data, error } = await supabase
     .from("decisions")
-    .select("id, emails!inner(from_email)")
+    .select("id, emails!decisions_email_id_fkey!inner(from_email)")
     // The classifier writes the category KEY from flow_nodes.config.categories as the
     // classification. Count both "refund" and "chargeback" requests — someone who earlier
     // threatened a chargeback should escalate the ladder faster. These keys MUST stay in
