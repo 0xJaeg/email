@@ -74,6 +74,7 @@ export const DraftStep: Step = {
       ...(ctx.branchReasons && Object.keys(ctx.branchReasons).length > 0
         ? { branch_reasons: ctx.branchReasons }
         : {}),
+      ...(ctx.spamReasoning ? { spam_reasoning: ctx.spamReasoning } : {}),
     }
 
     const { data: row, error: decErr } = await supabase

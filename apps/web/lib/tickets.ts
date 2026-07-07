@@ -138,6 +138,8 @@ export type DecisionContext = {
   classification_reasoning?: string
   /** reply_branch "why" keyed by node_key — the reason each gate/branch chose its path. */
   branch_reasons?: Record<string, string>
+  /** The spam filter's reason for letting the email through (not spam). */
+  spam_reasoning?: string
   lookups?: DecisionLookup[]
 }
 

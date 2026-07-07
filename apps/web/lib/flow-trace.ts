@@ -161,13 +161,18 @@ function nodeToStep(
         key,
         title: "Spam check",
         status: "done",
-        detail: {
-          kind: "text",
-          text:
-            s.outcome === "spam"
-              ? "Quarantined as spam"
-              : "Not spam — continued",
-        },
+        detail:
+          s.outcome === "spam"
+            ? {
+                kind: "reason",
+                headline: "Quarantined as spam",
+                reasoning: decision.llmReasoning,
+              }
+            : {
+                kind: "reason",
+                headline: "Not spam — continued",
+                reasoning: decision.context?.spam_reasoning ?? null,
+              },
       }
     case "classify":
       return {
@@ -208,7 +213,9 @@ function nodeToStep(
         title: "Checked purchase",
         status: s.outcome === "failed" ? "failed" : "done",
         detail: {
-          kind: "api-call",
+          kind: "order-access",
+          orders: decision.context?.orders ?? [],
+          access: null,
           lookups: (decision.context?.lookups ?? []).filter(
             (l) => l.operation === "order_lookup"
           ),

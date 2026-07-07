@@ -75,6 +75,9 @@ export type StepContext = {
   // reason), accumulated across the run and persisted into
   // decisions.context.branch_reasons so the ticket trace can explain each branch.
   branchReasons?: Record<string, string>
+  // The spam filter's 1-sentence "why" when it lets the email through (not spam),
+  // persisted to decisions.context.spam_reasoning so the trace can show it.
+  spamReasoning?: string
   // The exact path the graph walk took (one entry per node visited), recorded by
   // runGraph and persisted to flow_runs/flow_run_steps for the per-ticket trace.
   path?: FlowRunStep[]

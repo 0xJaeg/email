@@ -45,7 +45,8 @@ export const SpamFilterStep: Step = {
         ],
         output_config: { format: zodOutputFormat(SpamResult) },
       })
-      if (!resp.parsed_output?.is_spam) return {}
+      if (!resp.parsed_output?.is_spam)
+        return { spamReasoning: resp.parsed_output?.reasoning }
 
       const { data: row, error: decErr } = await supabase
         .from("decisions")

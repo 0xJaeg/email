@@ -265,14 +265,16 @@ describe("buildFlowTrace — from the recorded path", () => {
     const steps = buildFlowTrace(
       decision({
         decision: "quarantine_spam",
+        llmReasoning: "Bulk marketing blast, not a real customer question.",
         path: [step(0, "spam_filter", "spam")],
       }),
       [audit("webhook_received")]
     )
     expect(steps.map((s) => s.title)).toEqual(["Email received", "Spam check"])
     expect(steps[1]?.detail).toEqual({
-      kind: "text",
-      text: "Quarantined as spam",
+      kind: "reason",
+      headline: "Quarantined as spam",
+      reasoning: "Bulk marketing blast, not a real customer question.",
     })
   })
 
@@ -477,6 +479,68 @@ describe("buildFlowTrace — save-the-sale branch nodes + reasons", () => {
       value: "send_faq_reply",
       reasoning: null,
       snippet: "Here is how to reset your login.",
+    })
+  })
+})
+
+describe("buildFlowTrace — purchase orders + spam reason detail", () => {
+  const step = (
+    seq: number,
+    nodeType: string,
+    outcome: string | null,
+    nodeKey = nodeType
+  ) => ({ seq, nodeKey, nodeType, outcome })
+
+  it("shows the found orders on the Checked purchase step", () => {
+    const lookup = {
+      adapter: "orders_db",
+      operation: "order_lookup" as const,
+      ok: true,
+      summary: "1 active order(s) for this email",
+    }
+    const order = {
+      orderId: "D-100",
+      amount: 47,
+      currency: "USD",
+      productName: "Mobile Profits",
+      purchasedAt: "2026-07-01",
+    }
+    const steps = buildFlowTrace(
+      decision({
+        classification: "refund",
+        context: { orders: [order], lookups: [lookup] },
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "refund"),
+          step(2, "purchase_lookup", "found", "order_lookup_refund"),
+          step(3, "send_reply", "done", "reply_refund"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(steps.find((s) => s.title === "Checked purchase")?.detail).toEqual({
+      kind: "order-access",
+      orders: [order],
+      access: null,
+      lookups: [lookup],
+    })
+  })
+
+  it("shows the spam filter's reason on a not-spam email", () => {
+    const steps = buildFlowTrace(
+      decision({
+        context: { spam_reasoning: "Real customer asking about their login." },
+        path: [
+          step(0, "spam_filter", "not_spam"),
+          step(1, "classify", "login_access"),
+        ],
+      }),
+      [audit("webhook_received")]
+    )
+    expect(steps.find((s) => s.title === "Spam check")?.detail).toEqual({
+      kind: "reason",
+      headline: "Not spam — continued",
+      reasoning: "Real customer asking about their login.",
     })
   })
 })

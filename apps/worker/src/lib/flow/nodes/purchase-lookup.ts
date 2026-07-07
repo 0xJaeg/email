@@ -44,8 +44,8 @@ export const PurchaseLookupNode: NodeType = {
         "orders_db",
         "order_lookup",
         orders.length > 0
-          ? `${orders.length} order(s) found`
-          : "no matching order"
+          ? `${orders.length} active order(s) for this email`
+          : "no active order for this email"
       )
     )
   },
