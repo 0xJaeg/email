@@ -164,7 +164,7 @@ describe("parseDigistore", () => {
     const p = new URLSearchParams()
     p.append("event", "on_payment")
     p.append("email", "b@x.com")
-    p.append("buyer_first_name", "Bob")
+    p.append("first_name", "Bob")
     p.append("order_id", "D-7")
     p.append("product_id", "88")
     p.append("amount", "49")

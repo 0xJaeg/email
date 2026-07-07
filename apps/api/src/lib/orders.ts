@@ -148,7 +148,7 @@ export function parseDigistore(params: URLSearchParams): OrderInput | null {
     params.get("payment_id") ??
     ""
   if (!email || !orderId) return null
-  const name = [params.get("buyer_first_name"), params.get("buyer_last_name")]
+  const name = [params.get("first_name"), params.get("last_name")]
     .filter(Boolean)
     .join(" ")
   const amount = params.get("amount")
