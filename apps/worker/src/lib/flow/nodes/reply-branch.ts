@@ -23,7 +23,13 @@ export const ReplyBranchNode: NodeType = {
     }
     const result = await decide(ctx, node, branches)
 
-    const patch: Partial<StepContext> = {}
+    const patch: Partial<StepContext> = {
+      // Keep this branch's "why" (node_key -> reason) for the ticket trace.
+      branchReasons: {
+        ...(ctx.branchReasons ?? {}),
+        [node.node_key]: result.reasoning,
+      },
+    }
     if (ctx.priorDecision && !ctx.classification) {
       patch.classification = {
         classification: ctx.priorDecision.classification,

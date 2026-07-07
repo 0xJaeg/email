@@ -20,6 +20,14 @@ export const StopNode: NodeType = {
         llm_reasoning: cls?.reasoning ?? null,
         status: "closed",
         proposed_actions: [],
+        // Carry the branch "why" (e.g. the accept-reply read that led here) so the
+        // trace explains why the ticket closed with no send/refund.
+        context: {
+          ...(cls?.reasoning ? { classification_reasoning: cls.reasoning } : {}),
+          ...(ctx.branchReasons && Object.keys(ctx.branchReasons).length > 0
+            ? { branch_reasons: ctx.branchReasons }
+            : {}),
+        },
       })
       .select("id")
       .single()

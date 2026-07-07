@@ -19,7 +19,13 @@ export type FlowDetail =
       access: DecisionAccess | null
       lookups: DecisionLookup[]
     }
-  | { kind: "decision"; value: string | null; reasoning: string | null }
+  | {
+      kind: "decision"
+      value: string | null
+      reasoning: string | null
+      snippet?: string
+    }
+  | { kind: "reason"; headline?: string; reasoning?: string | null }
   | { kind: "actions"; actions: ProposedAction[] }
   | { kind: "api-call"; lookups: DecisionLookup[] }
 
@@ -122,6 +128,13 @@ function humanizeKey(key: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// Friendly titles for the reply_branch gates (fallback: humanized node key).
+const REPLY_BRANCH_TITLES: Record<string, string> = {
+  refund_problem_gate: "Checked for a specific problem",
+  await_save_no_problem_reply: "Read their reply to the offer",
+  await_help_problem_reply: "Read their reply after helping",
+}
+
 // First line of the drafted reply (truncated) — a compact "what was written",
 // distinct from the decision/reasoning shown on the deciding step.
 function draftSnippet(text: string | null): string | undefined {
@@ -148,13 +161,18 @@ function nodeToStep(
         key,
         title: "Spam check",
         status: "done",
-        detail: {
-          kind: "text",
-          text:
-            s.outcome === "spam"
-              ? "Quarantined as spam"
-              : "Not spam — continued",
-        },
+        detail:
+          s.outcome === "spam"
+            ? {
+                kind: "reason",
+                headline: "Quarantined as spam",
+                reasoning: decision.llmReasoning,
+              }
+            : {
+                kind: "reason",
+                headline: "Not spam — continued",
+                reasoning: decision.context?.spam_reasoning ?? null,
+              },
       }
     case "classify":
       return {
@@ -192,10 +210,12 @@ function nodeToStep(
     case "purchase_lookup":
       return {
         key,
-        title: "Checked purchase (ClickBank / JVZoo / Digistore)",
+        title: "Checked purchase",
         status: s.outcome === "failed" ? "failed" : "done",
         detail: {
-          kind: "api-call",
+          kind: "order-access",
+          orders: decision.context?.orders ?? [],
+          access: null,
           lookups: (decision.context?.lookups ?? []).filter(
             (l) => l.operation === "order_lookup"
           ),
@@ -225,6 +245,40 @@ function nodeToStep(
           ),
         },
       }
+    case "reply_branch":
+      return {
+        key,
+        title: REPLY_BRANCH_TITLES[s.nodeKey] ?? humanizeKey(s.nodeKey),
+        status: "done",
+        detail: {
+          kind: "reason",
+          headline: s.outcome ? `Chose: ${humanizeKey(s.outcome)}` : undefined,
+          reasoning: decision.context?.branch_reasons?.[s.nodeKey] ?? null,
+        },
+      }
+    case "refund_draft":
+      return {
+        key,
+        title: "Drafted refund reply",
+        status: "done",
+        detail: {
+          kind: "decision",
+          value: decision.decision,
+          reasoning: null,
+          snippet: draftSnippet(decision.draftReplyText),
+        },
+      }
+    case "stop":
+      return {
+        key,
+        title: "Closed — nothing to send",
+        status: "done",
+        detail: {
+          kind: "reason",
+          headline:
+            "Customer accepted the offer or the issue was resolved, so no reply or refund was needed.",
+        },
+      }
     case "refund_ladder":
       return {
         key,
@@ -248,16 +302,22 @@ function nodeToStep(
           },
         }
       }
-      // If an upstream node already showed the decision + reasoning (the refund
-      // ladder or an api_action), this step just shows the reply that was
-      // drafted; otherwise (e.g. a plain FAQ) this IS the deciding step.
+      // The "why" for a drafted reply lives on the upstream steps (classification,
+      // the lookup result, any branch/gate). If an upstream node already explained
+      // the decision (refund ladder / reply_branch / api_action), this step just
+      // shows the reply that was drafted. Otherwise (a plain FAQ) it shows the
+      // reply type + first line — never the classifier's reason again (that lives
+      // on the classify step).
       const decidedUpstream = path
         .slice(0, i)
         .some(
-          (p) => p.nodeType === "refund_ladder" || p.nodeType === "api_action"
+          (p) =>
+            p.nodeType === "refund_ladder" ||
+            p.nodeType === "reply_branch" ||
+            p.nodeType === "api_action"
         )
+      const snippet = draftSnippet(decision.draftReplyText)
       if (decidedUpstream) {
-        const snippet = draftSnippet(decision.draftReplyText)
         return {
           key,
           title: "Drafted reply",
@@ -272,7 +332,8 @@ function nodeToStep(
         detail: {
           kind: "decision",
           value: decision.decision,
-          reasoning: decision.llmReasoning,
+          reasoning: null,
+          snippet,
         },
       }
     }
