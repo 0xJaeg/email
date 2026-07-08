@@ -52,7 +52,7 @@ export function TicketStatusFilter() {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-2">
       <div className="inline-flex rounded-md border p-0.5">
         {STATE_OPTIONS.map((o) => (
           <button
@@ -71,24 +71,22 @@ export function TicketStatusFilter() {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-sm text-muted-foreground">Result</span>
-        <Select
-          value={activeResult}
-          onValueChange={(v) => setParam("outcome", v, "all")}
-        >
-          <SelectTrigger size="sm" className="w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {RESULT_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+
+      <Select
+        value={activeResult}
+        onValueChange={(v) => setParam("outcome", v, "all")}
+      >
+        <SelectTrigger size="sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {RESULT_OPTIONS.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }
