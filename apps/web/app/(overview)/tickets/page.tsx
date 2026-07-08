@@ -41,7 +41,7 @@ export default async function TicketsPage({
   return (
     <div className="flex flex-col gap-2 md:gap-4">
       <TicketsRealtime />
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center flex-wrap md:flex-nowrap justify-between gap-2">
         <Suspense>
           <SearchBar placeholder="Search sender or subject" />
         </Suspense>
