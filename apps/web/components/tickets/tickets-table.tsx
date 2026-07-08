@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { getServerSupabase } from "@/lib/supabase/admin"
-import { getTickets, type TicketState } from "@/lib/tickets"
+import { getTickets, type TicketState, type TicketOutcome } from "@/lib/tickets"
 import {
   Table,
   TableBody,
@@ -43,18 +43,21 @@ export async function TicketsTable({
   page,
   size,
   state,
+  outcome,
 }: {
   query: string
   page: number
   size: number
   state: TicketState
+  outcome?: TicketOutcome
 }) {
   const { data, count } = await getTickets(
     getServerSupabase(),
     query,
     page,
     size,
-    state
+    state,
+    outcome
   )
 
   return (
