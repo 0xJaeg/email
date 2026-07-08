@@ -2,16 +2,20 @@
 
 import { useSearchParams, usePathname, useRouter } from "next/navigation"
 import { cn } from "@workspace/ui/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
 
-// Filter for the unified tickets table. URL-driven like the search bar: sets
-// ?status= and resets ?page= so results start at page 1. Default (no param) =
-// open. Two groups: the work-queue views (open/done/all/quarantined) and the
-// lookup / escalation outcome filters (found/not_found/failed/escalated), so an
-// operator can see, across tickets, why a purchase lookup found something, found
-// nothing, or could not run.
-type Opt = { value: string; label: string; title?: string }
-
-const STATE_OPTIONS: Opt[] = [
+// Filter for the unified tickets table. URL-driven like the search bar: the
+// work-queue view sets ?status=, the lookup/escalation result sets ?outcome=,
+// each resetting ?page= so results start at page 1. Two separate controls so the
+// everyday views stay one clean row and the diagnostic filters (Ben's ask:
+// found / not found / failed / escalated) live in a dropdown beside them.
+const STATE_OPTIONS: { value: string; label: string; title?: string }[] = [
   { value: "open", label: "Open" },
   { value: "done", label: "Done" },
   { value: "all", label: "All" },
@@ -23,67 +27,68 @@ const STATE_OPTIONS: Opt[] = [
   },
 ]
 
-const OUTCOME_OPTIONS: Opt[] = [
-  {
-    value: "found",
-    label: "Found",
-    title: "Purchase lookup found an active order for the sender.",
-  },
-  {
-    value: "not_found",
-    label: "Not found",
-    title: "The lookup ran cleanly and found no active order.",
-  },
-  {
-    value: "failed",
-    label: "Failed",
-    title:
-      "The lookup could not run (API/DB error). Escalated — NOT a real miss.",
-  },
-  {
-    value: "escalated",
-    label: "Escalated",
-    title: "Routed to a human for a manual reply.",
-  },
+const RESULT_OPTIONS: { value: string; label: string }[] = [
+  { value: "all", label: "All results" },
+  { value: "found", label: "Found" },
+  { value: "not_found", label: "Not found" },
+  { value: "failed", label: "Failed" },
+  { value: "escalated", label: "Escalated" },
 ]
 
 export function TicketStatusFilter() {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const { replace } = useRouter()
-  const active = searchParams.get("status") ?? "open"
+  const activeState = searchParams.get("status") ?? "open"
+  const activeResult = searchParams.get("outcome") ?? "all"
 
-  function select(value: string) {
+  // Set (or clear, when it's the default) a URL param, and reset pagination.
+  function setParam(key: string, value: string, defaultValue: string) {
     const params = new URLSearchParams(searchParams)
-    // "open" is the default — keep the URL clean by omitting it.
-    if (value === "open") params.delete("status")
-    else params.set("status", value)
+    if (value === defaultValue) params.delete(key)
+    else params.set(key, value)
     params.delete("page")
     replace(`${pathname}?${params.toString()}`)
   }
 
-  const button = (o: Opt) => (
-    <button
-      key={o.value}
-      type="button"
-      title={o.title}
-      onClick={() => select(o.value)}
-      className={cn(
-        "rounded px-3 py-1 text-sm transition-colors",
-        active === o.value
-          ? "bg-muted font-medium text-foreground"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      {o.label}
-    </button>
-  )
-
   return (
-    <div className="inline-flex flex-wrap items-center gap-y-1 rounded-md border p-0.5">
-      {STATE_OPTIONS.map(button)}
-      <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-      {OUTCOME_OPTIONS.map(button)}
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="inline-flex rounded-md border p-0.5">
+        {STATE_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            title={o.title}
+            onClick={() => setParam("status", o.value, "open")}
+            className={cn(
+              "rounded px-3 py-1 text-sm transition-colors",
+              activeState === o.value
+                ? "bg-muted font-medium text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm text-muted-foreground">Result</span>
+        <Select
+          value={activeResult}
+          onValueChange={(v) => setParam("outcome", v, "all")}
+        >
+          <SelectTrigger size="sm" className="w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {RESULT_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   )
 }

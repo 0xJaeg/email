@@ -5,17 +5,12 @@ import { sanitizeSearch } from "@/lib/search"
 // accepts either. Imported as a type only (no secret-key runtime code).
 type DbClient = ServerClient
 
-export type TicketState =
-  | "open"
-  | "done"
-  | "all"
-  | "quarantined"
-  // Lookup-outcome filters (cross-cutting) — from the view's `lookup_outcome`.
-  | "found"
-  | "not_found"
-  | "failed"
-  // Routed to a human.
-  | "escalated"
+export type TicketState = "open" | "done" | "all" | "quarantined"
+
+/** Lookup/escalation result filter, independent of the state view above.
+ *  found/not_found/failed come from the view's `lookup_outcome`; escalated =
+ *  decision_status 'needs_human'. */
+export type TicketOutcome = "found" | "not_found" | "failed" | "escalated"
 
 export type TicketRow = {
   id: string
@@ -63,7 +58,8 @@ export async function getTickets(
   query: string,
   page: number,
   size: number,
-  state: TicketState
+  state: TicketState,
+  outcome?: TicketOutcome
 ): Promise<{ data: TicketRow[]; count: number }> {
   // thread_tickets is a Postgres view (not in the generated Database types);
   // query it untyped and map the rows. Its shape is owned by the migration
@@ -77,13 +73,14 @@ export async function getTickets(
     )
     .order("created_at", { ascending: false })
 
-  // Cross-cutting filters (spam / escalated / lookup outcome) sit alongside the
-  // open/done/all state filter; everything not matched below filters by state.
+  // State view (open/done/all/quarantined).
   if (state === "quarantined") q = q.eq("decision", "quarantine_spam")
-  else if (state === "escalated") q = q.eq("decision_status", "needs_human")
-  else if (state === "found" || state === "not_found" || state === "failed")
-    q = q.eq("lookup_outcome", state)
   else if (state !== "all") q = q.eq("state", state)
+
+  // Lookup/escalation result filter — independent of the view above (they AND).
+  if (outcome === "escalated") q = q.eq("decision_status", "needs_human")
+  else if (outcome === "found" || outcome === "not_found" || outcome === "failed")
+    q = q.eq("lookup_outcome", outcome)
 
   const esc = sanitizeSearch(query)
   if (esc) {
